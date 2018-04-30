@@ -23,7 +23,7 @@ describe OpsController do
         tenant = FactoryGirl.create(:tenant, :parent => Tenant.root_tenant)
 
         session[:sandboxes] = {"ops" => {:active_tree => :rbac_tree}}
-        post :tree_select, :params => { :id => "tn-#{controller.to_cid(tenant.id)}", :format => :js }
+        post :tree_select, :params => { :id => "tn-#{tenant.id}", :format => :js }
 
         expect(response).to render_template('ops/_rbac_details_tab')
         expect(response.status).to eq(200)
@@ -33,7 +33,7 @@ describe OpsController do
         tenant = FactoryGirl.create(:tenant, :parent => Tenant.root_tenant)
 
         session[:sandboxes] = {"ops" => {:active_tree => :rbac_tree}}
-        post :tree_select, :params => { :id => "tn-#{controller.to_cid(tenant.id)}", :format => :js }
+        post :tree_select, :params => { :id => "tn-#{tenant.id}", :format => :js }
 
         expect(response).to render_template('ops/_rbac_details_tab')
         expect(response.status).to eq(200)
@@ -47,7 +47,7 @@ describe OpsController do
                           :mem_allocated => {:value => four_terabytes})
 
         session[:sandboxes] = {"ops" => {:active_tree => :rbac_tree}}
-        post :tree_select, :params => { :id => "tn-#{controller.to_cid(tenant.id)}", :format => :js }
+        post :tree_select, :params => { :id => "tn-#{tenant.id}", :format => :js }
 
         expect(response).to render_template('ops/_rbac_details_tab')
         expect(response.status).to eq(200)
@@ -75,7 +75,7 @@ describe OpsController do
         allow(ApplicationHelper).to receive(:role_allows?).and_return(true)
         @t = FactoryGirl.create(:tenant, :parent => Tenant.root_tenant)
         sb_hash = {
-          :trees       => {:rbac_tree => {:active_node => "tn-#{controller.to_cid(@t.id)}"}},
+          :trees       => {:rbac_tree => {:active_node => "tn-#{@t.id}"}},
           :active_tree => :rbac_tree,
           :active_tab  => "rbac_details"
         }
@@ -108,7 +108,7 @@ describe OpsController do
         allow(ApplicationHelper).to receive(:role_allows?).and_return(true)
         t = FactoryGirl.create(:tenant, :parent => Tenant.root_tenant)
         sb_hash = {
-          :trees       => {:rbac_tree => {:active_node => "tn-#{controller.to_cid(t.id)}"}},
+          :trees       => {:rbac_tree => {:active_node => "tn-#{t.id}"}},
           :active_tree => :rbac_tree,
           :active_tab  => "rbac_details"
         }
@@ -153,7 +153,7 @@ describe OpsController do
                                      :parent    => Tenant.root_tenant,
                                      :subdomain => "test")
         sb_hash = {
-          :trees       => {:rbac_tree => {:active_node => "tn-#{controller.to_cid(@tenant.id)}"}},
+          :trees       => {:rbac_tree => {:active_node => "tn-#{@tenant.id}"}},
           :active_tree => :rbac_tree,
           :active_tab  => "rbac_details"
         }
@@ -251,7 +251,7 @@ describe OpsController do
       it "sets value of parent & divisible fields for new record" do
         tenant = FactoryGirl.build(:tenant, :parent => Tenant.root_tenant)
         sb_hash = {
-          :trees       => {:rbac_tree => {:active_node => "tn-#{controller.to_cid(@tenant.id)}"}},
+          :trees       => {:rbac_tree => {:active_node => "tn-#{@tenant.id}"}},
           :active_tree => :rbac_tree,
           :active_tab  => "rbac_details"
         }
@@ -271,7 +271,7 @@ describe OpsController do
                                      :domain    => "test",
                                      :subdomain => "test")
         sb_hash = {
-          :trees       => {:rbac_tree => {:active_node => "tn-#{controller.to_cid(@tenant.id)}"}},
+          :trees       => {:rbac_tree => {:active_node => "tn-#{@tenant.id}"}},
           :active_tree => :rbac_tree,
           :active_tab  => "rbac_details"
         }
@@ -326,7 +326,7 @@ describe OpsController do
                                      :parent    => Tenant.root_tenant,
                                      :domain    => "test",
                                      :subdomain => "test")
-        sb_hash = { :trees       => {:rbac_tree => {:active_node => "tn-#{controller.to_cid(@tenant.id)}"}},
+        sb_hash = { :trees       => {:rbac_tree => {:active_node => "tn-#{@tenant.id}"}},
                     :active_tree => :rbac_tree,
                     :active_tab  => "rbac_details"
                   }
@@ -444,6 +444,43 @@ describe OpsController do
 
     render_views
 
+    it "uses tags field only when editing the group filter_expression" do
+      new = {:use_filter_expression => true,
+             :name                  => 'Name',
+             :description           => "Test",
+             :role                  => @role.id,
+             :filter_expression     => @exp.exp,
+             :exp_key               => 'foo',
+             :belongsto             => {},
+             :filters               => {'managed/env' => '/managed/env'}}
+      allow(controller).to receive(:replace_right_cell)
+      controller.instance_variable_set(:@_params, :use_filter_expression => "true", :id => "new")
+
+      edit = {:key      => "rbac_group_edit__new",
+              :new      => new,
+              :current  => new,
+              :edit_exp => {:key => '???'}}
+      edit[:filter_expression] ||= ApplicationController::Filter::Expression.new
+      edit[:filter_expression][:expression] = {:test => "foo", :token => 1}
+      edit[:new][:filter_expression] = copy_hash(edit[:filter_expression][:expression])
+      edit[:filter_expression].history.reset(edit[:filter_expression][:expression])
+      controller.instance_variable_set(:@edit, edit)
+      controller.instance_variable_set(:@expkey, :filter_expression)
+      edit[:filter_expression][:exp_table] = controller.send(:exp_build_table, edit[:filter_expression][:expression])
+      edit[:filter_expression][:exp_model] = @group.class.to_s
+      session[:edit] = edit
+      session[:expkey] = :filter_expression
+      controller.instance_variable_set(:@edit, edit)
+      session[:sandboxes] = {"ops" => {:active_tree => :rbac_tree}}
+      allow(controller).to receive(:replace_right_cell)
+
+      post :tree_select, :params => { :id => 'root', :format => :js }
+      expect(MiqExpression).to receive(:tag_details)
+      post :exp_token_pressed, :params => {:id => 'new', :use_filter_expression => "true", :token => 1}
+      @edit = controller.instance_variable_get(:@edit)
+      expect(@edit[:filter_expression][:exp_typ]).to eq('tags')
+    end
+
     it "calls MiqExpression.tag_details to get only the My Company type tag categories" do
       new = {:use_filter_expression => true,
              :name                  => 'Name',
@@ -519,6 +556,36 @@ describe OpsController do
     end
   end
 
+  context "rbac_role_set_form_vars" do
+    before do
+      MiqUserRole.seed
+      MiqGroup.seed
+      MiqRegion.seed
+      stub_user(:features => :all)
+      @vm_role = FactoryGirl.create(:miq_user_role, :features => %w(embedded_automation_manager))
+    end
+
+    it "the feature list to edit should contain the children roles" do
+      EvmSpecHelper.seed_specific_product_features(%w(everything embedded_automation_manager embedded_configuration_script_source_view))
+      sb_hash = {:trees => {:active_tree => :rbac_tree, :typ => 'new'}}
+      controller.instance_variable_set(:@sb, sb_hash)
+      record = MiqUserRole.new
+      record.miq_product_features = [MiqProductFeature.find_by(:identifier => MiqProductFeature.feature_root)]
+      controller.instance_variable_set(:@record, record)
+      allow(controller).to receive(:replace_right_cell)
+      allow(controller).to receive(:build_rbac_feature_tree)
+      controller.instance_variable_set(:@_params, :button => "add")
+
+      new = {:features => ["everything"], :name => "foo"}
+      edit = {:key     => "rbac_role_edit__new",
+              :new     => new,
+              :current => new}
+      session[:edit] = edit
+      controller.send(:rbac_role_set_form_vars)
+      expect(controller.instance_variable_get(:@edit)[:new][:features]).to include('embedded_configuration_script_source_view')
+    end
+  end
+
   render_views
 
   context "::MiqRegion" do
@@ -554,14 +621,62 @@ describe OpsController do
       expect(controller.instance_variable_get(:@users_count)).to eq(1)
     end
 
-    it "displays the access object count for the current tenant" do
+    it "displays the access object count for the current user" do
       login_as @u2a
       session[:sandboxes] = {"ops" => {:active_tree => :rbac_tree}}
       allow(controller).to receive(:replace_right_cell)
       post :tree_select, :params => { :id => 'root', :format => :js }
-      expect(controller.instance_variable_get(:@groups_count)).to eq(2)
+      expect(controller.instance_variable_get(:@groups_count)).to eq(1)
       expect(controller.instance_variable_get(:@tenants_count)).to eq(1)
-      expect(controller.instance_variable_get(:@users_count)).to eq(5)
+      expect(controller.instance_variable_get(:@users_count)).to eq(2)
+    end
+  end
+
+  describe '#rbac_field_changed' do
+    let(:getvars) { "rbac_#{rec_type}_get_form_vars".to_sym }
+
+    before do
+      allow(controller).to receive(:load_edit).and_return(true)
+      allow(controller).to receive(getvars).and_call_original
+      allow(controller).to receive(:render).and_return(true)
+
+      controller.instance_variable_set(:@_params, params)
+      controller.instance_variable_set(:@edit, edit)
+    end
+
+    subject { controller.instance_variable_get(:@edit)[:new][:group] }
+
+    context 'editing/adding a new user' do
+      let(:rec_type) { "user" }
+      let(:params) { {:name => "new_user", :id => "new", :chosen_group => "12,34"} }
+      let(:edit) { {:new => {:name => nil, :group => []}} }
+
+      it 'sets list of selected groups' do
+        controller.send(:rbac_field_changed, rec_type)
+        expect(subject.count).to eq(2)
+      end
+    end
+
+    context 'editing/adding a new group' do
+      let(:rec_type) { "group" }
+      let(:params) { {:description => "new_group", :id => "new"} }
+      let(:edit) { {:new => {:description => nil}} }
+
+      it 'does not set list of selected groups' do
+        controller.send(:rbac_field_changed, rec_type)
+        expect(subject).to be_nil
+      end
+    end
+
+    context 'editing/adding a new role' do
+      let(:rec_type) { "role" }
+      let(:params) { {:description => "new_role", :id => "new"} }
+      let(:edit) { {:new => {:description => nil, :features => []}} }
+
+      it 'does not set list of selected groups' do
+        controller.send(:rbac_field_changed, rec_type)
+        expect(subject).to be_nil
+      end
     end
   end
 end

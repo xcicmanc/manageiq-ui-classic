@@ -16,7 +16,7 @@ module ContainerGroupHelper::TextualSummary
       _("Relationships"),
       %i(
         ems container_project container_services container_replicator containers container_node
-        lives_on container_images
+        lives_on container_images persistent_volumes
       )
     )
   end
@@ -121,22 +121,6 @@ module ContainerGroupHelper::TextualSummary
 
   def textual_group_container_statuses_summary
     TextualGroup.new(_("Container Statuses Summary"), %i(waiting running terminated))
-  end
-
-  def container_statuses_summary
-    @container_statuses_summary ||= @record.container_states_summary
-  end
-
-  def textual_waiting
-    container_statuses_summary[:waiting] || 0
-  end
-
-  def textual_running
-    container_statuses_summary[:running] || 0
-  end
-
-  def textual_terminated
-    container_statuses_summary[:terminated] || 0
   end
 
   def textual_compliance_history

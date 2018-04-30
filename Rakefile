@@ -1,5 +1,6 @@
 require 'bundler/setup'
 require 'bundler/gem_tasks'
+require 'English'
 
 require 'manageiq-ui-classic'
 ManageIQ::UI::Classic::Engine.load_tasks
@@ -48,6 +49,8 @@ class StaticOrHaml
     scope = ActionView::Base.new
     scope.controller = ActionController::Base.new
     scope.view_paths << File.expand_path("../app/views", __FILE__)
+
+    scope.extend(ApplicationHelper)
 
     compiled = Haml::Engine.new(raw).render(scope)
 
@@ -104,6 +107,27 @@ namespace :spec do
 
   desc "Try to compile assets"
   task :compile => ["app:assets:precompile"]
+
+  desc "run Jest tests"
+  task :jest do
+    system('yarn test')
+    exit $CHILD_STATUS.exitstatus
+  end
+
+  namespace :jest do
+    desc 'Run Jest tests with node debugger'
+    task :debug do
+      puts
+      puts "open your chrome://inspect/#devices on your chrome based browser (see https://facebook.github.io/jest/docs/en/troubleshooting.html for more details)"
+      puts
+      system('node --inspect-brk node_modules/.bin/jest --runInBand')
+    end
+
+  end
+  namespace :jest do
+    desc "Does nothing, needed by Travis"
+    task :setup
+  end
 end
 
 task :default => :spec

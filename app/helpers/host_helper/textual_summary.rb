@@ -12,7 +12,7 @@ module HostHelper::TextualSummary
     TextualGroup.new(
       _("Properties"),
       %i(
-        hostname ipaddress ipmi_ipaddress custom_1 vmm_info model asset_tag service_tag osinfo
+        hostname ipaddress ipmi_ipaddress hypervisor_hostname custom_1 vmm_info model asset_tag service_tag osinfo
         power_state lockdown_mode maintenance_mode devices network storage_adapters num_cpu num_cpu_cores
         cpu_cores_per_socket memory guid
       )
@@ -22,7 +22,7 @@ module HostHelper::TextualSummary
   def textual_group_relationships
     TextualGroup.new(
       _("Relationships"),
-      %i(ems cluster availability_zone used_tenants storages resource_pools vms templates drift_history physical_server)
+      %i(ems cluster availability_zone used_tenants storages resource_pools vms templates drift_history physical_server network_manager)
     )
   end
 
@@ -133,6 +133,10 @@ module HostHelper::TextualSummary
     {:label => _("IPMI IP Address"), :value => @record.ipmi_address.to_s}
   end
 
+  def textual_hypervisor_hostname
+    {:label => _("Hypervisor Hostname"), :value => @record.hypervisor_hostname.to_s}
+  end
+
   def textual_custom_1
     return nil if @record.custom_1.blank?
     label = _("Custom Identifier")
@@ -241,6 +245,12 @@ module HostHelper::TextualSummary
     else
       {:label => _("Physical Server"), :value => @record.physical_server.try(:name), :icon => "pficon pficon-server", :link => url_for(:controller => 'physical_server', :action => 'show', :id => @record.physical_server_id)}
     end
+  end
+
+  def textual_network_manager
+    return nil unless @record.ext_management_system.respond_to?(:network_manager)
+
+    textual_link(@record.ext_management_system.try(:network_manager))
   end
 
   def textual_storages
@@ -422,7 +432,7 @@ module HostHelper::TextualSummary
   def textual_ems_custom_attributes
     attrs = @record.ems_custom_attributes
     return nil if attrs.blank?
-    attrs.sort_by(&:name).collect { |a| {:label => a.name, :value => a.value} }
+    attrs.sort_by { |a| a.name.to_s }.collect { |a| {:label => a.name, :value => a.value} }
   end
 
   def textual_openstack_nova_scheduler

@@ -3,7 +3,9 @@ class CloudTenantDecorator < MiqDecorator
     'pficon pficon-cloud-tenant'
   end
 
-  def self.fileicon
-    '100/cloud_tenant.png'
+  def single_quad
+    {
+      :fonticon => fonticon
+    }
   end
 end

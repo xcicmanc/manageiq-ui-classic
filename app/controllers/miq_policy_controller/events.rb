@@ -8,7 +8,7 @@ module MiqPolicyController::Events
       @edit = nil
       add_flash(_("Edit Event cancelled by user"))
       get_node_info(x_node)
-      replace_right_cell(:nodetype => @nodetype)
+      replace_right_cell(:nodetype => @nodetype, :remove_form_buttons => true)
       return
     when "reset", nil # Reset or first time in
       event_build_edit_screen
@@ -24,7 +24,7 @@ module MiqPolicyController::Events
     id = params[:id] ? params[:id] : "new"
     return unless load_edit("event_edit__#{id}", "replace_cell__explorer")
     @event = @edit[:event_id] ? MiqEventDefinition.find_by_id(@edit[:event_id]) : MiqEventDefinition.new
-    policy = MiqPolicy.find(from_cid(@sb[:node_ids][x_active_tree]["p"]))
+    policy = MiqPolicy.find(@sb[:node_ids][x_active_tree]["p"])
     @policy = policy
 
     case params[:button]
@@ -44,7 +44,7 @@ module MiqPolicyController::Events
       @nodetype = "ev"
       event_get_info(MiqEventDefinition.find(event.id))
       @edit = nil
-      replace_right_cell(:nodetype => "ev", :replace_trees => [:policy_profile, :policy])
+      replace_right_cell(:nodetype => "ev", :replace_trees => %i(policy_profile policy), :remove_form_buttons => true)
     when "true_right", "true_left", "true_allleft", "true_up", "true_down", "true_sync", "true_async"
       handle_selection_buttons(:actions_true, :members_chosen_true, :choices_true, :choices_chosen_true)
       session[:changed] = (@edit[:new] != @edit[:current])
@@ -64,7 +64,7 @@ module MiqPolicyController::Events
     @edit[:current] = {}
 
     @event = MiqEventDefinition.find(params[:id])                                         # Get event record
-    policy = MiqPolicy.find(from_cid(@sb[:node_ids][x_active_tree]["p"]))   # Get the policy above this event
+    policy = MiqPolicy.find(@sb[:node_ids][x_active_tree]["p"])   # Get the policy above this event
     @policy = policy                                 # Save for use in the view
     @edit[:key] = "event_edit__#{@event.id || "new"}"
     @edit[:rec_id] = @event.id || nil
@@ -118,15 +118,15 @@ module MiqPolicyController::Events
   # Get information for an event
   def event_get_info(event)
     @record = @event = event
-    @policy = MiqPolicy.find(from_cid(@sb[:node_ids][x_active_tree]["p"])) unless x_active_tree == :event_tree
+    @policy = MiqPolicy.find(@sb[:node_ids][x_active_tree]["p"]) unless x_active_tree == :event_tree
     @right_cell_text = _("Event \"%{name}\"") % {:name => event.description}
     @right_cell_div = "event_details"
 
     if x_active_tree == :event_tree
       @event_policies = @event.miq_policies.sort_by { |p| p.description.downcase }
     else
-      @event_true_actions = MiqPolicy.find(from_cid(@sb[:node_ids][x_active_tree]["p"])).actions_for_event(event, :success)
-      @event_false_actions = MiqPolicy.find(from_cid(@sb[:node_ids][x_active_tree]["p"])).actions_for_event(event, :failure)
+      @event_true_actions = MiqPolicy.find(@sb[:node_ids][x_active_tree]["p"]).actions_for_event(event, :success)
+      @event_false_actions = MiqPolicy.find(@sb[:node_ids][x_active_tree]["p"]).actions_for_event(event, :failure)
     end
   end
 end

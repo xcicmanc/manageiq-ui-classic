@@ -13,17 +13,7 @@ class MiqPolicyController < ApplicationController
   after_action :cleanup_action
   after_action :set_session_data
 
-  UI_FOLDERS = [
-    Host,
-    Vm,
-    ContainerReplicator,
-    ContainerGroup,
-    ContainerNode,
-    ContainerImage,
-    ExtManagementSystem,
-    PhysicalServer,
-    MiddlewareServer
-  ].freeze
+  UI_FOLDERS = [Host, Vm, ContainerReplicator, ContainerGroup, ContainerNode, ContainerImage, ContainerProject, ExtManagementSystem, PhysicalServer].freeze
 
   def export
     @breadcrumbs = []
@@ -148,18 +138,14 @@ class MiqPolicyController < ApplicationController
       begin
         import_file_upload = miq_policy_import_service.store_for_import(params[:upload][:file])
         @sb[:hide] = true
-
-        redirect_options.merge!(:import_file_upload_id => import_file_upload.id)
+        redirect_options[:import_file_upload_id] = import_file_upload.id
       rescue => err
-        redirect_options.merge!(:flash_msg   => _("Error during 'Policy Import': %{messages}") %
-          {:messages => err.message},
-                                :flash_error => true,
-                                :action      => "export")
+        flash_to_session(_("Error during 'Policy Import': %{messages}") % {:messages => err.message}, :error)
+        redirect_options[:action] = 'export'
       end
     else
-      redirect_options.merge!(:flash_msg   => _("Use the Choose file button to locate an Import file"),
-                              :flash_error => true,
-                              :action      => "export")
+      flash_to_session(_("Use the Choose file button to locate an Import file"), :error)
+      redirect_options[:action] = 'export'
     end
 
     redirect_to redirect_options
@@ -198,7 +184,8 @@ class MiqPolicyController < ApplicationController
     elsif params[:commit] == "cancel"
       miq_policy_import_service.cancel_import(@import_file_upload_id)
 
-      javascript_redirect :action => 'export', :flash_msg => _("Import cancelled by user")
+      flash_to_session(_("Import cancelled by user"))
+      javascript_redirect(:action => 'export')
 
     # init import
     else
@@ -317,7 +304,7 @@ class MiqPolicyController < ApplicationController
               :filename => "policy.log")
     AuditEvent.success(:userid  => session[:userid],
                        :event   => "download_policy_log",
-                       :message => _("Policy log downloaded"))
+                       :message => "Policy log downloaded")
   end
 
   private
@@ -417,19 +404,19 @@ class MiqPolicyController < ApplicationController
     folder_get_info(treenodeid) if treenodeid != "root"         # Get folder info for all node types
     case @nodetype
     when "pp" # Policy Profile
-      profile_get_info(MiqPolicySet.find(from_cid(nodeid)))
+      profile_get_info(MiqPolicySet.find(nodeid))
     when "p"  # Policy
-      policy_get_info(MiqPolicy.find(from_cid(nodeid)))
+      policy_get_info(MiqPolicy.find(nodeid))
     when "co" # Condition
-      condition_get_info(Condition.find(from_cid(nodeid)))
+      condition_get_info(Condition.find(nodeid))
     when "ev" # Event
-      event_get_info(MiqEventDefinition.find(from_cid(nodeid)))
+      event_get_info(MiqEventDefinition.find(nodeid))
     when "a", "ta", "fa" # Action or True/False Action
-      action_get_info(MiqAction.find(from_cid(nodeid)))
+      action_get_info(MiqAction.find(nodeid))
     when "ap" # Alert Profile
-      alert_profile_get_info(MiqAlertSet.find(from_cid(nodeid)))
+      alert_profile_get_info(MiqAlertSet.find(nodeid))
     when "al" # Alert
-      alert_get_info(MiqAlert.find(from_cid(nodeid)))
+      alert_get_info(MiqAlert.find(nodeid))
     end
     @show_adv_search = (@nodetype == "xx"   && !@folders) ||
                        (@nodetype == "root" && ![:alert_profile_tree, :condition_tree, :policy_tree].include?(x_active_tree))
@@ -550,8 +537,8 @@ class MiqPolicyController < ApplicationController
     when 'root'
       partial_name, model =
         case x_active_tree
-        when :policy_profile_tree then ['profile_list',          _('Policy Profile')]
-        when :policy_tree         then ['policy_folders',        _('Policy')]
+        when :policy_profile_tree then ['profile_list',          _('Policy Profiles')]
+        when :policy_tree         then ['policy_folders',        _('Policies')]
         when :event_tree          then ['event_list',            _('Events')]
         when :condition_tree      then ['condition_folders',     _('Conditions')]
         when :action_tree         then ['action_list',           _('Actions')]
@@ -561,6 +548,7 @@ class MiqPolicyController < ApplicationController
 
       presenter.update(:main_div, r[:partial => partial_name])
       right_cell_text = _("All %{models}") % {:models => model}
+      right_cell_text += _(" (Names with \"%{search_text}\")") % {:search_text => @search_text} if @search_text.present? && %w(alert_profile_tree condition_tree policy_tree).exclude?(x_active_tree.to_s)
     when 'pp'
       presenter.update(:main_div, r[:partial => 'profile_details'])
       right_cell_text =
@@ -585,13 +573,20 @@ class MiqPolicyController < ApplicationController
           r[:partial => 'condition_list']
         elsif @folders
           mode = @sb[:folder]
-          right_cell_text = _("%{typ} Policies") % {:typ => mode.capitalize}
+          right_cell_text = if mode == 'compliance'
+                              _('Compliance Policies')
+                            elsif mode == 'control'
+                              _('Control Policies')
+                            else
+                              _("%{typ} Policies") % {:typ => mode.capitalize}
+                            end
           r[:partial => 'policy_folders']
         elsif @alert_profiles
           right_cell_text = _("All %{typ} Alert Profiles") % {:typ => ui_lookup(:model => @sb[:folder].try(:camelize))}
           r[:partial => 'alert_profile_list']
         end
       )
+      right_cell_text += _(" (Names with \"%{search_text}\")") % {:search_text => @search_text} if @search_text.present? && !@folders
     when 'p'
       presenter.update(:main_div, r[:partial => 'policy_details', :locals => {:read_only => true}])
       model_name = ui_lookup(:model => @sb[:nodeid].try(:camelize))
@@ -603,9 +598,9 @@ class MiqPolicyController < ApplicationController
                             _("Adding a new %{model_name} Policy") % {:model_name => model_name}
                           end
       else
-        options = {:model => "#{model_name} #{@sb[:mode] ? @sb[:mode].capitalize : ""} Policy",
+        options = {:model => "#{model_name} #{@sb[:mode] ? @sb[:mode].capitalize : ""}",
                    :name  => @policy.description}
-        right_cell_text = @edit ? _("Editing %{model} \"%{name}\"") % options : _("%{model} \"%{name}\"") % options
+        right_cell_text = @edit ? _("Editing %{model} Policy \"%{name}\"") % options : _("%{model} Policy \"%{name}\"") % options
         if @edit && @edit[:typ] == 'conditions'
           right_cell_text += _(" Condition Assignments")
         end
@@ -691,8 +686,10 @@ class MiqPolicyController < ApplicationController
     else
       # Added so buttons can be turned off even tho div is not being displayed it still pops up
       # Abandon changes box when trying to change a node on tree after saving a record
-      presenter.hide(:button_on).show(:toolbar).hide(:paging_div)
+      presenter.hide(:buttons_on).show(:toolbar).hide(:paging_div)
     end
+
+    presenter.hide(:form_buttons_div) if options[:remove_form_buttons]
 
     # Replace the searchbox
     presenter.replace(:adv_searchbox_div, r[:partial => 'layouts/x_adv_searchbox', :locals => {:nameonly => true}])
@@ -744,6 +741,137 @@ class MiqPolicyController < ApplicationController
     end
   end
 
+  def handle_selection_buttons_left(members, members_chosen, choices, _choices_chosen)
+    if params[members_chosen].nil?
+      add_flash(_("No %{members} were selected to move left") % {:members => members.to_s.split("_").first.titleize},
+                :error)
+      return
+    end
+
+    if @edit[:event_id]
+      # Handle Actions for an Event
+      params[members_chosen].each do |mc|
+        idx = nil
+        # Find the index of the new members array
+        @edit[:new][members].each_with_index { |mem, i| idx = mem[-1] == mc.to_i ? i : idx }
+        next if idx.nil?
+        desc = @edit[:new][members][idx][0].slice(4..-1) # Remove (x) prefix from the chosen item
+        @edit[choices][desc] = mc.to_i # Add item back into the choices hash
+        @edit[:new][members].delete_at(idx) # Remove item from the array
+      end
+    else
+      mems = @edit[:new][members].invert
+      params[members_chosen].each do |mc|
+        @edit[choices][mems[mc.to_i]] = mc.to_i
+        @edit[:new][members].delete(mems[mc.to_i])
+      end
+    end
+  end
+
+  def handle_selection_buttons_right(members, _members_chosen, choices, choices_chosen)
+    if params[choices_chosen].nil?
+      add_flash(_("No %{member} were selected to move right") %
+        {:member => members.to_s.split("_").first.titleize}, :error)
+      return
+    end
+
+    mems = @edit[choices].invert
+    if @edit[:event_id]
+      # Handle Actions for an Event
+      params[choices_chosen].each do |mc|
+        # Add selection to chosen members array, default to synch = true
+        @edit[:new][members].push(["(S) " + mems[mc.to_i], true, mc.to_i])
+        @edit[choices].delete(mems[mc.to_i]) # Remove from the choices hash
+      end
+    else
+      params[choices_chosen].each do |mc|
+        @edit[:new][members][mems[mc.to_i]] = mc.to_i
+        @edit[choices].delete(mems[mc.to_i])
+      end
+    end
+  end
+
+  def handle_selection_buttons_allleft(members, _members_chosen, choices, _choices_chosen)
+    if @edit[:new][members].empty?
+      add_flash(_("No %{member} were selected to move left") %
+        {:member => members.to_s.split("_").first.titleize}, :error)
+      return
+    end
+
+    if @edit[:event_id]
+      # Handle Actions for an Event
+      @edit[:new][members].each do |m|
+        # Put description/id of each chosen member back into choices hash
+        @edit[choices][m.first.slice(4..-1)] = m.last
+      end
+    else
+      @edit[:new][members].each do |key, value|
+        @edit[choices][key] = value
+      end
+    end
+    @edit[:new][members].clear
+  end
+
+  def handle_selection_buttons_sortout_selected(members_chosen)
+    if params[:button].starts_with?("true")
+      @true_selected = params[members_chosen][0].to_i
+    else
+      @false_selected = params[members_chosen][0].to_i
+    end
+  end
+
+  def handle_selection_buttons_up_down(members, members_chosen, _choices, _choices_chosen, up)
+    if params[members_chosen].nil? || params[members_chosen].length != 1
+      message = if up
+                  _("Select only one or consecutive %{member} to move up")
+                else
+                  _("Select only one or consecutive %{member} to move down")
+                end
+
+      add_flash(message % {:member => members.to_s.split("_").first.singularize.titleize}, :error)
+      return
+    end
+
+    handle_selection_buttons_sortout_selected(members_chosen)
+    idx = nil
+    mc = params[members_chosen][0]
+    # Find item index in new members array
+    @edit[:new][members].each_with_index { |mem, i| idx = mem[-1] == mc.to_i ? i : idx }
+
+    return if idx.nil?
+    return if up && idx.zero? # cannot go higher
+    return if !up && idx >= @edit[:new][members].length - 1 # canot go lower
+
+    pulled = @edit[:new][members].delete_at(idx)
+    delta  = up ? -1 : 1
+    @edit[:new][members].insert(idx + delta, pulled)
+  end
+
+  def handle_selection_buttons_sync_async(members, members_chosen, _choices, _choices_chosen, sync)
+    if params[members_chosen].nil?
+      msg = if sync
+              _("No %{member} selected to set to Synchronous")
+            else
+              _("No %{member} selected to set to Asynchronous")
+            end
+      add_flash(msg % {:member => members.to_s.split("_").first.titleize}, :error)
+      return
+    end
+
+    handle_selection_buttons_sortout_selected(members_chosen)
+
+    params[members_chosen].each do |mc|
+      idx = nil
+      # Find the index in the new members array
+      @edit[:new][members].each_with_index { |mem, i| idx = mem[-1] == mc.to_i ? i : idx }
+      next if idx.nil?
+
+      letter = sync ? 'S' : 'A'
+      @edit[:new][members][idx][0] = "(#{letter}) " + @edit[:new][members][idx][0].slice(4..-1) # Change prefix to (A)
+      @edit[:new][members][idx][1] = sync # true for sync
+    end
+  end
+
   # Handle the middle buttons on the add/edit forms
   # pass in member list symbols (i.e. :policies)
   def handle_selection_buttons(members,
@@ -751,138 +879,19 @@ class MiqPolicyController < ApplicationController
                                choices = :choices,
                                choices_chosen = :choices_chosen)
     if params[:button].ends_with?("_left")
-      if params[members_chosen].nil?
-        add_flash(_("No %{members} were selected to move left") % {:members => members.to_s.split("_").first.titleize},
-                  :error)
-      elsif @edit[:event_id]
-        # Handle Actions for an Event
-        params[members_chosen].each do |mc|
-          idx = nil
-          # Find the index of the new members array
-          @edit[:new][members].each_with_index { |mem, i| idx = mem[-1] == mc.to_i ? i : idx }
-          next if idx.nil?
-          desc = @edit[:new][members][idx][0].slice(4..-1) # Remove (x) prefix from the chosen item
-          @edit[choices][desc] = mc.to_i # Add item back into the choices hash
-          @edit[:new][members].delete_at(idx) # Remove item from the array
-        end
-      else
-        mems = @edit[:new][members].invert
-        params[members_chosen].each do |mc|
-          @edit[choices][mems[mc.to_i]] = mc.to_i
-          @edit[:new][members].delete(mems[mc.to_i])
-        end
-      end
+      handle_selection_buttons_left(members, members_chosen, choices, choices_chosen)
     elsif params[:button].ends_with?("_right")
-      if params[choices_chosen].nil?
-        add_flash(_("No %{member} were selected to move right") %
-          {:member => members.to_s.split("_").first.titleize}, :error)
-      else
-        mems = @edit[choices].invert
-        if @edit[:event_id]
-          # Handle Actions for an Event
-          params[choices_chosen].each do |mc|
-            # Add selection to chosen members array, default to synch = true
-            @edit[:new][members].push(["(S) " + mems[mc.to_i], true, mc.to_i])
-            @edit[choices].delete(mems[mc.to_i]) # Remove from the choices hash
-          end
-        else
-          params[choices_chosen].each do |mc|
-            @edit[:new][members][mems[mc.to_i]] = mc.to_i
-            @edit[choices].delete(mems[mc.to_i])
-          end
-        end
-      end
+      handle_selection_buttons_right(members, members_chosen, choices, choices_chosen)
     elsif params[:button].ends_with?("_allleft")
-      if @edit[:new][members].length == 0
-        add_flash(_("No %{member} were selected to move left") %
-          {:member => members.to_s.split("_").first.titleize}, :error)
-      elsif @edit[:event_id]
-        # Handle Actions for an Event
-        @edit[:new][members].each do |m|
-          # Put description/id of each chosen member back into choices hash
-          @edit[choices][m.first.slice(4..-1)] = m.last
-        end
-      else
-        @edit[:new][members].each do |key, value|
-          @edit[choices][key] = value
-        end
-      end
-      @edit[:new][members].clear
+      handle_selection_buttons_allleft(members, members_chosen, choices, choices_chosen)
     elsif params[:button].ends_with?("_up")
-      if params[members_chosen].nil? || params[members_chosen].length != 1
-        add_flash(_("Select only one or consecutive %{member} to move up") %
-          {:member => members.to_s.split("_").first.singularize.titleize}, :error)
-      else
-        if params[:button].starts_with?("true")
-          @true_selected = params[members_chosen][0].to_i
-        else
-          @false_selected = params[members_chosen][0].to_i
-        end
-        idx = nil
-        mc = params[members_chosen][0]
-        # Find item index in new members array
-        @edit[:new][members].each_with_index { |mem, i| idx = mem[-1] == mc.to_i ? i : idx }
-        return if idx.nil? || idx == 0
-        pulled = @edit[:new][members].delete_at(idx)
-        @edit[:new][members].insert(idx - 1, pulled)
-      end
+      handle_selection_buttons_up_down(members, members_chosen, choices, choices_chosen, true)
     elsif params[:button].ends_with?("_down")
-      if params[members_chosen].nil? || params[members_chosen].length != 1
-        add_flash(_("Select only one or consecutive %{member} to move down") %
-          {:member => members.to_s.split("_").first.singularize.titleize}, :error)
-      else
-        if params[:button].starts_with?("true")
-          @true_selected = params[members_chosen][0].to_i
-        else
-          @false_selected = params[members_chosen][0].to_i
-        end
-        idx = nil
-        mc = params[members_chosen][0]
-        # Find item index in new members array
-        @edit[:new][members].each_with_index { |mem, i| idx = mem[-1] == mc.to_i ? i : idx }
-        return if idx.nil? || idx >= @edit[:new][members].length - 1
-        pulled = @edit[:new][members].delete_at(idx)
-        @edit[:new][members].insert(idx + 1, pulled)
-      end
+      handle_selection_buttons_up_down(members, members_chosen, choices, choices_chosen, false)
     elsif params[:button].ends_with?("_sync")
-      if params[members_chosen].nil?
-        add_flash(_("No %{member} selected to set to Synchronous") %
-          {:member => members.to_s.split("_").first.titleize}, :error)
-      else
-        if params[:button].starts_with?("true")
-          @true_selected = params[members_chosen][0].to_i
-        else
-          @false_selected = params[members_chosen][0].to_i
-        end
-        params[members_chosen].each do |mc|
-          idx = nil
-          # Find the index in the new members array
-          @edit[:new][members].each_with_index { |mem, i| idx = mem[-1] == mc.to_i ? i : idx }
-          next if idx.nil?
-          @edit[:new][members][idx][0] = "(S) " + @edit[:new][members][idx][0].slice(4..-1) # Change prefix to (S)
-          @edit[:new][members][idx][1] = true # Set synch to true
-        end
-      end
+      handle_selection_buttons_sync_async(members, members_chosen, choices, choices_chosen, true)
     elsif params[:button].ends_with?("_async")
-      if params[members_chosen].nil?
-        add_flash(_("No %{member} selected to set to Asynchronous") %
-          {:member => members.to_s.split("_").first.titleize}, :error)
-      else
-        if params[:button].starts_with?("true")
-          @true_selected = params[members_chosen][0].to_i
-        else
-          @false_selected = params[members_chosen][0].to_i
-        end
-        params[members_chosen].each do |mc|
-          idx = nil
-          # Find the index in the new members array
-          @edit[:new][members].each_with_index { |mem, i| idx = mem[-1] == mc.to_i ? i : idx }
-          next if idx.nil?
-          @edit[:new][members][idx][0] = "(A) " + @edit[:new][members][idx][0].slice(4..-1) # Change prefix to (A)
-
-          @edit[:new][members][idx][1] = false # Set synch to false
-        end
-      end
+      handle_selection_buttons_sync_async(members, members_chosen, choices, choices_chosen, false)
     end
   end
 
@@ -902,6 +911,7 @@ class MiqPolicyController < ApplicationController
       @search_text = params[:search_text].strip
       @sb[:pol_search_text][x_active_tree] = @search_text unless @search_text.nil?
     else
+      @sb[:pol_search_text].delete(x_active_tree) if params[:action] == 'adv_search_text_clear'
       @search_text = @sb[:pol_search_text][x_active_tree]
     end
   end
@@ -919,7 +929,13 @@ class MiqPolicyController < ApplicationController
         @folders = UI_FOLDERS.collect do |model|
           "#{model.name.titleize} #{mode.titleize}"
         end
-        @right_cell_text = _("%{typ} Policies") % {:typ => mode.titleize}
+        @right_cell_text = if mode == 'compliance'
+                             _('Compliance Policies')
+                           elsif mode == 'control'
+                             _('Control Policies')
+                           else
+                             _("%{typ} Policies") % {:typ => mode.titleize}
+                           end
       else
         # level 2 - host, vm, etc. under compliance/control - OR deeper levels
         @sb[:mode] = nodeid.split("-")[1]

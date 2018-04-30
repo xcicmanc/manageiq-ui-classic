@@ -3,7 +3,9 @@ class ContainerTemplateDecorator < MiqDecorator
     'ff ff-template'
   end
 
-  def self.fileicon
-    '100/container_template.png'
+  def single_quad
+    {
+      :fonticon => fonticon
+    }
   end
 end

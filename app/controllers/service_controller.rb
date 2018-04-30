@@ -18,14 +18,20 @@ class ServiceController < ApplicationController
   }
 
   def button
-    if params[:pressed] == "custom_button"
-      ids = if @display == 'generic_objects'
-              @lastaction == 'generic_object' ? @sb[:rec_id] : 'LIST'
-            end
-      custom_buttons(ids)
-      return
+    case params[:pressed]
+    when 'generic_object_tag'
+      tag(GenericObject)
+    when "custom_button"
+      @display == 'generic_objects' ? generic_object_custom_buttons : custom_buttons
     end
-    tag(GenericObject) if @display == 'generic_objects' && params[:pressed] == 'generic_object_tag'
+  end
+
+  def generic_object_custom_buttons
+    display_options = {}
+    ids = @lastaction == 'generic_object' ? @sb[:rec_id] : 'LIST'
+    display_options[:display] = @display
+    display_options[:display_id] = params[:id]
+    custom_buttons(ids, display_options)
   end
 
   def x_button
@@ -38,15 +44,15 @@ class ServiceController < ApplicationController
 
   # Service show selected, redirect to proper controller
   def show
-    @record = Service.find(from_cid(params[:id]))
+    @record = Service.find(params[:id])
     @lastaction = "show"
 
     @gtl_url = "/show"
 
     set_display
 
-    if self.class.display_methods.include?(@display)
-      nested_list_show
+    if @display == 'generic_objects'
+      show_generic_object
       return
     end
 
@@ -65,12 +71,17 @@ class ServiceController < ApplicationController
     @display ||= default_display unless pagination_or_gtl_request?
   end
 
-  def nested_list_show
-    params[:generic_object_id] ? generic_object : display_nested_list(@display)
+  def show_generic_object
+    if params[:generic_object_id]
+      show_single_generic_object
+    else
+      display_nested_list(@display)
+    end
   end
 
   def show_list
-    redirect_to :action => 'explorer', :flash_msg => @flash_array.try(:fetch_path, 0, :message)
+    flash_to_session
+    redirect_to(:action => 'explorer')
   end
 
   def explorer
@@ -88,9 +99,10 @@ class ServiceController < ApplicationController
     if params[:id] # Tree node id came in, show it in the tree.
       @find_with_aggregates = true
       nodetype, id = params[:id].split("-")
-      x_node_to_set = "#{nodetype}-#{to_cid(id)}"
+      x_node_to_set = "#{nodetype}-#{id}"
     end
 
+    @breadcrumbs.clear if @breadcrumbs.present?
     build_accordions_and_trees(x_node_to_set)
 
     params.instance_variable_get(:@parameters).merge!(session[:exp_parms]) if session[:exp_parms]  # Grab any explorer parm overrides
@@ -106,7 +118,7 @@ class ServiceController < ApplicationController
 
   # ST clicked on in the explorer right cell
   def x_show
-    identify_service(from_cid(params[:id]))
+    identify_service(params[:id])
     generic_x_show(x_tree(:svcs_tree))
   end
 
@@ -142,7 +154,7 @@ class ServiceController < ApplicationController
 
   def service_reconfigure
     @explorer = true
-    s = Service.find_by_id(from_cid(params[:id]))
+    s = Service.find_by_id(params[:id])
     st = s.service_template
     ra = st.resource_actions.find_by_action('Reconfigure') if st
     if ra && ra.dialog_id
@@ -167,16 +179,18 @@ class ServiceController < ApplicationController
     }
   end
 
-  def generic_object
+  # display a single generic object
+  #
+  def show_single_generic_object
     return unless init_show_variables
 
     @lastaction = 'generic_object'
-    @item ||= @record.generic_objects.find(params[:generic_object_id]).first
-    drop_breadcrumb(:name => _("%{name} (All Generic Objects)") % {:name => @record.name},
-                    :url  => show_link(@record, :display => @display))
-    drop_breadcrumb(:name => @item.name, :url => "/#{controller_name}/show/#{@record.id}?display=generic_objects&generic_object_id=#{params[:generic_object_id]}")
+    @item = @record.generic_objects.find { |e| e[:id] == params[:generic_object_id].to_i }
+    drop_breadcrumb(:name => _("%{name} (All Generic Objects)") % {:name => @record.name}, :url => show_link(@record, :display => 'generic_objects'))
+    drop_breadcrumb(:name => @item.name, :url => show_link(@record, :display => 'generic_objects', :generic_object_id => params[:generic_object_id]))
     @view = get_db_view(GenericObject)
     @sb[:rec_id] = params[:generic_object_id]
+    @record = @item
     show_item
   end
 
@@ -205,8 +219,10 @@ class ServiceController < ApplicationController
   helper_method :sanitize_output
 
   def textual_group_list
-    if @record.type == "ServiceAnsiblePlaybook"
-      [%i(properties), %i(lifecycle tags generic_objects)]
+    if @item && @item.kind_of?(GenericObject)
+      [%i(go_properties attribute_details_list methods)]
+    elsif @record.type == "ServiceAnsiblePlaybook"
+      [%i(properties miq_custom_attributes), %i(lifecycle tags generic_objects)]
     else
       [%i(properties lifecycle relationships generic_objects miq_custom_attributes), %i(vm_totals tags)]
     end
@@ -251,7 +267,6 @@ class ServiceController < ApplicationController
   def service_retire_now
     @explorer = true
     retirevms_now
-    replace_right_cell
   end
 
   def service_set_record_vars(svc)
@@ -263,11 +278,12 @@ class ServiceController < ApplicationController
     assert_privileges("service_delete")
     @explorer = true
     elements = []
-    if params[:id]
+    if params[:id] # delete service from its details page
       elements.push(params[:id])
+      deleted_service = Service.find(params[:id].to_i) # service which is going to be deleted
       process_elements(elements, Service, 'destroy') unless elements.empty?
-      self.x_node = "root"
-    else # showing 1 element, delete it
+      self.x_node = deleted_service.retired ? "xx-rsrv" : "xx-asrv" # set x_node for returning to Active or Retired Services
+    else # delete choosen service(s), choosen by checking appropriate checkbox(es)
       elements = find_checked_items
       if elements.empty?
         add_flash(_("No Services were selected for deletion"), :error)
@@ -290,8 +306,9 @@ class ServiceController < ApplicationController
 
     case TreeBuilder.get_model_for_prefix(@nodetype)
     when "Service"
-      show_record(from_cid(id))
-      @right_cell_text = _("%{model} \"%{name}\"") % {:name => @record.name, :model => ui_lookup(:model => 'Service')}
+      show_record(id)
+      drop_breadcrumb(:name => _('Services'), :url => '/service/explorer') if @breadcrumbs.empty?
+      @right_cell_text = _("Service \"%{name}\"") % {:name => @record.name}
       @no_checkboxes = true
       @gtl_type = "grid"
       @items_per_page = ONE_MILLION
@@ -305,10 +322,12 @@ class ServiceController < ApplicationController
         process_show_list(:named_scope => [:retired, :displayed])
         @right_cell_text = _("Retired Services")
       end
-    when "MiqSearch"
-      load_adv_search # Select/load filter from Global/My Filters
+    when "MiqSearch", nil # nil if applying a filter from Advanced search - and @nodetype is root
+      load_adv_search unless @nodetype == "root" # Select/load filter from Global/My Filters
+      process_show_list
       @right_cell_text = _("All Services")
     end
+    @right_cell_text += _(" (Names with \"%{search_text}\")") % {:search_text => @search_text} if @search_text.present? && @nodetype != 's'
     @right_cell_text += @edit[:adv_search_applied][:text] if x_tree && @edit && @edit[:adv_search_applied]
 
     if @edit && @edit.fetch_path(:adv_search_applied, :qs_exp) # If qs is active, save it in history
@@ -328,7 +347,7 @@ class ServiceController < ApplicationController
     @nodetype, id = parse_nodetype_and_id(valid_active_node(x_node))
 
     if @nodetype == "ms"
-      listnav_search_selected(from_cid(id)) unless params.key?(:search_text)
+      listnav_search_selected(id) unless params.key?(:search_text)
       if @edit[:adv_search_applied] &&
          MiqExpression.quick_search?(@edit[:adv_search_applied][:exp]) &&
          %w(reload tree_select).include?(params[:action])
@@ -357,22 +376,10 @@ class ServiceController < ApplicationController
       partial = "service_form"
       header = _("Editing Service \"%{name}\"") % {:name => @service.name}
       action = "service_edit"
-    when "tag"
+    when "tag", 'service_tag'
       partial = "layouts/tagging"
       header = _("Edit Tags for Service")
       action = "service_tag"
-    when "show_generic_object"
-      table = controller_name
-      partial = "layouts/item"
-      header = _("Generic Object \"%{item_name}\" for %{service} \"%{name}\"") % {
-        :service   => ui_lookup(:table => table),
-        :name      => @record.name,
-        :item_name => @item.name
-      }
-      x_history_add_item(:id     => x_node,
-                         :text   => header,
-                         :action => action,
-                         :item   => @item.id)
     else
       action = nil
     end
@@ -390,7 +397,7 @@ class ServiceController < ApplicationController
     partial, action_url, @right_cell_text = set_right_cell_vars(action) if action # Set partial name, action and cell header
     get_node_info(x_node) if !action && !@in_a_form && !params[:display]
     replace_trees = @replace_trees if @replace_trees  # get_node_info might set this
-    type, = parse_nodetype_and_id(x_node)
+    type, _ = parse_nodetype_and_id(x_node)
     record_showing = type && ["Service"].include?(TreeBuilder.get_model_for_prefix(type))
     if x_active_tree == :svcs_tree && !@in_a_form && !@sb[:action]
       if record_showing && @sb[:action].nil?
@@ -411,51 +418,41 @@ class ServiceController < ApplicationController
     reload_trees_by_presenter(presenter, build_replaced_trees(replace_trees, %i(svcs)))
 
     # Replace right cell divs
-    presenter.update(:main_div,
-      if ["dialog_provision", "ownership", "retire", "service_edit", "tag"].include?(action)
+    presenter.update(
+      :main_div,
+      if %w(dialog_provision ownership retire service_edit tag service_tag).include?(action)
         r[:partial => partial, :locals => options[:dialog_locals]]
       elsif params[:display]
         r[:partial => 'layouts/x_gtl', :locals => {:controller => "vm", :action_url => @lastaction}]
       elsif record_showing
+        @selected_ids = [] # FIXME: hack to hide checkboxes
         presenter.remove_sand
-        if action
-          partial_locals[:item_id] = @item.id
-          cb_tb = build_toolbar(Mixins::CustomButtons::Result.new(:single))
-          r[:partial => partial, :locals => partial_locals]
-        else
-          r[:partial => "service/svcs_show", :locals => {:controller => "service"}]
-        end
+        r[:partial => "service/svcs_show", :locals => {:controller => "service"}]
       else
         r[:partial => "layouts/x_gtl"]
       end
     )
-    if %w(dialog_provision ownership tag).include?(action)
-      presenter.show(:form_buttons_div).hide(:pc_div_1, :toolbar).show(:paging_div)
-      if action == "dialog_provision" && params[:pressed] == "service_reconfigure"
-        presenter.update(:form_buttons_div, r[:partial => "layouts/x_dialog_buttons",
-                                              :locals  => {:action_url => action_url,
-                                                           :record_id  => @edit[:rec_id]}])
+    if %w(ownership tag service_tag).include?(action)
+      presenter.show(:form_buttons_div).remove_paging.hide(:toolbar).show(:paging_div)
+      if %w(tag service_tag).include?(action)
+        locals = {:action_url => action_url}
+        locals[:multi_record] = true  # need save/cancel buttons on edit screen even tho @record.id is not there
+        locals[:record_id]    = @sb[:rec_id] || @edit[:object_ids] && @edit[:object_ids][0]
+      elsif action == "ownership"
+        locals = {:action_url => action_url}
+        locals[:multi_record] = true
+        presenter.update(:form_buttons_div, r[:partial => "layouts/angular/paging_div_buttons"])
       else
-        if action == "tag"
-          locals = {:action_url => action_url}
-          locals[:multi_record] = true    # need save/cancel buttons on edit screen even tho @record.id is not there
-          locals[:record_id]    = @sb[:rec_id] || @edit[:object_ids] && @edit[:object_ids][0]
-        elsif action == "ownership"
-          locals = {:action_url => action_url}
-          locals[:multi_record] = true
-          presenter.update(:form_buttons_div, r[:partial => "layouts/angular/paging_div_buttons"])
-        else
-          locals = {:record_id => @edit[:rec_id], :action_url => action_url}
-        end
-        presenter.update(:form_buttons_div, r[:partial => "layouts/x_edit_buttons", :locals => locals]) unless action == "ownership"
+        locals = {:record_id => @edit[:rec_id], :action_url => action_url}
       end
+      presenter.update(:form_buttons_div, r[:partial => "layouts/x_edit_buttons", :locals => locals]) unless action == "ownership"
     elsif (action != "retire") && (record_showing ||
         (@pages && (@items_per_page == ONE_MILLION || @pages[:items] == 0)))
       # Added so buttons can be turned off even tho div is not being displayed it still pops up Abandon changes box
       # when trying to change a node on tree after saving a record
-      presenter.hide(:buttons_on).show(:toolbar).hide(:paging_div)
+      presenter.hide(:form_buttons_div, :paging_div).show(:toolbar)
     else
-      presenter.hide(:form_buttons_div).show(:pc_div_1, :toolbar, :paging_div)
+      presenter.hide(:form_buttons_div).show(:toolbar, :paging_div)
     end
 
     # Clear the JS gtl_list_grid var if changing to a type other than list
@@ -504,7 +501,8 @@ class ServiceController < ApplicationController
   end
 
   def tagging_explorer_controller?
-    @explorer
+    # this controller behaves explorer-like for services and non-explorer-like for GO
+    @tagging == 'Service'
   end
 
   def get_session_data

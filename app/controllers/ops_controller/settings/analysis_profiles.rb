@@ -22,7 +22,8 @@ module OpsController::Settings::AnalysisProfiles
   def ap_show
     # identify_scanitemset
     if @selected_scan.nil?
-      redirect_to :action => "show_list_set", :flash_msg => _("Error: Record no longer exists in the database"), :flash_error => true
+      flash_to_session(_("Error: Record no longer exists in the database"), :error)
+      redirect_to(:action => 'show_list_set')
       return
     end
     @lastaction = "ap_show"
@@ -165,7 +166,7 @@ module OpsController::Settings::AnalysisProfiles
 
   # Build the audit object when a record is created, including all of the new fields
   def ap_build_created_audit_set(scanitemset)
-    msg = _("[%{name}] Record created (") % {:name => scanitemset.name}
+    msg = "[#{scanitemset.name}] Record created ("
     event = "scanitemset_record_add"
     i = 0
     @edit[:new].each_key do |k|
@@ -183,7 +184,7 @@ module OpsController::Settings::AnalysisProfiles
 
   # Build the audit object when a record is saved, including all of the changed fields
   def ap_build_saved_audit(scanitemset)
-    msg = _("[%{name}] Record updated (") % {:name => scanitemset.name}
+    msg = "[#{scanitemset.name}] Record updated ("
     event = "scanitemset_record_update"
     i = 0
     @edit[:new].each_key do |k|
@@ -278,7 +279,7 @@ module OpsController::Settings::AnalysisProfiles
             replace_right_cell(:nodetype => x_node, :replace_trees => [:settings])
           else
             scanitemset.errors.each do |field, msg|
-              add_flash("#{field.to_s.capitalize} #{msg}", :error)
+              add_flash("#{_(field.to_s.capitalize)} #{msg}", :error)
             end
             @edit[:new] = ap_sort_array(@edit[:new])
             @edit[:current] = ap_sort_array(@edit[:current])

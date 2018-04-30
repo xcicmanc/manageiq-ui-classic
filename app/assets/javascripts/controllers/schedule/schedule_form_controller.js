@@ -65,7 +65,7 @@ ManageIQ.angular.app.controller('scheduleFormController', ['$http', '$scope', 's
       $scope.scheduleModel.name         = data.schedule_name;
       $scope.scheduleModel.timer_typ    = data.schedule_timer_type;
       $scope.scheduleModel.timer_value  = data.schedule_timer_value;
-      $scope.scheduleModel.start_date   = moment.utc(data.schedule_start_date, 'MM/DD/YYYY').toDate();
+      $scope.scheduleModel.start_date   = moment(data.schedule_start_date, 'MM/DD/YYYY').utc().toDate();
       $scope.scheduleModel.start_hour   = data.schedule_start_hour.toString();
       $scope.scheduleModel.start_min    = data.schedule_start_min.toString();
       $scope.scheduleModel.time_zone    = data.schedule_time_zone;
@@ -241,8 +241,9 @@ ManageIQ.angular.app.controller('scheduleFormController', ['$http', '$scope', 's
     }
   };
 
-  $scope.targetClassChanged = function() {
+  $scope.targetClassChanged = function(targetClass) {
     miqService.sparkleOn();
+    $scope.scheduleModel.target_class = targetClass;
     $http.post('/ops/fetch_target_ids/?target_class=' + $scope.scheduleModel.target_class)
       .then(postFetchTargetIdsComplete)
       .catch(miqService.handleFailure);
@@ -312,7 +313,6 @@ ManageIQ.angular.app.controller('scheduleFormController', ['$http', '$scope', 's
 
   $scope.cancelClicked = function() {
     scheduleEditButtonClicked('cancel');
-    $scope.angularForm.$setPristine(true);
   };
 
   $scope.resetClicked = function() {
@@ -344,8 +344,7 @@ ManageIQ.angular.app.controller('scheduleFormController', ['$http', '$scope', 's
   };
 
   $scope.saveClicked = function() {
-    scheduleEditButtonClicked('save', true);
-    $scope.angularForm.$setPristine(true);
+    scheduleEditButtonClicked('save', $scope.scheduleModel);
   };
 
   $scope.addClicked = function() {
@@ -396,6 +395,22 @@ ManageIQ.angular.app.controller('scheduleFormController', ['$http', '$scope', 's
         $scope.angularForm.uri.$dirty ||
         $scope.angularForm.log_userid.$dirty ||
         $scope.angularForm.log_password.$dirty);
+  };
+
+  $scope.setInstanceName = function(instanceName) {
+    $scope.scheduleModel.instance_name = instanceName;
+  };
+
+  $scope.setObjectMessage = function(objectMessage) {
+    $scope.scheduleModel.object_message = objectMessage;
+  };
+
+  $scope.setObjectRequest = function(objectRequest) {
+    $scope.scheduleModel.object_request = objectRequest;
+  };
+
+  $scope.setTargetId = function(targetId) {
+    $scope.scheduleModel.target_id = targetId;
   };
 
   init();

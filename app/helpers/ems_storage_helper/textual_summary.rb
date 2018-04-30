@@ -11,7 +11,7 @@ module EmsStorageHelper::TextualSummary
   def textual_group_relationships
     TextualGroup.new(
       _("Relationships"),
-      %i(parent_ems_cloud cloud_volumes cloud_volume_snapshots cloud_object_store_containers)
+      %i(parent_ems_cloud cloud_volumes cloud_volume_snapshots cloud_volume_backups cloud_object_store_containers)
     )
   end
 
@@ -44,7 +44,7 @@ module EmsStorageHelper::TextualSummary
   end
 
   def textual_type
-    @record.emstype_description
+    {:label => _('Type'), :value => @record.emstype_description}
   end
 
   def textual_port
@@ -64,11 +64,15 @@ module EmsStorageHelper::TextualSummary
   end
 
   def textual_cloud_volumes
-    @record.try(:cloud_volumes)
+    textual_link(@record.try(:cloud_volumes), :label => _('Cloud Volumes'))
   end
 
   def textual_cloud_volume_snapshots
-    @record.try(:cloud_volume_snapshots)
+    textual_link(@record.try(:cloud_volume_snapshots), :label => _('Cloud Volume Snapshots'))
+  end
+
+  def textual_cloud_volume_backups
+    textual_link(@record.try(:cloud_volume_backups), :label => _('Cloud Volume Backups'))
   end
 
   def textual_cloud_object_store_containers

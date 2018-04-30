@@ -16,7 +16,7 @@ module ContainersCommonMixin
     @refresh_div = "main_div" # Default div for button.rjs to refresh
     model = self.class.model
     tag(model) if params[:pressed] == "#{params[:controller]}_tag"
-    if [ContainerReplicator, ContainerGroup, ContainerNode, ContainerImage].include?(model)
+    if [ContainerReplicator, ContainerGroup, ContainerNode, ContainerImage, ContainerProject].include?(model)
       assign_policies(model) if params[:pressed] == "#{model.name.underscore}_protect"
       check_compliance(model) if params[:pressed] == "#{model.name.underscore}_check_compliance"
     end
@@ -77,7 +77,7 @@ module ContainersCommonMixin
     add_flash(_("Creation of a new Service Dialog was cancelled by the user"))
     @in_a_form = false
     @edit = @record = nil
-    session[:flash_msgs] = @flash_array.dup # Put msg in session for next transaction to display
+    flash_to_session
     javascript_redirect previous_breadcrumb_url
   end
 
@@ -97,7 +97,7 @@ module ContainersCommonMixin
                   {:name => @edit[:new][:dialog_name]}, :success)
       @in_a_form = false
       @edit = @record = nil
-      session[:flash_msgs] = @flash_array.dup # Put msg in session for next transaction to display
+      flash_to_session
       javascript_redirect previous_breadcrumb_url
     end
   end

@@ -6,12 +6,12 @@ module OpsController::Diagnostics
     typ, id = params[:id].split("-")
     case typ
     when "svr"
-      @record = MiqServer.find(from_cid(id))
+      @record = MiqServer.find(id)
     when "role"
-      @record = ServerRole.find(from_cid(id))
+      @record = ServerRole.find(id)
       @rec_status = @record.assigned_server_roles.find_by_active(true) ? "active" : "stopped" if @record.class == ServerRole
     when "asr"
-      @record = AssignedServerRole.find(from_cid(id))
+      @record = AssignedServerRole.find(id)
       @rec_status = @record.assigned_server_roles.find_by_active(true) ? "active" : "stopped" if @record.class == ServerRole
     end
     @sb[:diag_selected_model] = @record.class.to_s
@@ -28,7 +28,7 @@ module OpsController::Diagnostics
       add_flash(_("Error during 'Appliance restart': %{message}") % {:message => bang.message}, :error)
     else
       audit = {:event        => "restart_server",
-               :message      => _("Server '%{name}' restarted") % {:name => svr.name},
+               :message      => "Server '#{svr.name}' restarted",
                :target_id    => svr.id,
                :target_class => "MiqServer",
                :userid       => session[:userid]}
@@ -41,7 +41,7 @@ module OpsController::Diagnostics
   def pm_restart_workers
     assert_privileges("restart_workers")
     @refresh_partial = "#{@sb[:active_tab]}_tab"
-    worker = MiqWorker.find_by_id(@sb[:selected_worker_id])
+    worker = MiqWorker.find(checked_or_params.first)
     wtype = worker.normalized_type
     case wtype
     when "ems_vimbroker"
@@ -54,7 +54,7 @@ module OpsController::Diagnostics
         add_flash(_("Error during 'workers restart': %{message}") % {:message => bang.message}, :error)
       else
         audit = {:event        => "restart_workers",
-                 :message      => _("Worker on Server '%{name}' restarted") % {:name => svr.name},
+                 :message      => "Worker on Server '#{svr.name}' restarted",
                  :target_id    => svr.id,
                  :target_class => "MiqWorker",
                  :userid       => session[:userid]}
@@ -152,7 +152,7 @@ module OpsController::Diagnostics
     disable_client_cache
     send_data($log.contents(nil, nil),
               :filename => "evm.log")
-    AuditEvent.success(:userid => session[:userid], :event => "download_evm_log", :message => _("EVM log downloaded"))
+    AuditEvent.success(:userid => session[:userid], :event => "download_evm_log", :message => "EVM log downloaded")
   end
 
   # Send the audit log in text format
@@ -163,7 +163,7 @@ module OpsController::Diagnostics
               :filename => "audit.log")
     AuditEvent.success(:userid  => session[:userid],
                        :event   => "download_audit_log",
-                       :message => _("Audit log downloaded"))
+                       :message => "Audit log downloaded")
   end
 
   # Send the production log in text format
@@ -174,13 +174,13 @@ module OpsController::Diagnostics
               :filename => "#{@sb[:rails_log].downcase}.log")
     AuditEvent.success(:userid  => session[:userid],
                        :event   => "download_#{@sb[:rails_log].downcase}_log",
-                       :message => _("%{log_description} log downloaded") % {:log_description => @sb[:rails_log]})
+                       :message => "#{@sb[:rails_log]} log downloaded")
   end
 
   def refresh_log
     assert_privileges("refresh_log")
-    @log = $log.contents(120, 1000)
-    @selected_server = MiqServer.find(from_cid(x_node.split("-").last).to_i)
+    @log = $log.contents(nil, 1000)
+    @selected_server = MiqServer.find(x_node.split("-").last.to_i)
     add_flash(_("Logs for this %{product} Server are not available for viewing") % Vmdb::Appliance.PRODUCT_NAME, :warning) if @log.blank?
     render :update do |page|
       page << javascript_prologue
@@ -192,7 +192,7 @@ module OpsController::Diagnostics
   def refresh_audit_log
     assert_privileges("refresh_audit_log")
     @log = $audit_log.contents(nil, 1000)
-    @selected_server = MiqServer.find(from_cid(x_node.split("-").last).to_i)
+    @selected_server = MiqServer.find(x_node.split("-").last.to_i)
     add_flash(_("Logs for this %{product} Server are not available for viewing") % Vmdb::Appliance.PRODUCT_NAME, :warning) if @log.blank?
     render :update do |page|
       page << javascript_prologue
@@ -204,7 +204,7 @@ module OpsController::Diagnostics
   def refresh_production_log
     assert_privileges("refresh_production_log")
     @log = $rails_log.contents(nil, 1000)
-    @selected_server = MiqServer.find(from_cid(x_node.split("-").last).to_i)
+    @selected_server = MiqServer.find(x_node.split("-").last.to_i)
     add_flash(_("Logs for this %{product} Server are not available for viewing") % Vmdb::Appliance.PRODUCT_NAME, :warning) if @log.blank?
     render :update do |page|
       page << javascript_prologue
@@ -241,7 +241,7 @@ module OpsController::Diagnostics
       # converting string to time, and then converting into user selected timezone
       from =  "#{@edit[:new][:start_date]} #{@edit[:new][:start_hour]}:#{@edit[:new][:start_min]}:00".to_time.in_time_zone(@edit[:new][:timezone])
       to =  "#{@edit[:new][:end_date]} #{@edit[:new][:end_hour]}:#{@edit[:new][:end_min]}:00".to_time.in_time_zone(@edit[:new][:timezone])
-      selected_zone = Zone.find_by_id(from_cid(x_node.split('-').last))
+      selected_zone = Zone.find_by_id(x_node.split('-').last)
       begin
         Metric::Capture.perf_capture_gap_queue(from, to, selected_zone)
       rescue => bang
@@ -388,7 +388,7 @@ module OpsController::Diagnostics
     javascript_flash(:spinner_off => true)
   else
     audit = {:event        => "orphaned_record_delete",
-             :message      => _("Orphaned Records deleted for userid [%{number}]") % {:number => params[:userid]},
+             :message      => "Orphaned Records deleted for userid [#{params[:userid]}]",
              :target_id    => params[:userid],
              :target_class => "MiqReport",
              :userid       => session[:userid]}
@@ -405,7 +405,7 @@ module OpsController::Diagnostics
     @lastaction = "diagnostics_server_list"
     @force_no_grid_xml = true
     if x_node.split("-").first == "z"
-      zone = Zone.find_by_id(from_cid(x_node.split("-").last))
+      zone = Zone.find_by_id(x_node.split("-").last)
       @view, @pages = get_view(MiqServer, :named_scope => [[:with_zone_id, zone.id]]) # Get the records (into a view) and the paginator
     else
       @view, @pages = get_view(MiqServer) # Get the records (into a view) and the paginator
@@ -415,23 +415,6 @@ module OpsController::Diagnostics
     @current_page = @pages[:current] unless @pages.nil? # save the current page number
 
     update_gtl_div('diagnostics_server_list') if pagination_or_gtl_request?
-  end
-
-  def diagnostics_worker_selected
-    @explorer = true
-    @sb[:selected_worker_id] = params[:id]
-    get_workers
-
-    render :update do |page|
-      page << javascript_prologue
-      page.replace_html(@sb[:active_tab], :partial => "#{@sb[:active_tab]}_tab")
-      if center_toolbar_filename.present?
-        page << "$('#toolbar').show();"
-        page << javascript_reload_toolbars
-      else
-        page << "$('#toolbar').hide();"
-      end
-    end
   end
 
   private ############################
@@ -499,7 +482,7 @@ module OpsController::Diagnostics
         add_flash(_("Error during 'Clear Connection Broker cache': %{message}") % {:message => bang.message}, :error)
       else
         audit = {:event        => "reset_broker",
-                 :message      => _("Connection Broker cache cleared successfully"),
+                 :message      => "Connection Broker cache cleared successfully",
                  :target_id    => ms.id,
                  :target_class => "ExtManagementSystem",
                  :userid       => session[:userid]}
@@ -516,7 +499,7 @@ module OpsController::Diagnostics
     obj, id  = x_node.split("-")
     assert_privileges("#{obj == "z" ? "zone_" : ""}collect_logs")
     klass    = obj == "svr" ? MiqServer : Zone
-    instance = @selected_server = klass.find(from_cid(id).to_i)
+    instance = @selected_server = klass.find(id.to_i)
     if !instance.active?
       add_flash(_("Cannot start log collection, requires a started server"), :error)
     elsif instance.log_collection_active_recently?
@@ -543,11 +526,6 @@ module OpsController::Diagnostics
   end
 
   def pm_get_workers
-    @sb[:selected_worker_id] = nil
-    get_workers
-  end
-
-  def get_workers
     @lastaction = "pm_workers_list"
     @force_no_grid_xml = true
     @no_checkboxes = true
@@ -555,8 +533,16 @@ module OpsController::Diagnostics
     @embedded = @pages = false
     @showlinks = true
     status = ["started", "ready", "working"]
-    # passing all_pages option to show all records on same page
-    @view, @pages = get_view(MiqWorker, :named_scope => [[:with_miq_server_id, @sb[:selected_server_id]], [:with_status, status]], :all_pages => true) # Get the records (into a view) and the paginator
+
+    view_options = {
+      :named_scope => [[:with_miq_server_id, @sb[:selected_server_id]],
+                       [:with_status, status]],
+      # passing all_pages option to show all records on same page
+      :all_pages   => true,
+      :clickable   => false,
+    }
+    @view, @pages = get_view(MiqWorker, view_options)
+
     # setting @embedded and @pages to nil, we don't want to show sorting/paging bar on the screen'
     @embedded = @pages = nil
   end
@@ -616,7 +602,7 @@ module OpsController::Diagnostics
   else
     AuditEvent.success(
       :event        => "svr_record_delete",
-      :message      => _("[%{name}] Record deleted") % {:name => server.name},
+      :message      => "[#{server.name}] Record deleted",
       :target_id    => server.id,
       :target_class => "MiqServer",
       :userid       => session[:userid]
@@ -671,7 +657,7 @@ module OpsController::Diagnostics
     if x_node == "root"
       parent = MiqRegion.my_region
     else
-      parent = Zone.find_by_id(from_cid(x_node.split('-').last))
+      parent = Zone.find_by_id(x_node.split('-').last)
     end
     @selected_server = parent if params[:action] == "x_button"
     build_server_tree(parent)
@@ -706,7 +692,7 @@ module OpsController::Diagnostics
     if x_node == "root"
       parent = MiqRegion.my_region
     else
-      parent = Zone.find_by_id(from_cid(x_node.split('-').last))
+      parent = Zone.find_by_id(x_node.split('-').last)
     end
     build_server_tree(parent)
     render :update do |page|
@@ -719,7 +705,7 @@ module OpsController::Diagnostics
   def diagnostics_set_form_vars
     active_node = x_node
     if active_node && active_node.split('-').first == "z"
-      @record = @selected_zone = @selected_server = Zone.find_by_id(from_cid(active_node.split('-').last))
+      @record = @selected_server = Zone.find_by(:id => active_node.split('-').last)
       @sb[:selected_server_id] = @selected_server.id
       @sb[:selected_typ] = "zone"
       if @selected_server.miq_servers.length >= 1 &&
@@ -767,7 +753,7 @@ module OpsController::Diagnostics
       @selected_server ||= MiqServer.find(@sb[:selected_server_id])  # Reread the server record
       if @sb[:selected_server_id] == my_server.id
         if @sb[:active_tab] == "diagnostics_evm_log"
-          @log = $log.contents(120, 1000)
+          @log = $log.contents(nil, 1000)
           add_flash(_("Logs for this %{product} Server are not available for viewing") % {:product => Vmdb::Appliance.PRODUCT_NAME}, :warning) if @log.blank?
           @msg_title = _("ManageIQ")
           @refresh_action = "refresh_log"
@@ -794,7 +780,7 @@ module OpsController::Diagnostics
         elsif @sb[:active_tab] == "diagnostics_timelines"
           diagnostics_build_timeline
         else
-          @record = @selected_server = MiqServer.find(from_cid(x_node.split("-").last).to_i)
+          @record = @selected_server = MiqServer.find(x_node.split("-").last.to_i)
           @sb[:selected_server_id] = @selected_server.id
           @sb[:selected_typ] = "miq_server"
         end
@@ -807,7 +793,7 @@ module OpsController::Diagnostics
         elsif @sb[:active_tab] == "diagnostics_timelines"
           diagnostics_build_timeline
         else
-          @selected_server = MiqServer.find(from_cid(x_node.split("-").last).to_i)
+          @selected_server = MiqServer.find(x_node.split("-").last.to_i)
           @sb[:selected_server_id] = @selected_server.id
           @sb[:selected_typ] = "miq_server"
         end
@@ -818,7 +804,7 @@ module OpsController::Diagnostics
           diagnostics_build_timeline
         else
           @sb[:active_tab] = "diagnostics_collect_logs"       # setting it to show collect logs tab as first tab for the servers that are not started
-          @record = @selected_server = MiqServer.find(from_cid(x_node.split("-").last).to_i)
+          @record = @selected_server = MiqServer.find(x_node.split("-").last.to_i)
           @sb[:selected_server_id] = @selected_server.id
           @sb[:selected_typ] = "miq_server"
         end
@@ -885,7 +871,7 @@ module OpsController::Diagnostics
       @sb[:diag_selected_id] = nil
       diagnostics_set_form_vars
     when "svr"
-      @record = @selected_server = MiqServer.find(from_cid(x_node.downcase.split("-").last))
+      @record = @selected_server = MiqServer.find(x_node.downcase.split("-").last)
       @sb[:selected_server_id] = @selected_server.id
       diagnostics_set_form_vars
     end

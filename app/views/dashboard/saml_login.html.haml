@@ -2,13 +2,14 @@
   %head
     = favicon_link_tag
     = stylesheet_link_tag 'application'
+    = stylesheet_link_tag '/custom.css'
     = javascript_include_tag 'application'
 
   %body
     - if api_auth_token && validation_url
       :javascript
         miqFlashClearSaved();
-        sessionStorage.miq_token = '#{j_str api_auth_token}';
+        localStorage.miq_token = '#{j_str api_auth_token}';
         window.location = '#{j_str validation_url}';
     - else
       :javascript

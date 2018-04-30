@@ -1,26 +1,25 @@
-ManageIQ.angular.app.controller('dialogEditorController', ['$window', '$http', 'API', 'miqService', 'DialogEditor', 'DialogValidation', 'dialogId', function($window, $http, API, miqService, DialogEditor, DialogValidation, dialogId) {
+ManageIQ.angular.app.controller('dialogEditorController', ['$window', 'miqService', 'DialogEditor', 'DialogEditorHttp', 'DialogValidation', 'dialogIdAction', function($window, miqService, DialogEditor, DialogEditorHttp, DialogValidation, dialogIdAction) {
   var vm = this;
-
-  vm.cache = {};
-  vm.$http = $http;
 
   vm.saveDialogDetails = saveDialogDetails;
   vm.dismissChanges = dismissChanges;
-  vm.setupModalOptions = setupModalOptions;
 
   // treeSelector related
-  vm.lazyLoad = lazyLoad;
-  vm.onSelect = onSelect;
-  vm.showFullyQualifiedName = showFullyQualifiedName;
+  vm.lazyLoad = DialogEditorHttp.treeSelectorLazyLoadData;
   vm.node = {};
-  vm.treeSelectorToggle = treeSelectorToggle;
-  vm.treeSelectorIncludeDomain = false;
-  vm.treeSelectorShow = false;
-  vm.$http.get('/tree/automate_entrypoint').then(function(response) {
-    vm.treeSelectorData = response.data;
+  DialogEditorHttp.treeSelectorLoadData().then(function(data) {
+    vm.treeSelectorData = data;
   });
 
-  if (dialogId === 'new') {
+  function requestDialogId() {
+    return JSON.parse(dialogIdAction).id;
+  }
+
+  function requestDialogAction() {
+    return JSON.parse(dialogIdAction).action;
+  }
+
+  if (requestDialogAction() === 'new') {
     var dialogInitContent = {
       'content': [{
         'dialog_tabs': [{
@@ -36,11 +35,7 @@ ManageIQ.angular.app.controller('dialogEditorController', ['$window', '$http', '
     };
     init(dialogInitContent);
   } else {
-    API.get(
-      '/api/service_dialogs/'
-      + dialogId
-      + '?attributes=content,buttons,label'
-    ).then(init);
+    DialogEditorHttp.loadDialog(requestDialogId()).then(init);
   }
 
   function init(dialog) {
@@ -59,78 +54,23 @@ ManageIQ.angular.app.controller('dialogEditorController', ['$window', '$http', '
           });
         });
       });
-
-      _.forEach(allFields, function(field) {
-        _.forEach(field.dialog_field_responders, function(responder, index) {
-          _.forEach(dynamicFields, function(dynamicField) {
-            if (responder === dynamicField.name) {
-              field.dialog_field_responders[index] = dynamicField.id;
-            }
-          });
-        });
-      });
     }
 
     translateResponderNamesToIds(dialog.content[0]);
+
+    if (requestDialogAction() === 'copy') {
+      dialog.label = dialog.content[0].label = "Copy of " + dialog.label;
+    }
+
     DialogEditor.setData(dialog);
     vm.dialog = dialog;
     vm.DialogValidation = DialogValidation;
     vm.DialogEditor = DialogEditor;
   }
 
-  function setupModalOptions(type, tab, box, field) {
-    var components = {
-      tab: 'dialog-editor-modal-tab',
-      box: 'dialog-editor-modal-box',
-      field: 'dialog-editor-modal-field'
-    };
-    vm.modalOptions = {
-      component: components[type],
-      size: 'lg',
-    };
-    vm.elementInfo = { type: type, tabId: tab, boxId: box, fieldId: field };
-    vm.visible = true;
-  }
-
-
-  function lazyLoad(node) {
-    return vm.$http.get('/tree/automate_entrypoint?id=' + encodeURIComponent(node.key))
-    .then(function(response) {
-      vm.cache[node.key] = response.data;
-      return response.data;
-    });
-  }
-
-  function onSelect(node, elementData) {
-    var fqname = node.fqname.split('/');
-    if (vm.treeSelectorIncludeDomain === false) {
-      fqname.splice(1, 1);
-    }
-    elementData.resource_action.ae_instance = fqname.pop();
-    elementData.resource_action.ae_class = fqname.pop();
-    elementData.resource_action.ae_namespace = fqname.filter(String).join('/');
-    vm.treeSelectorShow = false;
-  }
-
-  function showFullyQualifiedName(resourceAction) {
-    if (typeof resourceAction.ae_namespace === 'undefined' ||
-        typeof resourceAction.ae_class === 'undefined' ||
-        typeof resourceAction.ae_instance === 'undefined') {
-      return '';
-    }
-    var fqname = resourceAction.ae_namespace
-      + '/' + resourceAction.ae_class
-      + '/' + resourceAction.ae_instance;
-    return fqname;
-  }
-
-  function treeSelectorToggle() {
-    vm.treeSelectorShow = ! vm.treeSelectorShow;
-  }
-
   var beingCloned = null; // hack that solves recursion problem for cloneDeep
   function customizer(value) {
-    var keysToDelete = ['active', '$$hashKey', 'href', 'dynamicFieldList'];
+    var keysToDelete = ['active', '$$hashKey', 'href', 'dynamicFieldList', 'id'];
     var useCustomizer =
       (value !== beingCloned) &&
       _.isObject(value) &&
@@ -159,17 +99,9 @@ ManageIQ.angular.app.controller('dialogEditorController', ['$window', '$http', '
     var dialogId;
 
     // load dialog data
-    if (angular.isUndefined(DialogEditor.getDialogId())) {
-      action = 'create';
-      dialogData = {
-        description: DialogEditor.getDialogDescription(),
-        label: DialogEditor.getDialogLabel(),
-        buttons: 'submit, cancel',
-        dialog_tabs: [],
-      };
-      dialogData.dialog_tabs = _.cloneDeep(DialogEditor.getDialogTabs(), customizer);
-    } else {
+    if (requestDialogAction() === 'edit') {
       action = 'edit';
+      dialogId = '/' + DialogEditor.getDialogId();
       dialogData = {
         description: DialogEditor.getDialogDescription(),
         label: DialogEditor.getDialogLabel(),
@@ -180,21 +112,19 @@ ManageIQ.angular.app.controller('dialogEditorController', ['$window', '$http', '
       // once we start using lodash 4.17.4, change to 'cloneDeepWith'
       // https://lodash.com/docs/4.17.4#cloneDeepWith
       dialogData.content.dialog_tabs = _.cloneDeep(DialogEditor.getDialogTabs(), customizer);
-    }
-
-    // save the dialog
-    if (action === 'create') {
-      dialogId = '';
     } else {
-      dialogId = '/' + DialogEditor.getDialogId();
+      action = 'create';
+      dialogId = '';
+      dialogData = {
+        description: DialogEditor.getDialogDescription(),
+        label: DialogEditor.getDialogLabel(),
+        buttons: 'submit,cancel',
+        dialog_tabs: [],
+      };
+      dialogData.dialog_tabs = _.cloneDeep(DialogEditor.getDialogTabs(), customizer);
     }
 
-    API.post('/api/service_dialogs' + dialogId, {
-      action: action,
-      resource: dialogData,
-    }, { // options - don't show the error modal on validation errors
-      skipErrors: [400],
-    }).then(saveSuccess, saveFailure);
+    DialogEditorHttp.saveDialog(dialogId, action, dialogData).then(saveSuccess, saveFailure);
   }
 
   function dismissChanges() {

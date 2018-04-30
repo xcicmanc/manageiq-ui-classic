@@ -1,7 +1,7 @@
 - if @record.try(:name)
   #accordion.panel-group
     = miq_accordion_panel(truncate(@record.name, :length => truncate_length), true, "icon") do
-      = render_quadicon(@record, :mode => :icon, :size => 72, :typ => :listnav)
+      = render :partial => 'shared/quadicon', :locals => {:record => @record}
 
     = miq_accordion_panel(_("Properties"), false, "stack_prop") do
       %ul.nav.nav-pills.nav-stacked
@@ -18,12 +18,12 @@
               {:controller => "automation_manager",
                :action     => 'explorer',
                :accordion  => "automation_manager_providers",
-               :id         => "at-#{to_cid(@record.ext_management_system.id)}"},
+               :id         => "at-#{@record.ext_management_system.id}"},
               :title => _("Show parent %s for this Job") % ui_lookup(:model => @record.ext_management_system.class.to_s))
         - if role_allows?(:feature => "service_view") && @record.service
           %li
             = link_to(_("Service: %{name}") % {:name => @record.service.name},
-              {:controller => "service", :action => 'show', :id => to_cid(@record.service.id)},
+              {:controller => "service", :action => 'show', :id => @record.service.id},
               :title => _("Show Service for this Job"))
         = li_link(:count => @record.number_of(:parameters),
           :text          => _("Parameters"),

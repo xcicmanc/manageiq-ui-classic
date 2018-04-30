@@ -17,33 +17,18 @@
             %textarea#description{"ng-model" => "vm.dialog.content[0].description",
               :title => _("Dialog's description")}
               {{ vm.dialog.content[0].description }}
-    .dialog-designer-container
-      %dialog-editor-modal{"modal-options" => "vm.modalOptions",
-                           "element-info" => "vm.elementInfo",
-                           "lazy-load" => "vm.lazyLoad",
-                           "on-select" => "vm.onSelect",
-                           "show-fully-qualified-name" => "vm.showFullyQualifiedName",
-                           "tree-selector-data" => "vm.treeSelectorData",
-                           "tree-selector-include-domain" => "vm.treeSelectorIncludeDomain",
-                           "tree-selector-show" => "vm.treeSelectorShow",
-                           "tree-selector-toggle" => "vm.treeSelectorToggle",
-                           :visible => "vm.modalVisible"}
-      .toolbox-container
-        #toolbox.static-field-container
-          .draggable
-            %dialog-editor-field-static
-        .editable-fields-container
-          %dialog-editor-tabs{"setup-modal-options" => "vm.setupModalOptions(type, tab, box, field)"}
-          %dialog-editor-boxes{"setup-modal-options" => "vm.setupModalOptions(type, tab, box, field)"}
-
+    %dialog-editor{'tree-selector-data' => 'vm.treeSelectorData', 'tree-selector-lazy-load' => 'vm.lazyLoad'}
     .pull-right
-      %button.btn.btn-default{"ng-click" => "vm.dismissChanges()",
-                              :type => "button"}= _("Cancel")
       %button.btn.btn-primary{"ng-click" => "vm.saveDialogDetails()",
                               "ng-disabled" => "!vm.DialogValidation.dialogIsValid(vm.DialogEditor.data.content)",
                               "ng-attr-title" => "{{vm.DialogValidation.invalid.message}}",
                               :type => "button"}= _("Save")
+      %button.btn.btn-default{"ng-click" => "vm.dismissChanges()",
+                              :type => "button"}= _("Cancel")
 
 :javascript
-  ManageIQ.angular.app.value('dialogId', '#{ @record.id || "new" }');
+  ManageIQ.angular.app.value('dialogIdAction', '#{ dialog_id_action.to_json }');
   miq_bootstrap('#dialog-editor');
+  // Fixes wrong coordinates of draggable element after scrolling in #main-content.
+  // To be selected as scrollParent it cannot have position: static(default setting of #main-content) so it's overridden here
+  $("#main-content").css("position", "relative");

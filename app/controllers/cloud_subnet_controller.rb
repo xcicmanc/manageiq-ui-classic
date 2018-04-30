@@ -43,12 +43,12 @@ class CloudSubnetController < ApplicationController
 
   def new
     assert_privileges("cloud_subnet_new")
+    assert_privileges("ems_network_show_list")
+    assert_privileges("cloud_tenant_show_list")
+    assert_privileges("cloud_network_show_list")
+
     @subnet = CloudSubnet.new
     @in_a_form = true
-    @network_provider_choices = {}
-    ExtManagementSystem.where(:type => ['ManageIQ::Providers::Openstack::NetworkManager', 'ManageIQ::Providers::Redhat::NetworkManager']).find_each do |ems|
-      @network_provider_choices[ems.name] = ems.id
-    end
     drop_breadcrumb(
       :name => _("Add New Subnet"),
       :url  => "/cloud_subnet/new"
@@ -101,16 +101,13 @@ class CloudSubnetController < ApplicationController
 
     @breadcrumbs.pop if @breadcrumbs
     session[:edit] = nil
-    session[:flash_msgs] = @flash_array.dup if @flash_array
+    flash_to_session
     javascript_redirect :action => "show_list"
   end
 
   def delete_subnets
     assert_privileges("cloud_subnet_delete")
     subnets = find_records_with_rbac(CloudSubnet, checked_or_params)
-    if subnets.empty?
-      add_flash(_("No Cloud Subnet were selected for deletion."), :error)
-    end
 
     subnets_to_delete = []
     subnets.each do |subnet|
@@ -133,10 +130,11 @@ class CloudSubnetController < ApplicationController
       if @flash_array.nil?
         add_flash(_("The selected Cloud Subnet was deleted"))
       end
-      javascript_redirect :action => 'show_list', :flash_msg => @flash_array[0][:message]
+      flash_to_session
+      javascript_redirect(:action => 'show_list')
     else
       drop_breadcrumb(:name => 'dummy', :url  => " ") # missing a bc to get correctly back so here's a dummy
-      session[:flash_msgs] = @flash_array.dup if @flash_array
+      flash_to_session
       redirect_to(previous_breadcrumb_url)
     end
   end
@@ -195,7 +193,7 @@ class CloudSubnetController < ApplicationController
     end
 
     session[:edit] = nil
-    session[:flash_msgs] = @flash_array.dup if @flash_array
+    flash_to_session
     javascript_redirect previous_breadcrumb_url
   end
 
@@ -242,7 +240,7 @@ class CloudSubnetController < ApplicationController
       options[:gateway_ip] = params[:gateway].blank? ? nil : params[:gateway]
     end
     options[:ip_version] = params[:network_protocol] =~ /4/ ? 4 : 6
-    options[:cloud_tenant] = find_record_with_rbac(CloudTenant, from_cid(params[:cloud_tenant_id])) if params[:cloud_tenant_id]
+    options[:cloud_tenant] = find_record_with_rbac(CloudTenant, params[:cloud_tenant_id]) if params[:cloud_tenant_id]
     options[:network_id] = params[:network_id] if params[:network_id]
     options[:enable_dhcp] = params[:dhcp_enabled]
     # TODO: Add extra fields

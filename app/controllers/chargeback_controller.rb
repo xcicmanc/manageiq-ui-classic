@@ -110,9 +110,6 @@ class ChargebackController < ApplicationController
       if @edit[:new][:description].nil? || @edit[:new][:description] == ""
         render_flash(_("Description is required"), :error)
         return
-      elsif @rate.description == "Default Container Image Rate" && @edit[:new][:description] != @rate.description
-        render_flash(_("Can not change description of 'Default Container Image Rate'"), :error)
-        return
       end
       @rate.description = @edit[:new][:description]
       @rate.rate_type   = @edit[:new][:rate_type] if @edit[:new][:rate_type]
@@ -193,7 +190,8 @@ class ChargebackController < ApplicationController
   def cb_rate_show
     @display = "main"
     if @record.nil?
-      redirect_to :action => "cb_rates_list", :flash_msg => _("Error: Record no longer exists in the database"), :flash_error => true
+      flash_to_session(_('Error: Record no longer exists in the database'), :error)
+      redirect_to(:action => 'cb_rates_list')
       return
     end
   end
@@ -205,25 +203,22 @@ class ChargebackController < ApplicationController
     if !params[:id] # showing a list
       rates = find_checked_items
       if rates.empty?
-        render_flash(_("No Chargeback Rate were selected for deletion"), :error)
+        add_flash(_("No Chargeback Rates were selected for deletion"), :error)
       end
     else # showing 1 rate, delete it
-      cb_rate = ChargebackRate.find_by_id(params[:id])
+      cb_rate = ChargebackRate.find_by(:id => params[:id])
+      self.x_node = x_node.split('_').first
       if cb_rate.nil?
-        render_flash(_("Chargeback Rate no longer exists"), :error)
+        add_flash(_("Chargeback Rate no longer exists"), :error)
       else
         rates.push(params[:id])
-        self.x_node = "xx-#{cb_rate.rate_type}"
       end
     end
-    process_cb_rates(rates, 'destroy') unless rates.empty?
-    if flash_errors?
-      javascript_flash
-    else
-      cb_rates_list
-      @right_cell_text = _("%{typ} Chargeback Rate") % {:typ => x_node.split('-').last}
-      replace_right_cell(:replace_trees => [:cb_rates])
-    end
+    process_cb_rates(rates, 'destroy') if rates.present?
+
+    cb_rates_list
+    @right_cell_text = _("%<typ>s Chargeback Rates") % {:typ => x_node.split('-').last}
+    replace_right_cell(:replace_trees => [:cb_rates])
   end
 
   # AJAX driven routine to check for changes in ANY field on the form
@@ -336,7 +331,7 @@ class ChargebackController < ApplicationController
   end
 
   def cb_rpts_fetch_saved_report(id)
-    rr = MiqReportResult.for_user(current_user).find_by_id(from_cid(id.split('-').last))
+    rr = MiqReportResult.for_user(current_user).find_by_id(id.to_s.split('-').last)
     if rr.nil?  # Saved report no longer exists
       @report = nil
       return
@@ -384,7 +379,7 @@ class ChargebackController < ApplicationController
     if x_active_tree == :cb_rates_tree
       if node == "root"
         @record = nil
-        @right_cell_text = _("All Chargeback Rate")
+        @right_cell_text = _("All Chargeback Rates")
       elsif ["xx-Compute", "xx-Storage"].include?(node)
         @record = nil
         @right_cell_text = case node
@@ -393,7 +388,7 @@ class ChargebackController < ApplicationController
                            end
         cb_rates_list
       else
-        @record = ChargebackRate.find(from_cid(parse_nodetype_and_id(node).last))
+        @record = ChargebackRate.find(parse_nodetype_and_id(node).last)
         @sb[:action] = nil
         @right_cell_text = case @record.rate_type
                            when "Compute" then _("Compute Chargeback Rate \"%{name}\"") % {:name => @record.description}
@@ -425,7 +420,7 @@ class ChargebackController < ApplicationController
         # On a saved report node
         cb_rpts_show_saved_report
         if @report
-          s = MiqReportResult.for_user(current_user).find_by_id(from_cid(nodes.last.split('-').last))
+          s = MiqReportResult.for_user(current_user).find_by_id(nodes.last.split('-').last)
 
           @right_cell_div = "reports_list_div"
           @right_cell_text = _("Saved Chargeback Report \"%{last_run_on}\"") % {:last_run_on => format_timezone(s.last_run_on, Time.zone, "gtl")}
@@ -459,13 +454,13 @@ class ChargebackController < ApplicationController
     @parent_reports = {}
 
     MiqReportResult.with_saved_chargeback_reports.select_distinct_results.each_with_index do |sr, sr_idx|
-      @parent_reports[sr.miq_report.name] = "#{to_cid(sr.miq_report_id)}-#{sr_idx}"
+      @parent_reports[sr.miq_report.name] = "#{sr.miq_report_id}-#{sr_idx}"
     end
   end
 
   def cb_rpts_get_all_reps(nodeid)
     return [] if nodeid.blank?
-    @sb[:miq_report_id] = from_cid(nodeid)
+    @sb[:miq_report_id] = nodeid
     miq_report = MiqReport.for_user(current_user).find(@sb[:miq_report_id])
     saved_reports = miq_report.miq_report_results.with_current_user_groups
                               .select("id, miq_report_id, name, last_run_on, report_source")
@@ -673,11 +668,9 @@ class ChargebackController < ApplicationController
     @edit[:current_assignment] = ChargebackRate.get_assignments(x_node.split('-').last)
     unless @edit[:current_assignment].empty?
       @edit[:new][:cbshow_typ] =  case @edit[:current_assignment][0][:object]
-                                  when ManageIQ::Providers::ContainerManager
-                                    "ems_container"
                                   when EmsCluster
                                     "ems_cluster"
-                                  when ExtManagementSystem
+                                  when ExtManagementSystem, ManageIQ::Providers::ContainerManager
                                     "ext_management_system"
                                   when MiqEnterprise
                                     "enterprise"
@@ -747,10 +740,17 @@ class ChargebackController < ApplicationController
     classification.entries.each { |e| @edit[:cb_assign][:tags][e.id.to_s] = e.description } if classification
   end
 
+  DEFAULT_CHARGEBACK_LABELS = ["com.redhat.component"].freeze
+
   def get_docker_labels_all_keys
     @edit[:cb_assign][:docker_label_keys] = {}
+    @edit[:cb_assign][:docker_label_default_keys] = {}
     CustomAttribute.where(:section => "docker_labels").pluck(:id, :name).uniq(&:second).each do |label|
-      @edit[:cb_assign][:docker_label_keys][label.first.to_s] = label.second
+      if DEFAULT_CHARGEBACK_LABELS.include?(label.second)
+        @edit[:cb_assign][:docker_label_default_keys][label.first.to_s] = label.second
+      else
+        @edit[:cb_assign][:docker_label_keys][label.first.to_s] = label.second
+      end
     end
   end
 
@@ -777,9 +777,7 @@ class ChargebackController < ApplicationController
       if klass == "enterprise"
         MiqEnterprise.all
       elsif klass == "ext_management_system"
-        ExtManagementSystem.all.reject { |prov| prov.kind_of? ManageIQ::Providers::ContainerManager }
-      elsif klass == "ems_container"
-        ManageIQ::Providers::ContainerManager.all
+        ExtManagementSystem.all
       else
         klass.classify.constantize.all
       end
@@ -881,7 +879,7 @@ class ChargebackController < ApplicationController
          (x_active_tree == :cb_assignments_tree && ["Compute", "Storage"].include?(x_node.split('-').last))
         presenter.hide(:toolbar)
         # incase it was hidden for summary screen, and incase there were no records on show_list
-        presenter.show(:paging_div, :form_buttons_div).hide(:pc_div_1)
+        presenter.show(:paging_div, :form_buttons_div).remove_paging
         locals = {:record_id => @edit[:rec_id]}
         if x_active_tree == :cb_rates_tree
           locals[:action_url] = 'cb_rate_edit'
@@ -899,11 +897,11 @@ class ChargebackController < ApplicationController
         presenter.hide(:form_buttons_div) if params[:button]
       end
     else
-      presenter.hide(:form_buttons_div).show(:pc_div_1)
+      presenter.hide(:form_buttons_div)
       if (x_active_tree == :cb_assignments_tree && x_node == "root") ||
          (x_active_tree == :cb_reports_tree && !@report) ||
          (x_active_tree == :cb_rates_tree && x_node == "root")
-        presenter.hide(:toolbar, :pc_div_1)
+        presenter.hide(:toolbar).remove_paging
       end
       presenter.show(:paging_div)
     end

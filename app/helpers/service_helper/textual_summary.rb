@@ -2,9 +2,9 @@ module ServiceHelper::TextualSummary
   include TextualMixins::TextualDescription
   include TextualMixins::TextualGroupTags
   include TextualMixins::TextualName
-  #
+  include GenericObjectHelper::TextualSummary
+
   # Groups
-  #
 
   def textual_group_properties
     TextualGroup.new(_("Properties"), %i(name description guid))
@@ -22,7 +22,7 @@ module ServiceHelper::TextualSummary
 
   def textual_group_provisioning_credentials
     return nil unless provisioning_get_job
-    TextualGroup.new(_("Credentials"), %i(machine_credential network_credential cloud_credential vmware_credential))
+    TextualGroup.new(_("Credentials"), %i(machine_credential vault_credential network_credential cloud_credential))
   end
 
   def textual_group_provisioning_plays
@@ -42,7 +42,7 @@ module ServiceHelper::TextualSummary
 
   def textual_group_retirement_credentials
     return nil unless retirement_get_job
-    TextualGroup.new(_("Credentials"), %i(machine_credential network_credential cloud_credential))
+    TextualGroup.new(_("Credentials"), %i(machine_credential vault_credential network_credential cloud_credential))
   end
 
   def textual_group_retirement_plays
@@ -77,9 +77,8 @@ module ServiceHelper::TextualSummary
     TextualGroup.new(_("Generic Objects"), %i(generic_object_instances))
   end
 
-  #
   # Items
-  #
+
   def textual_guid
     {:label => _("Management Engine GUID"), :value => @record.guid}
   end
@@ -146,12 +145,10 @@ module ServiceHelper::TextualSummary
   def textual_orchestration_stack
     ost = @record.try(:orchestration_stack)
     if ost && !ost.id.present?
-      {
-        :label => _("Orchestration Stack"),
-        :image => "100/orchestration_stack.png",
-        :value => ost.name,
-        :title => _("Invalid Stack")
-      }
+      {:label => _("Orchestration Stack"),
+       :image => "100/orchestration_stack.png",
+       :value => ost.name,
+       :title => _("Invalid Stack")}
     elsif ost
       ost
     end
@@ -169,11 +166,11 @@ module ServiceHelper::TextualSummary
   end
 
   def textual_owner
-    @record.evm_owner.try(:name)
+    {:label => _('Owner'), :value => @record.evm_owner.try(:name)}
   end
 
   def textual_group
-    @record.miq_group.try(:description)
+    {:label => _('Group'), :value => @record.miq_group.try(:description)}
   end
 
   def textual_created
@@ -226,6 +223,12 @@ module ServiceHelper::TextualSummary
     credential(credential, _("Machine"))
   end
 
+  def textual_vault_credential
+    credential = @job.authentications.find_by(:type => 'ManageIQ::Providers::EmbeddedAnsible::AutomationManager::VaultCredential')
+    return nil unless credential
+    credential(credential, _("Vault"))
+  end
+
   def textual_network_credential
     credential = @job.authentications.find_by(:type => 'ManageIQ::Providers::EmbeddedAnsible::AutomationManager::NetworkCredential')
     return nil unless credential
@@ -233,18 +236,15 @@ module ServiceHelper::TextualSummary
   end
 
   def textual_cloud_credential
-    credential = @job.authentications.find_by(:type => 'ManageIQ::Providers::EmbeddedAnsible::AutomationManager::CloudCredential')
-    return nil unless credential
-    credential(credential, _("Cloud"))
-  end
-
-  def textual_vmware_credential
-    credential = @job.authentications.find_by(:type => 'ManageIQ::Providers::EmbeddedAnsible::AutomationManager::VmwareCredential')
-    return nil unless credential
-    {:label => _('VMware'),
-     :value => credential.name,
-     :title => _('VMware Credential'),
-     :link  => url_for_only_path(:action => 'show', :id => credential.id, :controller => 'ansible_credential')}
+    cloud_credential = nil
+    excluded_types = ["ManageIQ::Providers::EmbeddedAnsible::AutomationManager::MachineCredential",
+                      "ManageIQ::Providers::EmbeddedAnsible::AutomationManager::VaultCredential",
+                      "ManageIQ::Providers::EmbeddedAnsible::AutomationManager::NetworkCredential"]
+    @job.authentications.each do |authentication|
+      cloud_credential = authentication unless excluded_types.include?(authentication.type)
+    end
+    return nil unless cloud_credential
+    credential(cloud_credential, _("Cloud"))
   end
 
   def textual_generic_object_instances
@@ -258,7 +258,10 @@ module ServiceHelper::TextualSummary
   end
 
   def credential(credential, label)
-    {:label => label, :value => credential.name}
+    {:label => label,
+     :value => credential.name,
+     :title => ui_lookup(:model => credential.type),
+     :link  => url_for_only_path(:action => 'show', :id => credential.id, :controller => 'ansible_credential')}
   end
 
   def provisioning_get_job
@@ -276,12 +279,10 @@ module ServiceHelper::TextualSummary
 
   def fetch_job_plays
     items = @job.job_plays.sort_by(&:start_time).collect do |play|
-      [
-        play.name,
-        format_timezone(play.start_time),
-        format_timezone(play.finish_time),
-        play.finish_time && play.start_time ? calculate_elapsed_time(play.start_time, play.finish_time) : '/A'
-      ]
+      [play.name,
+       format_timezone(play.start_time),
+       format_timezone(play.finish_time),
+       play.finish_time && play.start_time ? calculate_elapsed_time(play.start_time, play.finish_time) : '/A']
     end.sort
 
     TextualTable.new(

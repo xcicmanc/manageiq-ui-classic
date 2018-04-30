@@ -19,7 +19,8 @@ class InfraNetworkingController < ApplicationController
   end
 
   def show_list
-    redirect_to :action => 'explorer', :flash_msg => @flash_array ? @flash_array[0][:message] : nil
+    flash_to_session
+    redirect_to(:action => 'explorer')
   end
 
   def tagging_explorer_controller?
@@ -189,7 +190,7 @@ class InfraNetworkingController < ApplicationController
       self.x_node = "root"
       get_node_info("root")
     else
-      show_record(from_cid(id))
+      show_record(id)
       model_string = ui_lookup(:model => (model ? model : @record.class).to_s)
       @right_cell_text = _("%{model} \"%{name}\"") % {:name => @record.name, :model => model_string}
     end
@@ -203,15 +204,6 @@ class InfraNetworkingController < ApplicationController
     ].map do |hsh|
       ApplicationController::Feature.new_with_hash(hsh)
     end
-  end
-
-  def build_infra_networking_tree(type, name)
-    tree = case name
-           when :infra_networking_tree
-             TreeBuilderConfigurationManager.new(name, type, @sb)
-           end
-    instance_variable_set :"@#{name}", tree.tree_nodes
-    tree
   end
 
   def get_node_info(treenodeid, show_list = true)
@@ -248,16 +240,6 @@ class InfraNetworkingController < ApplicationController
                          :text   => @right_cell_text)
     else
       x_history_add_item(:id => treenodeid, :text => @right_cell_text) # Add to history pulldown array
-    end
-    options
-  end
-
-  def dvswitches_list(id, model)
-    return dvswitch_node(id, model) if id
-    if x_active_tree == :infra_networking_tree
-      options = {:model => "Switch", :named_scope => :shareable}
-      @right_cell_text = _("All %{title}") % {:title => model_to_name(model)}
-      process_show_list(options) if @show_list
     end
     options
   end
@@ -558,9 +540,9 @@ class InfraNetworkingController < ApplicationController
     # Handle bottom cell
     if @pages || @in_a_form
       if @pages && !@in_a_form
-        presenter.hide(:form_buttons_div).show(:pc_div_1)
+        presenter.hide(:form_buttons_div)
       elsif @in_a_form
-        presenter.hide(:pc_div_1).show(:form_buttons_div)
+        presenter.remove_paging.show(:form_buttons_div)
       end
       presenter.show(:paging_div)
     else
@@ -602,7 +584,7 @@ class InfraNetworkingController < ApplicationController
   end
 
   def display_adv_searchbox
-    !(@infra_networking_record || @in_a_form)
+    !(@infra_networking_record || @in_a_form || @nodetype == 'sw')
   end
 
   def breadcrumb_name(_model)

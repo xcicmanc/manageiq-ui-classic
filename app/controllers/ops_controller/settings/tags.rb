@@ -15,7 +15,7 @@ module OpsController::Settings::Tags
     category = Classification.find(params[:id])
     c_name = category.name
     audit = {:event        => "category_record_delete",
-             :message      => _("[%{name}] Record deleted") % {:name => c_name},
+             :message      => "[#{c_name}] Record deleted",
              :target_id    => category.id,
              :target_class => "Classification",
              :userid       => session[:userid]}
@@ -25,6 +25,7 @@ module OpsController::Settings::Tags
       category_get_all
       render :update do |page|
         page << javascript_prologue
+        page.replace("flash_msg_div", :partial => "layouts/flash_msg")
         page.replace_html 'settings_co_categories', :partial => 'settings_co_categories_tab'
       end
     else

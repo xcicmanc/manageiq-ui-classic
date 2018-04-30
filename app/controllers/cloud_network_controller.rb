@@ -26,19 +26,20 @@ class CloudNetworkController < ApplicationController
       return tag("CloudNetwork")
     when 'cloud_network_delete'
       delete_networks
+      javascript_redirect(previous_breadcrumb_url)
     when "cloud_network_edit"
       javascript_redirect :action => "edit", :id => checked_item_id
     when "cloud_network_new"
       javascript_redirect :action => "new"
+    when "cloud_subnet_tag"
+      return tag("CloudSubnet")
     when "custom_button"
       custom_buttons
       return
-    else
-      if !flash_errors? && @refresh_div == "main_div" && @lastaction == "show_list"
-        replace_gtl_main_div
-      else
-        render_flash
-      end
+    when "instance_tag"
+      return tag("VmOrTemplate")
+    when "network_router_tag"
+      return tag("NetworkRouter")
     end
   end
 
@@ -50,7 +51,6 @@ class CloudNetworkController < ApplicationController
                           :flash_msg => _("Add of new Cloud Network was cancelled by the user")
 
     when "add"
-      @network = CloudNetwork.new
       options = form_params
       ems = ExtManagementSystem.find(options[:ems_id])
       if CloudNetwork.class_by_ems(ems).supports_create?
@@ -86,7 +86,7 @@ class CloudNetworkController < ApplicationController
 
     @breadcrumbs.pop if @breadcrumbs
     session[:edit] = nil
-    session[:flash_msgs] = @flash_array.dup if @flash_array
+    flash_to_session
     javascript_redirect :action => "show_list"
   end
 
@@ -129,35 +129,30 @@ class CloudNetworkController < ApplicationController
       if @flash_array.nil?
         add_flash(_("The selected Cloud Network was deleted"))
       end
-      session[:flash_msgs] = @flash_array.dup if @flash_array
-      javascript_redirect(previous_breadcrumb_url)
+      flash_to_session
     end
   end
 
   def edit
     params[:id] = checked_item_id unless params[:id].present?
     assert_privileges("cloud_network_edit")
-    @network_ems_provider_choices = {}
     @network = find_record_with_rbac(CloudNetwork, params[:id])
     @in_a_form = true
     drop_breadcrumb(
       :name => _("Edit Cloud Network \"%{name}\"") % {:name => @network.name},
       :url  => "/cloud_network/edit/#{@network.id}"
     )
-    render :action => 'change'
   end
 
   def new
     assert_privileges("cloud_network_new")
+    assert_privileges("ems_network_show_list")
+    assert_privileges("cloud_tenant_show_list")
+
     @network = CloudNetwork.new
     @in_a_form = true
-    @network_ems_provider_choices = {}
-    network_managers.each do |network_manager|
-      @network_ems_provider_choices[network_manager.name] = network_manager.id
-    end
 
     drop_breadcrumb(:name => _("Add New Cloud Network"), :url => "/cloud_network/new")
-    render :action => 'change'
   end
 
   def update
@@ -200,7 +195,7 @@ class CloudNetworkController < ApplicationController
     end
 
     session[:edit] = nil
-    session[:flash_msgs] = @flash_array.dup if @flash_array
+    flash_to_session
     javascript_redirect previous_breadcrumb_url
   end
 
@@ -251,7 +246,8 @@ class CloudNetworkController < ApplicationController
     end
     options[:provider_physical_network] = params[:provider_physical_network] if params[:provider_physical_network]
     options[:provider_segmentation_id] = params[:provider_segmentation_id] if params[:provider_segmentation_id]
-    options[:cloud_tenant] = find_record_with_rbac(CloudTenant, params[:cloud_tenant_id]) if params[:cloud_tenant_id]
+    cloud_tenant = find_record_with_rbac(CloudTenant, params[:cloud_tenant][:id]) if params[:cloud_tenant][:id]
+    options[:tenant_id] = cloud_tenant.ems_ref
     options
   end
 

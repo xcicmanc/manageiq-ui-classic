@@ -2,18 +2,6 @@
 module PxeController::IsoDatastores
   extend ActiveSupport::Concern
 
-  def iso_datastore_tree_select
-    typ, id = params[:id].split("_")
-    case typ
-    when "img"
-      @record = MiqServer.find(from_cid(id))
-    when "wimg"
-      @record = WindowsImage.find(from_cid(id))
-    when "ps"
-      @record = ServerRole.find(from_cid(id))
-    end
-  end
-
   def iso_datastore_new
     assert_privileges("iso_datastore_new")
     @isd = IsoDatastore.new
@@ -186,7 +174,7 @@ module PxeController::IsoDatastores
         return
       end
     when "reset", nil
-      @img = IsoImage.find_by_id(from_cid(params[:id]))
+      @img = IsoImage.find_by_id(params[:id])
       iso_img_set_form_vars
       @in_a_form = true
       session[:changed] = false
@@ -234,20 +222,6 @@ module PxeController::IsoDatastores
 
   def iso_img_set_record_vars(img)
     img.pxe_image_type = @edit[:new][:img_type].blank? ? nil : PxeImageType.find_by_id(@edit[:new][:img_type])
-  end
-
-  def identify_isd_datastore
-    @isd = nil
-    begin
-      @record = @isd = find_record_with_rbac(IsoDatastore, from_cid(params[:id]))
-    rescue ActiveRecord::RecordNotFound
-    rescue => @bang
-    end
-  end
-
-  # Delete all selected or single displayed ISO Datastore(s)
-  def deleteisds
-    iso_datastore_button_operation('destroy', 'deletion')
   end
 
   def iso_datastore_set_record_vars(isd)
@@ -303,10 +277,10 @@ module PxeController::IsoDatastores
       nodes = treenodeid.split("-")
       if (nodes[0] == "isd" && nodes.length == 2) || (["isd_xx"].include?(nodes[1]) && nodes.length == 3)
         # on iso_datastore node OR folder node is selected
-        @record = @isd = IsoDatastore.find_by_id(from_cid(nodes.last))
+        @record = @isd = IsoDatastore.find_by_id(nodes.last)
         @right_cell_text = _("ISO Datastore \"%{name}\"") % {:name => @isd.name}
       elsif nodes[0] == "isi"
-        @record = @img = IsoImage.find_by_id(from_cid(nodes.last))
+        @record = @img = IsoImage.find_by_id(nodes.last)
         @right_cell_text = _("ISO Image \"%{name}\"") % {:name => @img.name}
       end
     end

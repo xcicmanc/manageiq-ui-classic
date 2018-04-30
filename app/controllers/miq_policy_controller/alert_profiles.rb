@@ -6,7 +6,7 @@ module MiqPolicyController::AlertProfiles
   end
 
   def alert_profile_edit_cancel
-    alert_profile_load
+    return unless alert_profile_edit_load_edit
     @edit = nil
     if @alert_profile && @alert_profile.id.blank?
       add_flash(_("Add of new Alert Profile was cancelled by the user"))
@@ -14,7 +14,7 @@ module MiqPolicyController::AlertProfiles
       add_flash(_("Edit of Alert Profile \"%{name}\" was cancelled by the user") % {:name => @alert_profile.description})
     end
     get_node_info(x_node)
-    replace_right_cell(:nodetype => @nodetype)
+    replace_right_cell(:nodetype => @nodetype, :remove_form_buttons => true)
   end
 
   def alert_profile_edit_reset
@@ -59,9 +59,9 @@ module MiqPolicyController::AlertProfiles
     alert_profile_get_info(MiqAlertSet.find(alert_profile.id))
     alert_profile_sync_provider(current, mems.keys)
     @edit = nil
-    self.x_node = @new_alert_profile_node = "xx-#{alert_profile.mode}_ap-#{to_cid(alert_profile.id)}"
+    self.x_node = @new_alert_profile_node = "xx-#{alert_profile.mode}_ap-#{alert_profile.id}"
     get_node_info(@new_alert_profile_node)
-    replace_right_cell(:nodetype => "ap", :replace_trees => [:alert_profile])
+    replace_right_cell(:nodetype => "ap", :replace_trees => %i(alert_profile), :remove_form_buttons => true)
   end
 
   def alert_profile_edit_move
@@ -142,7 +142,7 @@ module MiqPolicyController::AlertProfiles
     nodes.pop
     self.x_node = nodes.join("_")
     get_node_info(x_node)
-    replace_right_cell(:nodetype => "xx", :replace_trees => [:alert_profile])
+    replace_right_cell(:nodetype => "xx", :replace_trees => %i(alert_profile))
   end
 
   def alert_profile_field_changed
@@ -171,10 +171,10 @@ module MiqPolicyController::AlertProfiles
     end
     if params.key?(:id)
       if params[:check] == "1"
-        @assign[:new][:objects].push(from_cid(params[:id].split("-").last))
+        @assign[:new][:objects].push(params[:id].split("-").last)
         @assign[:new][:objects].sort!
       else
-        @assign[:new][:objects].delete(from_cid(params[:id].split("-").last))
+        @assign[:new][:objects].delete(params[:id].split("-").last)
       end
     end
 

@@ -60,8 +60,11 @@ module ApplicationController::Filter
 
         if %w(not discard commit remove).include?(params[:pressed])
           page << javascript_hide("exp_buttons_on")
+          page << javascript_hide("exp_buttons2_on")
           page << javascript_hide("exp_buttons_not")
+          page << javascript_hide("exp_buttons2_not")
           page << javascript_show("exp_buttons_off")
+          page << javascript_show("exp_buttons2_off")
         end
         if changed != session[:changed]
           session[:changed] = changed
@@ -94,14 +97,19 @@ module ApplicationController::Filter
         page << javascript_prologue
         page.replace("flash_msg_div", :partial => "layouts/flash_msg")
         page.replace("exp_editor_div", :partial => "layouts/exp_editor")
-        page << "$('#exp_#{token}').css({'background-color': 'yellow'})"
+        page << "$('#exp_#{token}').css({'text-decoration': 'underline'})"
         page << javascript_hide("exp_buttons_off")
+        page << javascript_hide("exp_buttons2_off")
         if exp.key?("not") || @parent_is_not
           page << javascript_hide("exp_buttons_on")
           page << javascript_show("exp_buttons_not")
+          page << javascript_hide("exp_buttons2_on")
+          page << javascript_show("exp_buttons2_not")
         else
           page << javascript_hide("exp_buttons_not")
           page << javascript_show("exp_buttons_on")
+          page << javascript_hide("exp_buttons2_not")
+          page << javascript_show("exp_buttons2_on")
         end
 
         page << ENABLE_CALENDAR if @edit[@expkey].calendar_needed?
@@ -212,7 +220,7 @@ module ApplicationController::Filter
     @edit[@expkey].history.reset(@edit[@expkey][:expression])
     @edit[@expkey][:exp_table] = exp_build_table(@edit[@expkey][:expression]) # Rebuild the expression table
     @edit[@expkey][:selected] = {:id => 0}                                    # Save the last search loaded
-    @edit[:adv_search_name] = nil                                             # Clear search name
+    @edit[:adv_search_name] = @edit[:new_search_name] = nil                   # Clear search name
     @edit[:adv_search_report] = nil                                           # Clear the report name
     session[:adv_search] ||= {}                                               # Create/reuse the adv search hash
     session[:adv_search][@edit[@expkey][:exp_model]] = copy_hash(@edit)       # Save by model name in settings
@@ -246,15 +254,10 @@ module ApplicationController::Filter
   end
 
   def clear_default_search
+    # @edit[@expkey][:exp_last_loaded] = nil                                  # Clear the last search loaded
     @edit[@expkey][:selected] = {:id => 0, :description => "All"}             # Save the last search loaded
     @edit[:adv_search_applied] = nil
-    @edit[@expkey][:expression] = {"???" => "???"}                            # Set as new exp element
-    @edit[:new][@expkey] = @edit[@expkey][:expression]                        # Copy to new exp
-    @edit[@expkey].history.reset(@edit[@expkey][:expression])
-    @edit[@expkey][:exp_table] = exp_build_table(@edit[@expkey][:expression]) # Rebuild the expression table
-    # @edit[@expkey][:exp_last_loaded] = nil                                  # Clear the last search loaded
-    @edit[:adv_search_name] = nil                                             # Clear search name
-    @edit[:adv_search_report] = nil                                           # Clear the report name
+    search_expression_reset_fields
   end
 
   def load_default_search(id)

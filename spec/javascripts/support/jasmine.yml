@@ -12,12 +12,15 @@
 #
 src_files:
 - __spec__/helpers/i18n-test.js
-- assets/phantomjs-polyfill/bind-polyfill
+- assets/bower_components/phantomjs-polyfill/bind-polyfill
 - assets/application
-- assets/jasmine-jquery
+- assets/bower_components/jasmine-jquery/lib/jasmine-jquery
 - assets/angular-mocks
 - __spec__/helpers/fixtures-fix.js
+- packs/vendor.js
 - packs/manageiq-ui-classic/application-common.js
+- packs/manageiq-ui-classic/compat-common.js
+- packs/manageiq-ui-classic/miq-redux-common.js
 
 # stylesheets
 #
@@ -126,3 +129,9 @@ boot_files:
 #
 # rack_options:
 #   server: 'thin'
+
+# show_console_log
+#
+# Tell PhantomJS runner to enable console.log output from your specs.
+
+# show_console_log: true

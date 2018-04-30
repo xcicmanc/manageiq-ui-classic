@@ -178,7 +178,7 @@ describe OpsController do
                                          :selected_server_id => miq_server.id,
                                          :active_tab         => 'settings_authentication'
                                         )
-        controller.x_node = "svr-#{controller.to_cid(miq_server.id)}"
+        controller.x_node = "svr-#{miq_server.id}"
       end
 
       it "sets ldap_role to false to make forest entries div hidden" do
@@ -229,6 +229,17 @@ describe OpsController do
           controller.instance_variable_set(:@sb, :active_tab => 'settings_help_menu')
           controller.send(:settings_get_info, 'root-0')
           expect(edit[:new]).to eq(edit[:current])
+        end
+      end
+
+      context 'zone node' do
+        it 'sets ntp server info for display' do
+          _guid, miq_server, zone = EvmSpecHelper.local_guid_miq_server_zone
+          controller.instance_variable_set(:@sb, :active_tab => 'settings_zone')
+          controller.instance_variable_set(:@edit, :new => {:ntp => {:server => ["1.example.com", "2.example.com"]}})
+          controller.send(:zone_save_ntp_server_settings, zone)
+          controller.send(:settings_get_info, "z-#{zone.id}")
+          expect(assigns(:ntp_servers)).to eq("1.example.com, 2.example.com")
         end
       end
     end

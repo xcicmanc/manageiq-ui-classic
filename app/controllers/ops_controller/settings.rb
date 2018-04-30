@@ -5,7 +5,6 @@ module OpsController::Settings
   include_concern 'AnalysisProfiles'
   include_concern 'CapAndU'
   include_concern 'Common'
-  include_concern 'Ldap'
   include_concern 'Schedules'
   include_concern 'AutomateSchedules'
   include_concern 'Tags'
@@ -21,19 +20,19 @@ module OpsController::Settings
       begin
         session[:imports].apply
       rescue => bang
-        msg = _("Error during 'apply': %{error}") % {:error => bang}
-        err = true
+        add_flash(_("Error during 'apply': %{error}") % {:error => bang}, :error)
+        @sb[:show_button] = true
       else
-        msg = _("Records were successfully imported")
-        err = false
+        add_flash(_("Records were successfully imported"))
+        @sb[:show_button] = false
         session[:imports] = @sb[:imports] = nil
       end
     else
-      msg = _("Use the Choose file button to locate CSV file")
-      err = true
+      add_flash(_("Use the Choose file button to locate CSV file"), :error)
+      @sb[:show_button] = true
     end
-    @sb[:show_button] = err
-    redirect_to :action => 'explorer', :flash_msg => msg, :flash_error => err, :no_refresh => true
+    flash_to_session
+    redirect_to(:action => 'explorer', :no_refresh => true)
   end
 
   def forest_get_form_vars
@@ -136,8 +135,9 @@ module OpsController::Settings
 
   def region_edit
     settings_set_view_vars
-    @right_cell_text = _("Settings Region \"%{name}\"") %
-                       {:name => "#{MiqRegion.my_region.description} [#{MiqRegion.my_region.region}]"}
+    @right_cell_text = _("%{product} Region \"%{name}\"") %
+                       {:name    => "#{MiqRegion.my_region.description} [#{MiqRegion.my_region.region}]",
+                        :product => Vmdb::Appliance.PRODUCT_NAME}
     case params[:button]
     when "cancel"
       session[:edit] = @edit = nil
@@ -196,13 +196,6 @@ module OpsController::Settings
 
   def region_get_form_vars
     @edit[:new][:description] = params[:region_description] if params[:region_description]
-  end
-
-  # Need to make arrays by category containing arrays of items so the filtering logic can apply
-  # AND between the categories, but OR between the items within a category
-  def user_make_subarrays
-    # moved into common method used by ops_rbac module as well
-    rbac_and_user_make_subarrays
   end
 
   def set_verify_status

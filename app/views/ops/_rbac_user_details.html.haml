@@ -41,7 +41,7 @@
           = text_field_tag("userid",
                            @edit[:new][:userid],
                            :autocomplete => 'off',
-                           :maxlength    => 50,
+                           :maxlength    => 255,
                            :disabled     => disabled,
                            :class => "form-control",
                            "data-miq_observe" => observe_url_json)
@@ -98,7 +98,7 @@
           - if @record.current_group
             - if role_allows?(:feature => "rbac_group_show")
               - params = {:class => "pointer",
-                          :onclick => "miqOnClickSelectRbacTreeNode('g-#{to_cid(@record.current_group.id)}');",
+                          :onclick => "miqOnClickSelectRbacTreeNode('g-#{@record.current_group.id}');",
                           :title => _("View this Group")}
             %i.ff.ff-group{params}
             = link_to(@record.current_group.description, "#", params)
@@ -110,11 +110,11 @@
           = _("Available Groups")
       .col-md-2
         - groups = @record.present? && @record.miq_groups.present? ? @record.miq_groups.order(:description) : []
-        - if groups.present? && @edit.blank?
+        - if @edit.blank?
           - if role_allows?(:feature => "rbac_group_show")
             - groups.each do |group|
               - params = {:class => "pointer",
-                          :onclick => "miqOnClickSelectRbacTreeNode('g-#{to_cid(group.id)}');",
+                          :onclick => "miqOnClickSelectRbacTreeNode('g-#{group.id}');",
                           :title => _("View this Group")}
               %i.ff.ff-group{params}
               = link_to(group.description, "#", params)
@@ -131,20 +131,21 @@
                 = h(group.description)
                 %br
           - else
-            - options = (@edit[:new][:group].present? ? [] : [[_("<Choose a Group>"), nil]]) + @edit[:groups]
             - select_groups = @edit[:new][:userid].blank? ? @edit[:new][:group] : groups.map(&:id)
             = select_tag('chosen_group',
-                         options_for_select(options, select_groups),
+                         options_for_select(@edit[:groups], select_groups),
                          :class    => "selectpicker",
                          :multiple => true,
+                         :title    => "&lt;#{_('Choose one or more Groups')}&gt;",
                          :style    => "overflow-x: scroll;")
             :javascript
               miqInitSelectPicker();
               miqSelectPickerEvent('chosen_group', "#{url}")
-      - if @edit
+    - if @edit
+      .form-group
         %label.col-md-2.control-label
           = _("Selected Groups")
-        .col-md-3
+        .col-md-4
           = render :partial => "ops/rbac_group_selected"
     - unless @edit
       .form-group
@@ -154,7 +155,7 @@
           - if @record.current_group && @record.current_group.miq_user_role
             - if role_allows?(:feature => "rbac_user_show")
               - params = {:class => "pointer",
-                          :onclick => "miqOnClickSelectRbacTreeNode('ur-#{to_cid(@record.current_group.miq_user_role.id)}');",
+                          :onclick => "miqOnClickSelectRbacTreeNode('ur-#{@record.current_group.miq_user_role.id}');",
                           :title => _("View this Role")}
             - else
               - params = {}

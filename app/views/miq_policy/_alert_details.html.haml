@@ -32,23 +32,6 @@
             .col-md-8
               %p.form-control-static
                 = @alert.enabled ? _("Yes") : _("No")
-        .form-group
-          %label.control-label.col-md-2
-            = _("Severity")
-          - if @edit
-            .col-md-8
-              - options = [[_("<Choose>"), nil]]
-              - controller.class::SEVERITIES.each { |key, value| options.push([value, key]) }
-              = select_tag('miq_alert_severity',
-                options_for_select(options, @edit[:new][:severity]),
-                :class => "selectpicker")
-              :javascript
-                miqInitSelectPicker();
-                miqSelectPickerEvent('miq_alert_severity', '#{url}', {beforeSend: true, complete: true})
-          - else
-            .col-md-8
-              %p.form-control-static
-                = controller.class::SEVERITIES[@alert.severity]
         -# Based on (model)
         .form-group
           %label.control-label.col-md-2
@@ -146,15 +129,13 @@
                   - hide = true
                 - else
                   = h(@sb[:alert][:repeat_times][@alert.options[:notifications][:delay_next_evaluation]])
+          %hr
           - if hide
             :javascript
               $(".notification-frequency").hide();
-      %hr
       -# Expression
       - if @edit
         - if !@edit[:new][:expression][:eval_method]
-          %h3
-            = _('Expression (Choose an element of the expression to edit)')
           = render(:partial => 'layouts/exp_editor')
         - else
           - if @edit[:new][:expression][:eval_method] != "nothing"
@@ -298,7 +279,7 @@
                 %table
                   %tbody
                     - @alert_profiles.each do |ap|
-                      - id = "xx-#{@alert.db}_ap-#{to_cid(ap.id)}"
+                      - id = "xx-#{@alert.db}_ap-#{ap.id}"
                       %tr{:title => _("View this Alert Profile"),
                           :onclick => remote_function(:url => "/miq_policy/x_show/#{id}?accord=alert_profile")}
                         %td
@@ -317,7 +298,7 @@
                 %table.table.table-striped.table-bordered.table-hover
                   %tbody
                     - @alert.owning_miq_actions.each do |oa|
-                      - id = "a-#{to_cid(oa.id)}"
+                      - id = "a-#{oa.id}"
                       %tr{:title => _("View this Action"),
                         :onclick => remote_function(:url => "/miq_policy/x_show/#{id}?accord=action")}
                         %td.table-view-pf-select

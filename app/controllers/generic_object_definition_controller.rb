@@ -23,12 +23,12 @@ class GenericObjectDefinitionController < ApplicationController
     self.x_active_tree ||= :generic_object_definitions_tree
     self.x_node ||= 'root'
     build_tree
-    node_info(x_node)
     process_show_list
+    node_info(x_node)
   end
 
   def show
-    self.x_node = "god-#{to_cid(params[:id])}"
+    self.x_node = "god-#{params[:id]}"
     if params[:display] || @display
       super
     else
@@ -55,15 +55,15 @@ class GenericObjectDefinitionController < ApplicationController
       when 'generic_object_definition_new'
         {:action => 'new'}
       when 'generic_object_definition_edit'
-        {:action => 'edit', :id => from_cid(params[:id] || params[:miq_grid_checks])}
+        {:action => 'edit', :id => params[:id] || params[:miq_grid_checks]}
       when 'ab_group_new'
-        {:action => 'custom_button_group_new', :id => from_cid(params[:id] || params[:miq_grid_checks])}
+        {:action => 'custom_button_group_new', :id => params[:id] || params[:miq_grid_checks]}
       when 'ab_group_edit'
-        {:action => 'custom_button_group_edit', :id => from_cid(params[:id])}
+        {:action => 'custom_button_group_edit', :id => params[:id]}
       when 'ab_button_new'
-        {:action => 'custom_button_new', :id => from_cid(params[:id] || params[:miq_grid_checks])}
+        {:action => 'custom_button_new', :id => params[:id] || params[:miq_grid_checks]}
       when 'ab_button_edit'
-        {:action => 'custom_button_edit', :id => from_cid(params[:id])}
+        {:action => 'custom_button_edit', :id => params[:id]}
       end
     )
   end
@@ -103,7 +103,7 @@ class GenericObjectDefinitionController < ApplicationController
   def custom_button_group_edit
     assert_privileges('ab_group_edit')
     @custom_button_group = CustomButtonSet.find(params[:id])
-    title = _("Edit Custom Button Group '#{@custom_button_group.name}'")
+    title = _("Edit Custom Button Group '%{name}'") % {:name => @custom_button_group.name}
     render_form(title, 'custom_button_group_form')
   end
 
@@ -122,7 +122,7 @@ class GenericObjectDefinitionController < ApplicationController
   def custom_button_edit
     assert_privileges('ab_button_edit')
     @custom_button = CustomButton.find(params[:id])
-    title = _("Edit Custom Button '#{@custom_button.name}'")
+    title = _("Edit Custom Button '%{name}'") % {:name => @custom_button.name}
     render_form(title, 'custom_button_form')
   end
 
@@ -177,29 +177,33 @@ class GenericObjectDefinitionController < ApplicationController
   def god_node_info(node)
     @god_node = true
     @center_toolbar = 'generic_object_definition'
-    @record = GenericObjectDefinition.find(from_cid(node.split('-').last))
+    @record = GenericObjectDefinition.find(node.split('-').last)
     @right_cell_text = _("Generic Object Class %{record_name}") % {:record_name => @record.name}
+    @gtl_type = nil
   end
 
   def actions_node_info(node)
     @actions_node = true
     @center_toolbar = 'generic_object_definition_actions_node'
-    @record = GenericObjectDefinition.find(from_cid(node.split('-').last))
+    @record = GenericObjectDefinition.find(node.split('-').last)
     @right_cell_text = _("Actions for %{model}") % {:model => _("Generic Object Class")}
+    @gtl_type = nil
   end
 
   def custom_button_group_node_info(node)
     @custom_button_group_node = true
     @center_toolbar = 'generic_object_definition_button_group'
-    @record = CustomButtonSet.find(from_cid(node.split("-").last))
+    @record = CustomButtonSet.find(node.split("-").last)
     @right_cell_text = _("Custom Button Set %{record_name}") % {:record_name => @record.name}
+    @gtl_type = nil
   end
 
   def custom_button_node_info(node)
     @custom_button_node = true
     @center_toolbar = 'generic_object_definition_button'
-    @record = CustomButton.find(from_cid(node.split("-").last))
+    @record = CustomButton.find(node.split("-").last)
     @right_cell_text = _("Custom Button %{record_name}") % {:record_name => @record.name}
+    @gtl_type = nil
   end
 
   def render_form(title, form_partial)
@@ -210,7 +214,7 @@ class GenericObjectDefinitionController < ApplicationController
     presenter.replace(:main_div, r[:partial => form_partial])
     presenter.hide(:paging_div)
     presenter[:lock_sidebar] = true
-    build_toolbar("x_summary_view_tb")
+    presenter.set_visibility(false, :toolbar)
 
     render :json => presenter.for_render
   end

@@ -212,6 +212,7 @@ Rails.application.routes.draw do
         download_summary_pdf
         index
         perf_top_chart
+        protect
         show
         show_list
         tagging_edit
@@ -220,6 +221,7 @@ Rails.application.routes.draw do
       :post => %w(
         button
         listnav_search_selected
+        protect
         quick_search
         sections_field_changed
         show
@@ -251,6 +253,7 @@ Rails.application.routes.draw do
         add_host
         add_host_select
         button
+        listnav_search_selected
         create
         quick_search
         remove_host
@@ -263,7 +266,7 @@ Rails.application.routes.draw do
         tl_chooser
         update
         wait_for_task
-      ) + adv_search_post + compare_post + exp_post + perf_post
+      ) + adv_search_post + compare_post + exp_post + perf_post + save_post
     },
 
     :catalog                  => {
@@ -484,7 +487,7 @@ Rails.application.routes.draw do
         tagging_edit
         tag_edit_form_field_changed
         update
-      ) + compare_post + adv_search_post + exp_post
+      ) + compare_post + adv_search_post + exp_post + save_post
     },
 
     :cloud_volume             => {
@@ -685,6 +688,7 @@ Rails.application.routes.draw do
 
     :container_node           => {
       :get  => %w(
+        dialog_load
         download_data
         download_summary_pdf
         edit
@@ -718,6 +722,7 @@ Rails.application.routes.draw do
         launch_external_logging
       ) +
                adv_search_post +
+               dialog_runner_post +
                exp_post +
                perf_post +
                save_post
@@ -1024,13 +1029,6 @@ Rails.application.routes.draw do
       )
     },
 
-    :middleware_topology       => {
-      :get => %w(
-        show
-        data
-      )
-    },
-
     :network_topology         => {
       :get => %w(
         show
@@ -1317,11 +1315,13 @@ Rails.application.routes.draw do
     :physical_server    =>  {
       :get  =>  %w(
         download_data
+        download_summary_pdf
         perf_top_chart
         protect
         show_list
         show
         tagging_edit
+        console_file
       ) + compare_get,
 
       :post   =>  %w(
@@ -1339,6 +1339,23 @@ Rails.application.routes.draw do
         tl_chooser
         wait_for_task
         provision
+        console
+      ) +
+          adv_search_post +
+          exp_post +
+          save_post
+    },
+
+    :guest_device    =>  {
+      :get  =>  %w(
+        show_list
+        show
+        quick_search
+      ) + compare_get,
+
+      :post   =>  %w(
+        button
+        show_list
       ) +
           adv_search_post +
           exp_post +
@@ -1436,7 +1453,6 @@ Rails.application.routes.draw do
         show_list
         tagging_edit
         tag_edit_form_field_changed
-        jdbc_drivers
         dr_download
         dr_report_download
         protect
@@ -1444,8 +1460,6 @@ Rails.application.routes.draw do
                compare_get,
       :post => %w(
         add_deployment
-        add_jdbc_driver
-        add_datasource
         button
         create
         dynamic_checkbox_refresh
@@ -1505,43 +1519,6 @@ Rails.application.routes.draw do
                compare_post +
                exp_post +
                save_post
-    },
-
-    :middleware_datasource => {
-      :get  => %w(
-        download_data
-        download_summary_pdf
-        edit
-        index
-        new
-        perf_chart_chooser
-        show
-        show_list
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-      compare_get,
-      :post => %w(
-        button
-        create
-        dynamic_checkbox_refresh
-        form_field_changed
-        listnav_search_selected
-        quick_search
-        sections_field_changed
-        perf_chart_chooser
-        show
-        show_list
-        tl_chooser
-        update
-        wait_for_task
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-      adv_search_post +
-      compare_post +
-      exp_post +
-      save_post
     },
 
     :middleware_domain => {
@@ -1612,68 +1589,6 @@ Rails.application.routes.draw do
         compare_post +
         exp_post +
         save_post
-    },
-
-    :middleware_messaging => {
-      :get  => %w(
-        download_data
-        download_summary_pdf
-        index
-        perf_chart_chooser
-        show
-        show_list
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-      compare_get,
-      :post => %w(
-        button
-        perf_chart_chooser
-        show
-        show_list
-        quick_search
-        listnav_search_selected
-        tl_chooser
-        update
-        wait_for_task
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-        adv_search_post +
-        exp_post +
-        save_post
-    },
-
-    :ems_datawarehouse => {
-      :get  => %w(
-        download_data
-        download_summary_pdf
-        ems_datawarehouse_form_fields
-        show_list
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-      compare_get,
-      :post => %w(
-        button
-        create
-        dynamic_checkbox_refresh
-        form_field_changed
-        listnav_search_selected
-        quick_search
-        sections_field_changed
-        show
-        show_list
-        tl_chooser
-        update
-        wait_for_task
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-      adv_search_post +
-      compare_post +
-      exp_post +
-      save_post
     },
 
     :ems_network              => {
@@ -2158,10 +2073,13 @@ Rails.application.routes.draw do
         new
         show
         show_list
+        tagging_edit
       ),
       :post => %w(
         button
         show_list
+        tag_edit_form_field_changed
+        tagging_edit
       )
     },
 
@@ -2171,9 +2089,14 @@ Rails.application.routes.draw do
         download_summary_pdf
         show
         show_list
+        tagging_edit
       ),
       :post => %w(
-        show_list)
+        button
+        show_list
+        tag_edit_form_field_changed
+        tagging_edit
+      )
     },
 
     :ansible_repository => {
@@ -2184,6 +2107,7 @@ Rails.application.routes.draw do
         new
         show
         show_list
+        tagging_edit
       ),
       :post => %w(
         button
@@ -2191,6 +2115,8 @@ Rails.application.routes.draw do
         new
         repository_refresh
         show_list
+        tag_edit_form_field_changed
+        tagging_edit
       )
     },
 
@@ -2210,6 +2136,7 @@ Rails.application.routes.draw do
         create_method
         create_ns
         domains_priority_edit
+        embedded_methods_add
         embedded_methods_remove
         explorer
         expand_toggle
@@ -2261,7 +2188,7 @@ Rails.application.routes.draw do
         playbook_options_field_changed
         cancel_import
         change_tab
-        dialog_edit
+        dialog_copy_editor
         dialog_edit_editor
         dialog_new_editor
         dialog_form_field_changed
@@ -2432,10 +2359,9 @@ Rails.application.routes.draw do
       ),
       :post => %w(
         button
+        filter
         post_install_callback
         pre_prov
-        prov_button
-        prov_change_options
         prov_continue
         prov_edit
         prov_field_changed
@@ -2642,7 +2568,6 @@ Rails.application.routes.draw do
         show_product_update
         tenant_quotas_form_fields
         tenant_form_fields
-        ldap_regions_list
       ),
       :post => %w(
         accordion_select
@@ -2675,7 +2600,6 @@ Rails.application.routes.draw do
         db_list
         diagnostics_server_list
         diagnostics_tree_select
-        diagnostics_worker_selected
         edit_rhn
         explorer
         fetch_build
@@ -2746,13 +2670,7 @@ Rails.application.routes.draw do
         x_show
         zone_edit
         zone_field_changed
-        ldap_region_add
-        ldap_region_edit
-        ldap_region_form_field_changed
-        ldap_domain_edit
-        ldap_domain_form_field_changed
         ls_select
-        ldap_entry_changed
         ls_delete
       ) + exp_post + dialog_runner_post
    },
@@ -3148,6 +3066,7 @@ Rails.application.routes.draw do
         filesystem_download
         retirement_info
         reconfigure_form_fields
+        launch_vmware_console
         launch_html5_console
         perf_chart_chooser
         protect
@@ -3174,6 +3093,7 @@ Rails.application.routes.draw do
         advanced_settings
         accordion_select
         button
+        console
         edit_vm
         resize_vm
         resize_field_changed
@@ -3450,7 +3370,7 @@ Rails.application.routes.draw do
   controller_routes.each do |controller_name, controller_actions|
     # Default route with no action to controller's index action
     unless [
-      :ems_cloud, :ems_infra, :ems_physical_infra, :ems_container, :ems_middleware, :ems_datawarehouse, :ems_network
+      :ems_cloud, :ems_infra, :ems_physical_infra, :ems_container, :ems_middleware, :ems_network
     ].include?(controller_name)
       match controller_name.to_s, :controller => controller_name, :action => :index, :via => :get
     end
@@ -3483,6 +3403,7 @@ Rails.application.routes.draw do
 
   # API-like JSON trees
   get '/tree/automate_entrypoint', :to => 'tree#automate_entrypoint'
+  get '/tree/automate_inline_methods', :to => 'tree#automate_inline_methods'
 
   # pure-angular templates
   get '/static/*id' => 'static#show', :format => false
@@ -3492,6 +3413,5 @@ Rails.application.routes.draw do
   resources :ems_physical_infra, :as => :ems_physical_infras
   resources :ems_container,      :as => :ems_containers
   resources :ems_middleware,     :as => :ems_middlewares
-  resources :ems_datawarehouse,  :as => :ems_datawarehouses
   resources :ems_network,        :as => :ems_networks
 end

@@ -98,6 +98,20 @@ function playbookReusableCodeMixin(API, $q, miqService) {
     );
   };
 
+  var getCredentialsForType = function(type, credentialUrl, vm) {
+    var prefixes = ['retirement', 'provisioning'];
+    var prefixLen = prefixes.length;
+    allApiPromises.push(API.get(credentialUrl + sortOptions)
+      .then(function(data) {
+        vm[type + '_credentials'] = data.resources;
+        for (var i = 0; i < prefixLen; i++) {
+          vm['_' + prefixes[i] + '_' + type + '_credential'] = _.find(vm[type + '_credentials'], {id: vm[vm.model][prefixes[i] + '_' + type + '_credential_id']});
+        }
+      })
+      .catch(miqService.handleFailure)
+    );
+  };
+
   // list of service catalogs
   var formOptions = function(vm) {
     miqService.sparkleOn();
@@ -134,24 +148,13 @@ function playbookReusableCodeMixin(API, $q, miqService) {
     );
 
     // list of machine credentials
-    allApiPromises.push(API.get('/api/authentications?collection_class=ManageIQ::Providers::EmbeddedAnsible::AutomationManager::MachineCredential&expand=resources&attributes=id,name' + sortOptions)
-      .then(function(data) {
-        vm.machine_credentials = data.resources;
-        vm._retirement_machine_credential = _.find(vm.machine_credentials, {id: vm[vm.model].retirement_machine_credential_id});
-        vm._provisioning_machine_credential = _.find(vm.machine_credentials, {id: vm[vm.model].provisioning_machine_credential_id});
-      })
-      .catch(miqService.handleFailure)
-    );
+    getCredentialsForType('machine', '/api/authentications?collection_class=ManageIQ::Providers::EmbeddedAnsible::AutomationManager::MachineCredential&expand=resources&attributes=id,name', vm);
+
+    // list of vault credentials
+    getCredentialsForType('vault', '/api/authentications?collection_class=ManageIQ::Providers::EmbeddedAnsible::AutomationManager::VaultCredential&expand=resources&attributes=id,name', vm);
 
     // list of network credentials
-    allApiPromises.push(API.get('/api/authentications?collection_class=ManageIQ::Providers::EmbeddedAnsible::AutomationManager::NetworkCredential&expand=resources&attributes=id,name' + sortOptions)
-      .then(function(data) {
-        vm.network_credentials = data.resources;
-        vm._retirement_network_credential = _.find(vm.network_credentials, {id: vm[vm.model].retirement_network_credential_id});
-        vm._provisioning_network_credential = _.find(vm.network_credentials, {id: vm[vm.model].provisioning_network_credential_id});
-      })
-      .catch(miqService.handleFailure)
-    );
+    getCredentialsForType('network', '/api/authentications?collection_class=ManageIQ::Providers::EmbeddedAnsible::AutomationManager::NetworkCredential&expand=resources&attributes=id,name', vm);
   };
 
   function retrievedFormData(vm) {
@@ -174,6 +177,10 @@ function playbookReusableCodeMixin(API, $q, miqService) {
       })
       .catch(miqService.handleFailure)
     );
+    checkFormDataRetrieval(vm);
+  };
+
+  var checkFormDataRetrieval = function(vm) {
     $q.all(allApiPromises)
       .then(retrievedFormData(vm));
   };
@@ -198,19 +205,22 @@ function playbookReusableCodeMixin(API, $q, miqService) {
   };
 
   var getRemoveResourcesTypes = function(vm) {
+    var defaultValue = 0;
     if (vm[vm.model].retirement_repository_id === undefined || vm[vm.model].retirement_repository_id === '') {
-      vm[vm.model].retirement_remove_resources = 'yes_without_playbook';
+      defaultValue = 1;
       vm.remove_resources_types = {
         'No': 'no_without_playbook',
         'Yes': 'yes_without_playbook',
       };
     } else {
-      vm[vm.model].retirement_remove_resources = 'no_with_playbook';
       vm.remove_resources_types = {
         'No': 'no_with_playbook',
         'Before Playbook runs': 'pre_with_playbook',
         'After Playbook runs': 'post_with_playbook',
       };
+    }
+    if ( _.includes(_.values(vm.remove_resources_types), vm[vm.model].retirement_remove_resources) === false) {
+      vm[vm.model].retirement_remove_resources = _.values(vm.remove_resources_types)[defaultValue];
     }
   };
 
@@ -242,5 +252,6 @@ function playbookReusableCodeMixin(API, $q, miqService) {
     formCloudCredentials: formCloudCredentials,
     repositoryChanged: repositoryChanged,
     setIfDefined: setIfDefined,
+    checkFormDataRetrieval: checkFormDataRetrieval,
   };
 }

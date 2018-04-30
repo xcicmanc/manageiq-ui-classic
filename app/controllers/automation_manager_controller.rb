@@ -68,7 +68,7 @@ class AutomationManagerController < ApplicationController
       @nodetype, id = parse_nodetype_and_id(valid_active_node(x_node))
 
       if filtering? && %w(xx-csa ms).include?(@nodetype)
-        search_id = from_cid(id)
+        search_id = id
         listnav_search_selected(search_id) unless params.key?(:search_text) # Clear or set the adv search filter
         if @edit[:adv_search_applied] &&
            MiqExpression.quick_search?(@edit[:adv_search_applied][:exp]) &&
@@ -120,7 +120,7 @@ class AutomationManagerController < ApplicationController
     nodes = x_node.split('-')
     case nodes.first
     when "root", "xx" then find_record(ConfiguredSystem, params[:id])
-    when "ms"         then find_record(ConfiguredSystem, from_cid(params[:id]))
+    when "ms"         then find_record(ConfiguredSystem, params[:id])
     end
   end
 
@@ -171,6 +171,10 @@ class AutomationManagerController < ApplicationController
     true
   end
 
+  def providers_active_tree?
+    x_active_tree == :automation_manager_providers_tree
+  end
+
   private
 
   def textual_group_list
@@ -205,19 +209,6 @@ class AutomationManagerController < ApplicationController
     ]
   end
 
-  def build_automation_manager_tree(type, name)
-    tree = case name
-           when :automation_manager_providers_tree
-             TreeBuilderAutomationManagerProviders.new(name, type, @sb)
-           when :automation_manager_cs_filter_tree
-             TreeBuilderAutomationManagerConfiguredSystems.new(name, type, @sb)
-           else
-             TreeBuilderAutomationManagerConfigurationScripts.new(name, type, @sb)
-           end
-    instance_variable_set :"@#{name}", tree.tree_nodes
-    tree
-  end
-
   def get_node_info(treenodeid, _show_list = true)
     @sb[:action] = nil
     @nodetype, id = parse_nodetype_and_id(valid_active_node(treenodeid))
@@ -242,6 +233,9 @@ class AutomationManagerController < ApplicationController
     else
       default_node
     end
+
+    # Edit right cell text if searching text
+    @right_cell_text += _(" (Names with \"%{search_text}\")") % {:search_text => @search_text} if @search_text.present? && %w(ConfiguredSystem ConfigurationScript).exclude?(model)
     # Edit right cell text if using filter
     @right_cell_text += @edit[:adv_search_applied][:text] if x_tree && filtering? && @edit && @edit[:adv_search_applied]
 
@@ -267,7 +261,7 @@ class AutomationManagerController < ApplicationController
     elsif x_active_tree == :configuration_scripts_tree
       cs_provider_node(provider)
     else
-      @show_adv_search = true
+      @show_adv_search = false
       @no_checkboxes = true
       options = {:model                 => "ManageIQ::Providers::AutomationManager::InventoryRootGroup",
                  :match_via_descendants => 'ConfiguredSystem',
@@ -297,10 +291,10 @@ class AutomationManagerController < ApplicationController
       self.x_node = "root"
       get_node_info("root")
     else
-      @show_adv_search = true
+      @show_adv_search = false
       options = {:model                 => "ConfiguredSystem",
                  :match_via_descendants => 'ConfiguredSystem',
-                 :named_scope           => [[:with_inventory_root_group, from_cid(@inventory_group_record.id)]],
+                 :named_scope           => [[:with_inventory_root_group, @inventory_group_record.id]],
                  :gtl_dbname            => "automation_manager_configured_systems"}
       process_show_list(options)
       record_model = ui_lookup(:model => model || TreeBuilder.get_model_for_prefix(@nodetype))
@@ -414,6 +408,13 @@ class AutomationManagerController < ApplicationController
     else
       presenter.update(:main_div, r[:partial => 'layouts/x_gtl'])
     end
+    replace_search_box(presenter)
+  end
+
+  def replace_search_box(presenter)
+    presenter.replace(:adv_searchbox_div,
+                      r[:partial => 'layouts/x_adv_searchbox',
+                        :locals  => {:nameonly => providers_active_tree?}])
   end
 
   def group_summary_tab_selected?
@@ -438,10 +439,6 @@ class AutomationManagerController < ApplicationController
 
   def active_tab_configured_systems?
     (%w(x_show x_search_by_name).include?(action_name) && managed_group_record?)
-  end
-
-  def empty_managed_group_record?(inventory_group_record)
-    inventory_group_record.try(:id).nil?
   end
 
   def valid_managed_group_record?(inventory_group_record)

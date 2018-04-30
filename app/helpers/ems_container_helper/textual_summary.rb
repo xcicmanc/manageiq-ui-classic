@@ -96,7 +96,7 @@ module EmsContainerHelper::TextualSummary
     endpoints_types = {
       :hawkular          => {
         :name => _("Metrics"),
-        :type => _("Hakular"),
+        :type => _("Hawkular"),
       },
       :prometheus        => {
         :name => _("Metrics"),
@@ -105,6 +105,10 @@ module EmsContainerHelper::TextualSummary
       :prometheus_alerts => {
         :name => _("Alerts"),
         :type => _("prometheus"),
+      },
+      :kubevirt          => {
+        :name => _("Virtualization"),
+        :type => _("kubevirt"),
       }
     }
 

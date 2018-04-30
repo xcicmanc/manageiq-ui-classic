@@ -62,7 +62,7 @@ module Mixins
           if @sb[:explorer]
             replace_right_cell
           else
-            session[:flash_msgs] = @flash_array.dup
+            flash_to_session
             render :update do |page|
               page << javascript_prologue
               page.redirect_to previous_breadcrumb_url
@@ -77,7 +77,7 @@ module Mixins
 
         def associate_handle_submit_button
           if @record.supports_associate_floating_ip?
-            floating_ip = params[:floating_ip]
+            floating_ip = params[:floating_ip][:address]
             begin
               @record.associate_floating_ip_queue(session[:userid], floating_ip)
               add_flash(_("Associating Floating IP %{address} with Instance \"%{name}\"") % {

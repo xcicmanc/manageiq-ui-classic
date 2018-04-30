@@ -26,7 +26,7 @@
           = _("NTP Servers")
         .col-md-8
           %p.form-control-static
-            = @selected_zone.settings[:ntp] ? @selected_zone.settings[:ntp][:server].join(", ") : ''
+            = @ntp_servers
 
       .form-group
         %label.col-md-2.control-label
@@ -63,7 +63,7 @@
       %table.table.table-striped.table-bordered.table-hover
         %tbody
           - @servers.sort_by(&:id).each do |s|
-            %tr{:onclick => "miqTreeActivateNode('settings_tree', 'svr-#{to_cid(s.id)}');", :title => _("View this MiqServer")}
+            %tr{:onclick => "miqTreeActivateNode('settings_tree', 'svr-#{s.id}');", :title => _("View this MiqServer")}
               %td.table-view-pf-select
                 %i.pficon.pficon-server
               %td

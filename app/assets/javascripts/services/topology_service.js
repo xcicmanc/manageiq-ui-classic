@@ -1,4 +1,4 @@
-ManageIQ.angular.app.service('topologyService', function() {
+ManageIQ.angular.app.service('topologyService', ['$location', '$http', 'miqService', '$timeout', function($location, $http, miqService, $timeout) {
   this.tooltip = function tooltip(d) {
     var status = [
       __('Name: ') + d.item.name,
@@ -6,13 +6,19 @@ ManageIQ.angular.app.service('topologyService', function() {
       __('Status: ') + d.item.status,
     ];
 
+    if (d.item.kind === 'Tag') {
+      status = [
+        d.item.name,
+        __('Type: ') + d.item.display_kind,
+      ];
+    }
+
     if (d.item.kind === 'Host' || d.item.kind === 'Vm') {
       status.push(__('Provider: ') + d.item.provider);
     }
 
     return status;
   };
-
 
   this.showHideNames = function($scope) {
     return function() {
@@ -140,9 +146,6 @@ ManageIQ.angular.app.service('topologyService', function() {
       case 'NetworkManager':
         entity_url = 'ems_network';
         break;
-      case 'MiddlewareManager':
-        entity_url = 'ems_middleware';
-        break;
       case 'InfraManager':
         entity_url = 'ems_infra';
         break;
@@ -176,23 +179,17 @@ ManageIQ.angular.app.service('topologyService', function() {
       case 'Running':
       case 'Succeeded':
       case 'Valid':
-      case 'Enabled':
         return 'success';
       case 'NotReady':
       case 'Failed':
       case 'Error':
       case 'Unreachable':
-      case 'Down':
       case 'Inactive':
         return 'error';
       case 'Warning':
       case 'Waiting':
       case 'Pending':
-      case 'Disabled':
-      case 'Reload required':
         return 'warning';
-      case 'Starting':
-        return 'information'; // defined in middleware_topology.css
       case 'Unknown':
       case 'Terminated':
         return 'unknown';
@@ -216,27 +213,105 @@ ManageIQ.angular.app.service('topologyService', function() {
   // this injects some common code in the controller - temporary pending a proper merge
   this.mixinSearch = function($scope) {
     var topologyService = this;
+
     var resetEvent = function() {
       topologyService.resetSearch($scope.d3);
       $('input#search_topology')[0].value = '';
       $scope.searching = false;
       $scope.notFound = false;
     };
+
     $scope.searching = false;
     $scope.notFound = false;
-      // NOTE: listener on search
-    ManageIQ.angular.rxSubject.subscribe(function(event) {
-      if (event.service === 'topologyService') {
-        if (event.name === 'searchNode') {
-          $scope.searching = true;
-          var svg = topologyService.getSVG($scope.d3);
-          var query = $('input#search_topology')[0].value;
-          $scope.notFound = ! topologyService.searchNode(svg, query);
-        } else if (event.name === 'resetSearch') {
-          resetEvent();
+    $scope.resetSearch = resetEvent;
+
+    // listen for search & reset events
+    listenToRx(function(event) {
+      if (event.service !== 'topologyService') {
+        return;
+      }
+
+      $timeout(function() {
+        switch (event.name) {
+          case 'searchNode':
+            $scope.searching = true;
+            var svg = topologyService.getSVG($scope.d3);
+            var query = $('input#search_topology')[0].value;
+            $scope.notFound = ! topologyService.searchNode(svg, query);
+            break;
+
+          case 'resetSearch':
+            resetEvent();
+            break;
         }
+      });
+    });
+  };
+
+  this.mixinRefresh = function(controller, $scope) {
+    var topologyService = this;
+    var getTopologyData = function(response) {
+      var data = response.data;
+      var currentSelectedKinds = controller.kinds;
+      controller.items = data.data.items;
+      controller.relations = data.data.relations;
+      controller.kinds = $scope.kinds = data.data.kinds;
+      controller.icons = data.data.icons;
+      if (currentSelectedKinds && (Object.keys(currentSelectedKinds).length !== Object.keys(controller.kinds).length)) {
+        controller.kinds = $scope.kinds = currentSelectedKinds;
+      } else if (controller.remove_hierarchy && data.data.settings && data.data.settings.containers_max_items) {
+        var size_limit = data.data.settings.containers_max_items;
+        controller.kinds = $scope.kinds = topologyService.reduce_kinds(controller.items, controller.kinds, size_limit, controller.remove_hierarchy);
+      }
+    };
+
+    controller.parseUrl = function(screenUrl) {
+      if (screenUrl.match('show/?$')) {
+        return controller.dataUrl;
+      }
+
+      var match = screenUrl.match(/(ems_container|show)\/([0-9]+)\?display=topology$/) ||
+        screenUrl.match(/(_topology)\/show\/([0-9]+)\/?$/);
+
+      if (match) {
+        var id = match[2];
+        var url = controller.detailUrl || controller.dataUrl;
+
+        // ems_container is restful? and thus special :(
+        // FIXME: get rid of detailUrl, use a separate container project controller instead
+        if (match[1] === 'ems_container') {
+          url = controller.dataUrl;
+        }
+
+        return url + (id && '/' + id);
+      }
+    };
+
+    controller.refresh = function() {
+      var url = controller.parseUrl($location.absUrl());
+
+      $http.get(url)
+        .then(controller.getTopologyData ? controller.getTopologyData : getTopologyData)
+        .catch(miqService.handleFailure);
+    };
+
+    listenToRx(function(event) {
+      if (event.name === 'refreshTopology') {
+        controller.refresh();
       }
     });
-    $scope.resetSearch = resetEvent;
   };
-});
+
+  this.mixinGetIcon = function(controller) {
+    controller.getIcon = function(d) {
+      switch (d.item.kind) {
+        case 'CloudManager':
+        case 'InfraManager':
+        case 'PhysicalInfraManager':
+          return controller.icons[d.item.display_kind];
+        default:
+          return controller.icons[d.item.kind];
+      }
+    };
+  };
+}]);

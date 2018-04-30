@@ -12,7 +12,7 @@
   * For success functuon @see ToolbarController#onRowSelect()
   */
   function subscribeToSubject() {
-    ManageIQ.angular.rxSubject.subscribe(function(event) {
+    listenToRx(function(event) {
       if (event.eventType === 'updateToolbarCount') {
         this.MiQToolbarSettingsService.setCount(event.countSelected);
       } else if (event.rowSelect) {
@@ -126,7 +126,9 @@
           }
 
           sendDataWithRx({toolbarEvent: 'itemClicked'});
-          miqToolbarOnClick.bind($event.delegateTarget)($event);
+          Promise.resolve(miqToolbarOnClick.bind($event.delegateTarget)($event)).then(function(data) {
+            sendDataWithRx({type: 'TOOLBAR_CLICK_FINISH', payload: data});
+          });
         };
       })
       .value();

@@ -61,7 +61,6 @@ class ApplicationController < ActionController::Base
   include_concern 'Explorer'
   include_concern 'Filter'
   include_concern 'MiqRequestMethods'
-  include_concern 'Network'
   include_concern 'Performance'
   include_concern 'PolicySupport'
   include_concern 'ReportDownloads'
@@ -93,99 +92,99 @@ class ApplicationController < ActionController::Base
   # Default UI settings
   DEFAULT_SETTINGS = {
     :quadicons => { # Show quad icons, by resource type
-      :service         => true,
-      :ems             => true,
-      :ems_cloud       => true,
-      :host            => true,
-      :miq_template    => true,
-      :physical_server => true,
-      :storage         => true,
-      :vm              => true,
-      :ems_container   => true
+      :service            => true,
+      :ems                => true,
+      :ems_cloud          => true,
+      :ems_physical_infra => true,
+      :ems_network        => true,
+      :host               => true,
+      :miq_template       => true,
+      :physical_server    => true,
+      :storage            => true,
+      :vm                 => true,
+      :ems_container      => true
     },
     :views     => { # List view setting, by resource type
-      :authkeypaircloud                         => "list",
-      :availabilityzone                         => "list",
-      :hostaggregate                            => "list",
-      :catalog                                  => "list",
-      :cm_providers                             => "list",
-      :cm_configured_systems                    => "list",
-      :compare                                  => "expanded",
-      :compare_mode                             => "details",
-      :condition                                => "list",
-      :container                                => "list",
-      :containergroup                           => "list",
-      :containernode                            => "list",
-      :containerservice                         => "list",
-      :containerroute                           => "list",
-      :containerproject                         => "list",
-      :containerreplicator                      => "list",
-      :containerimage                           => "list",
-      :containerimageregistry                   => "list",
-      :persistentvolume                         => "list",
-      :containerbuild                           => "list",
-      :containertemplate                        => "list",
-      :cloudobjectstorecontainer                => "list",
-      :cloudobjectstoreobject                   => "list",
-      :cloudtenant                              => "list",
-      :cloudvolume                              => "list",
-      :cloudvolumebackup                        => "list",
-      :cloudvolumesnapshot                      => "list",
-      :drift                                    => "expanded",
-      :drift_mode                               => "details",
-      :emscluster                               => "grid",
-      :emscontainer                             => "grid",
-      :filesystem                               => "list",
-      :flavor                                   => "list",
-      :host                                     => "grid",
-      :job                                      => "list",
-      :manageiq_providers_cloudmanager          => "grid",
-      :manageiq_providers_cloudmanager_template => "list",
-      :manageiq_providers_cloudmanager_vm       => "grid",
-      :manageiq_providers_containermanager      => "grid",
-      :manageiq_providers_inframanager          => "grid",
-      :manageiq_providers_inframanager_vm       => "grid",
-      :manageiq_providers_inframanager_template => "list",
-      :manageiq_providers_middlewaremanager     => "grid",
-      :manageiq_providers_physicalinframanager  => "list",
-      :manageiq_providers_storagemanager        => "list",
-      :middlewaredatasource                     => "list",
-      :middlewaredeployment                     => "list",
-      :middlewaredomain                         => "list",
-      :middlewaremessaging                      => "list",
-      :middlewareserver                         => "list",
-      :middlewareservergroup                    => "list",
-      :miqaction                                => "list",
-      :miqaeclass                               => "list",
-      :miqaeinstance                            => "list",
-      :miqevent                                 => "list",
-      :miqpolicy                                => "list",
-      :miqpolicyset                             => "list",
-      :miqreportresult                          => "list",
-      :miqrequest                               => "list",
-      :miqtemplate                              => "list",
-      :orchestrationstack                       => "list",
-      :orchestrationtemplate                    => "list",
-      :servicetemplate                          => "list",
-      :storagemanager                           => "list",
-      :miqtask                                  => "list",
-      :ms                                       => "grid",
-      :physicalserver                           => "list",
-      :policy                                   => "list",
-      :policyset                                => "grid",
-      :resourcepool                             => "grid",
-      :service                                  => "grid",
-      :scanhistory                              => "list",
-      :storage_files                            => "list",
-      :summary_mode                             => "dashboard",
-      :registryitems                            => "list",
-      :serverbuild                              => "list",
-      :storage                                  => "grid",
-      :tagging                                  => "grid",
-      :treesize                                 => "20",
-      :vm                                       => "grid",
-      :vmortemplate                             => "grid",
-      :vmcompare                                => "compressed"
+      :authkeypaircloud                                                       => "list",
+      :availabilityzone                                                       => "list",
+      :hostaggregate                                                          => "list",
+      :catalog                                                                => "list",
+      :cm_providers                                                           => "list",
+      :cm_configured_systems                                                  => "list",
+      :cm_configuration_profiles                                              => "list",
+      :compare                                                                => "expanded",
+      :compare_mode                                                           => "details",
+      :condition                                                              => "list",
+      :container                                                              => "list",
+      :containergroup                                                         => "list",
+      :containernode                                                          => "list",
+      :containerservice                                                       => "list",
+      :containerroute                                                         => "list",
+      :containerproject                                                       => "list",
+      :containerreplicator                                                    => "list",
+      :containerimage                                                         => "list",
+      :containerimageregistry                                                 => "list",
+      :persistentvolume                                                       => "list",
+      :containerbuild                                                         => "list",
+      :containertemplate                                                      => "list",
+      :cloudobjectstorecontainer                                              => "list",
+      :cloudobjectstoreobject                                                 => "list",
+      :cloudtenant                                                            => "list",
+      :cloudvolume                                                            => "list",
+      :cloudvolumebackup                                                      => "list",
+      :cloudvolumesnapshot                                                    => "list",
+      :drift                                                                  => "expanded",
+      :drift_mode                                                             => "details",
+      :emscluster                                                             => "grid",
+      :emscontainer                                                           => "grid",
+      :filesystem                                                             => "list",
+      :guestdevice                                                            => "list",
+      :flavor                                                                 => "list",
+      :host                                                                   => "grid",
+      :job                                                                    => "list",
+      :manageiq_providers_cloudmanager                                        => "grid",
+      :manageiq_providers_cloudmanager_template                               => "list",
+      :manageiq_providers_cloudmanager_vm                                     => "grid",
+      :manageiq_providers_containermanager                                    => "grid",
+      :manageiq_providers_embeddedansible_automationmanager_playbook          => "list",
+      :manageiq_providers_embeddedautomationmanager_authentication            => "list",
+      :manageiq_providers_embeddedautomationmanager_configurationscriptsource => "list",
+      :manageiq_providers_inframanager                                        => "grid",
+      :manageiq_providers_inframanager_vm                                     => "grid",
+      :manageiq_providers_inframanager_template                               => "list",
+      :manageiq_providers_physicalinframanager                                => "list",
+      :manageiq_providers_storagemanager                                      => "list",
+      :miqaction                                                              => "list",
+      :miqaeclass                                                             => "list",
+      :miqaeinstance                                                          => "list",
+      :miqevent                                                               => "list",
+      :miqpolicy                                                              => "list",
+      :miqpolicyset                                                           => "list",
+      :miqreportresult                                                        => "list",
+      :miqrequest                                                             => "list",
+      :miqtemplate                                                            => "list",
+      :orchestrationstack                                                     => "list",
+      :orchestrationtemplate                                                  => "list",
+      :servicetemplate                                                        => "list",
+      :storagemanager                                                         => "list",
+      :miqtask                                                                => "list",
+      :ms                                                                     => "grid",
+      :physicalserver                                                         => "list",
+      :policy                                                                 => "list",
+      :policyset                                                              => "grid",
+      :resourcepool                                                           => "grid",
+      :service                                                                => "grid",
+      :scanhistory                                                            => "list",
+      :storage_files                                                          => "list",
+      :summary_mode                                                           => "dashboard",
+      :registryitems                                                          => "list",
+      :serverbuild                                                            => "list",
+      :storage                                                                => "grid",
+      :tagging                                                                => "grid",
+      :treesize                                                               => "20",
+      :vm                                                                     => "grid",
+      :vmortemplate                                                           => "grid",
+      :vmcompare                                                              => "compressed"
     },
     :perpage   => { # Items per page, by view setting
       :grid    => 20,
@@ -354,26 +353,6 @@ class ApplicationController < ActionController::Base
     render Charting.render_format => rpt.chart
   end
 
-  # Method for creating object with data for report.
-  # Report is either grid/table or list.
-  # @param controller_name name of JS controller. Typically `reportDataController`.
-  def init_report_data(controller_name)
-    view_url = view_to_url(@view) unless @view.nil?
-    {
-      :controller_name => controller_name,
-      :data            => {
-        :model_name => @display.nil? && !self.class.model.nil? ? self.class.model.to_s.tableize : @display,
-        :activeTree => x_active_tree.to_s,
-        :gtlType    => @gtl_type,
-        :parentId   => params[:id],
-        :sortColIdx => @sortcol,
-        :sortDir    => @sortdir,
-        :isExplorer => @explorer,
-        :showUrl    => view_url
-      }
-    }
-  end
-
   # Private method for processing params.
   # params can contain these options:
   # @param params parameters object.
@@ -399,8 +378,6 @@ class ApplicationController < ActionController::Base
     # handle exceptions
     if params[:model_name]
       options = case params[:model_name]
-                when 'MiqRequest'
-                  page_display_options
                 when 'miq_tasks'
                   jobs_info
                 when 'physical_servers_with_host'
@@ -411,7 +388,7 @@ class ApplicationController < ActionController::Base
     end
 
     if params[:parent_id]
-      parent_id = from_cid(params[:parent_id])
+      parent_id = params[:parent_id]
       unless parent_id.nil?
         options[:parent] = identify_record(parent_id, controller_to_model) if parent_id && options[:parent].nil?
       end
@@ -517,7 +494,7 @@ class ApplicationController < ActionController::Base
     params[:display] = "event_logs"
     if !params[:show].nil? || !params[:x_show].nil?
       id = params[:show] ? params[:show] : params[:x_show]
-      @item = @record.event_logs.find(from_cid(id))
+      @item = @record.event_logs.find(id)
       drop_breadcrumb(:name => @record.name + " (#{bc_text})", :url => "/#{obj}/event_logs/#{@record.id}?page=#{@current_page}")
       drop_breadcrumb(:name => @item.name, :url => "/#{obj}/show/#{@record.id}?show=#{@item.id}")
       show_item
@@ -530,7 +507,6 @@ class ApplicationController < ActionController::Base
 
   # Common method to show a standalone report
   def report_only
-    @report_only = true # Indicate stand alone report for views
     # Render error message if report doesn't exist
     if params[:rr_id].nil? && @sb.fetch_path(:pages, :rr_id).nil?
       add_flash(_("This report isn't generated yet. It cannot be rendered."), :error)
@@ -548,7 +524,8 @@ class ApplicationController < ActionController::Base
     @html     = report_build_html_table(rr.report_results, rr.html_rows.join)
     @ght_type = params[:type] || (@report.graph.blank? ? 'tabular' : 'hybrid')
     @render_chart = (@ght_type == 'hybrid')
-    render 'shared/show_report'
+    # Indicate stand alone report for views
+    render 'shared/show_report', :layout => 'report_only'
   end
 
   def show_statistics
@@ -679,14 +656,14 @@ class ApplicationController < ActionController::Base
           # show this as selected/expanded node when tree loads
           if inst
             @open_nodes.push("aei-#{inst.id}")
-            @active_node = "aei-#{to_cid(inst.id)}"
+            @active_node = "aei-#{inst.id}"
           end
         elsif i == nodes.length - 2
           @cls = MiqAeClass.find_by(:namespace_id => @ns.id, :name => nodes[i])
-          @open_nodes.push("aec-#{to_cid(@cls.id)}") if @cls
+          @open_nodes.push("aec-#{@cls.id}") if @cls
         else
           @ns = MiqAeNamespace.find_by(:name => nodes[i])
-          @open_nodes.push("aen-#{to_cid(@ns.id)}") if @ns
+          @open_nodes.push("aen-#{@ns.id}") if @ns
         end
       end
     end
@@ -845,8 +822,7 @@ class ApplicationController < ActionController::Base
   end
 
   def report_edit_aborted(lastaction)
-    add_flash(_("Edit aborted!  %{product} does not support the browser's back button or access from multiple tabs or windows of the same browser.  Please close any duplicate sessions before proceeding.") % {:product => Vmdb::Appliance.PRODUCT_NAME}, :error)
-    session[:flash_msgs] = @flash_array.dup
+    flash_to_session(_("Edit aborted!  %{product} does not support the browser's back button or access from multiple tabs or windows of the same browser.  Please close any duplicate sessions before proceeding.") % {:product => Vmdb::Appliance.PRODUCT_NAME}, :error)
     if request.xml_http_request? # Is this an Ajax request?
       if lastaction == "configuration"
         edit
@@ -916,32 +892,10 @@ class ApplicationController < ActionController::Base
     session[:user_tz] = Time.zone = (user ? user.get_timezone : server_timezone)
   end
 
-  # Initialize the options for server selection
-  def init_server_options(show_all = true)
-    @server_options ||= {}
-    @server_options[:zones] = []
-    @server_options[:zone_servers] = {}
-    MiqServer.all.each do |ms|
-      next if !show_all && !ms.started? # Collect all or only started servers
-
-      if ms.id == MiqServer.my_server.id # This is the current server
-        @server_options[:server_id] ||= ms.id
-        next # Don't add to list
-      end
-      @server_options[:zones].push(ms.my_zone) unless @server_options[:zones].include?(ms.my_zone)
-      @server_options[:zone_servers][ms.my_zone] ||= []
-      @server_options[:zone_servers][ms.my_zone].push(ms.id)
-    end
-    @server_options[:server_id] ||= MiqServer.my_server.id
-    @server_options[:zone] = MiqServer.find(@server_options[:server_id]).my_zone
-    @server_options[:hostname] = ""
-    @server_options[:ipaddress] = ""
-  end
-
-  def populate_reports_menu(tree_type = 'reports', mode = 'menu')
+  def populate_reports_menu(hide_custom = false)
     # checking to see if group (used to be role) was selected in menu editor tree, or came in from reports/timeline tree calls
     group = !session[:role_choice].blank? ? MiqGroup.find_by(:description => session[:role_choice]) : current_group
-    @sb[:rpt_menu] = get_reports_menu(group, tree_type, mode)
+    @sb[:rpt_menu] = get_reports_menu(hide_custom, group)
   end
 
   def reports_group_title
@@ -955,92 +909,26 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def get_reports_menu(group = current_group, tree_type = "reports", mode = "menu")
-    rptmenu = []
-    reports = []
-    folders = []
-    user = current_user
-    @sb[:grp_title] = reports_group_title
-    data = []
-    if !group.settings || group.settings[:report_menus].blank? || mode == "default"
-      # array of all reports if menu not configured
-      data = MiqReport.for_user(current_user).where(:template_type => "report").order(:rpt_type, :filename, :name)
-      data.where.not(:timeline => nil) if tree_type == "timeline"
-      data.each do |r|
-        r_group = r.rpt_group == "Custom" ? "#{@sb[:grp_title]} - Custom" : r.rpt_group # Get the report group
-        title = r_group.reverse.split('-', 2).collect(&:reverse).collect(&:strip).reverse
-        next if mode == "menu" && title[1] == "Custom"
-        if @temp_title != title[0]
-          @temp_title = title[0]
-          reports = []
-          folders = []
-        end
-
-        if title[1].nil?
-          if title[0] == @temp_title
-            reports.push(r.name) unless reports.include?(r.name)
-            rptmenu.push([title[0], reports]) unless rptmenu.include?([title[0], reports])
-          end
-        else
-          if @temp_title1 != title[1]
-            reports.sort!
-            reports = []
-            @temp_title1 = title[1]
-          end
-          rptmenu.push([title[0], folders]) unless rptmenu.include?([title[0], folders])
-          reports.push(r.name) unless reports.include?(r.name)
-          folders.push([title[1], reports]) unless folders.include?([title[1], reports])
-        end
-      end
-    else
-      # Building custom reports array for super_admin/admin roles, it doesnt show up on menu if their menu was set which didnt contain custom folder in it
-      temp = []
-      subfolder = %w(Custom)
-      @custom_folder = [@sb[:grp_title]]
-      @custom_folder.push([subfolder]) unless @custom_folder.include?([subfolder])
-
-      custom = MiqReport.for_user(current_user).sort_by { |r| [r.rpt_type, r.filename.to_s, r.name] }
-      rep = custom.select do |r|
-        r.rpt_type == "Custom" && (user.admin_user? || r.miq_group_id.to_i == current_group.try(:id))
-      end.map(&:name).uniq
-
-      subfolder.push(rep) unless subfolder.include?(rep)
-      temp.push(@custom_folder) unless temp.include?(@custom_folder)
-      if tree_type == "timeline"
-        temp2 = []
-        group.settings[:report_menus].each do |menu|
-          folder_arr = []
-          menu_name = menu[0]
-          menu[1].each_with_index do |mreports, _i|
-            reports_arr = []
-            folder_name = mreports[0]
-            mreports[1].each do |rpt|
-              r = MiqReport.find_by(:name => rpt)
-              next if r.nil? || r.timeline.nil?
-
-              temp2.push([menu_name, folder_arr]) unless temp2.include?([menu_name, folder_arr])
-              reports_arr.push(rpt) unless reports_arr.include?(rpt)
-              folder_arr.push([folder_name, reports_arr]) unless folder_arr.include?([folder_name, reports_arr])
-            end
-          end
-        end
-      else
-        temp2 = group.settings[:report_menus]
-      end
-      # don't add custom reports to rptmenu when building tree for menu editor form
-      rptmenu = mode == "menu" ? temp2 : temp.concat(temp2)
+  def default_reports_menu
+    # TODO: move this into a named scope
+    data = MiqReport.for_user(current_user).where(:template_type => "report").where.not(:rpt_type => 'Custom').order(:rpt_type, :name).pluck(:rpt_group, :name)
+    data.map { |grp, items| [grp.split(/ *- */), items].flatten }.group_by(&:first).map do |grp, items|
+      # Group the items by the secondary group and throw out the group names from the final items list
+      [grp, items.group_by(&:second).map { |subgroup, subitems| [subgroup, subitems.map(&:third)] }]
     end
-    # move Customs folder as last item in tree
-    rptmenu[0].each do |r|
-      next unless r.class == String && r == @sb[:grp_title]
+  end
 
-      @custom_folder = copy_array(rptmenu[0]) if @custom_folder.nil?
-      # Keeping My Company Reports folder on top of the menu tree only if user is on edit tab, else delete it from tree
-      # only add custom folder if it has any reports
-      rptmenu.push(rptmenu[0]) unless rptmenu[0][1][0][1].empty?
-      rptmenu.delete_at(0)
+  def get_reports_menu(hide_custom = false, group = current_group)
+    reports = group.try(:settings).try(:[], :report_menus) || default_reports_menu
+    # TODO: move this into a named scope
+    unless hide_custom
+      # TODO: move this into a named scope
+      @sb[:grp_title] = reports_group_title
+      custom = MiqReport.for_user(current_user).where(:template_type => "report", :rpt_type => 'Custom').order(:name).pluck(:name, :miq_group_id)
+      custom.select! { |item| item.second.to_i == current_group.try(:id) } unless current_user.admin_user?
+      reports.push([@sb[:grp_title], [[_("Custom"), custom.map(&:first)]]])
     end
-    rptmenu
+    reports
   end
 
   # Calculate controller name from job.target_class used in the Tasks GTL
@@ -1077,6 +965,9 @@ class ApplicationController < ActionController::Base
     end
 
     view.headers.each_with_index do |h, i|
+      col = view.col_order[i]
+      next if view.column_is_hidden?(col)
+
       align = [:fixnum, :integer, :Fixnum, :float].include?(column_type(view.db, view.col_order[i])) ? 'right' : 'left'
 
       root[:head] << {:text    => h,
@@ -1094,17 +985,19 @@ class ApplicationController < ActionController::Base
     view_context.instance_variable_set(:@explorer, @explorer)
     table.data.each do |row|
       target = @targets_hash[row.id] unless row['id'].nil?
-      if fetch_data && defined?(@gtl_type) && @gtl_type != "list"
-        quadicon = view_context.render_quadicon(target) if !target.nil? && type_has_quadicon(target.class.name)
+      if fetch_data && defined?(@gtl_type) && @gtl_type != "list" && !target.nil? && type_has_quadicon(target.class.name)
+        quadicon = view_context.quadicon_hash(target)
       end
+
       new_row = {
-        :id       => list_row_id(row),
-        :long_id  => row['id'].to_s,
-        :cells    => [],
-        :quadicon => quadicon
+        :id      => list_row_id(row),
+        :long_id => row['id'].to_s,
+        :cells   => [],
+        :quad    => quadicon
       }
+
       if defined?(row.data) && defined?(params) && params[:active_tree] != "reports_tree"
-        new_row[:parent_id] = "xx-#{to_cid(row.data['miq_report_id'])}" if row.data['miq_report_id']
+        new_row[:parent_id] = "xx-#{row.data['miq_report_id']}" if row.data['miq_report_id']
       end
       new_row[:parent_id] = "xx-#{CONTENT_TYPE_ID[target[:content_type]]}" if target && target[:content_type]
       new_row[:tree_id] = TreeBuilder.build_node_cid(target) if target
@@ -1126,7 +1019,6 @@ class ApplicationController < ActionController::Base
         image = "100/#{(@listicon || view.db).underscore}.png" if icon.nil? && image.nil? # TODO: we want to get rid of this
         # FIXME: adding exceptions here is a wrong approach
         icon = nil if params[:controller] == 'pxe'
-        icon = nil if params[:model] == 'MiddlewareServer'
         new_row[:cells] << {:title => _('View this item'),
                             :image   => ActionController::Base.helpers.image_path(image.to_s),
                             :picture => ActionController::Base.helpers.image_path(picture.to_s),
@@ -1136,6 +1028,8 @@ class ApplicationController < ActionController::Base
       end
 
       view.col_order.each_with_index do |col, col_idx|
+        next if view.column_is_hidden?(col)
+
         celltext = nil
 
         case view.col_order[col_idx]
@@ -1148,8 +1042,7 @@ class ApplicationController < ActionController::Base
         when "result"
           new_row[:cells] << {:span => result_span_class(row[col]), :text => row[col].titleize}
         when "severity"
-          value = row[col] || ' '
-          new_row[:cells] << {:span => severity_span_class(value), :text => severity_title(value)}
+          new_row[:cells] << {:span => severity_span_class(row[col]), :text => row[col].titleize}
         when 'state'
           celltext = row[col].to_s.titleize
         when 'hardware.bitness'
@@ -1198,14 +1091,6 @@ class ApplicationController < ActionController::Base
       "label label-warning center-block"
     else
       "label label-low-severity center-block"
-    end
-  end
-
-  def severity_title(value)
-    if self.class.instance_of?(MiqPolicyController)
-      self.class::SEVERITIES[value]
-    else
-      value.titleize
     end
   end
 
@@ -1299,7 +1184,7 @@ class ApplicationController < ActionController::Base
   end
 
   def rbac_free_for_custom_button?(task, button_id)
-    task == "custom_button" && CustomButton.find_by(:id => from_cid(button_id))
+    task == "custom_button" && CustomButton.find_by(:id => button_id)
   end
 
   def check_button_rbac
@@ -1320,7 +1205,7 @@ class ApplicationController < ActionController::Base
   end
 
   def check_generic_rbac
-    ident = "#{controller_name}_#{action_name}"
+    ident = "#{controller_name}_#{action_name == 'report_data' ? 'show_list' : action_name}"
     if MiqProductFeature.feature_exists?(ident)
       role_allows?(:feature => ident, :any => true)
     else
@@ -1328,8 +1213,7 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def handle_generic_rbac
-    pass = check_generic_rbac
+  def handle_generic_rbac(pass)
     unless pass
       if request.xml_http_request?
         javascript_redirect :controller => 'dashboard', :action => 'auth_error'
@@ -1350,7 +1234,7 @@ class ApplicationController < ActionController::Base
 
     return if action_name == 'auth_error'
 
-    pass = %w(button x_button).include?(action_name) ? handle_button_rbac : handle_generic_rbac
+    pass = %w(button x_button).include?(action_name) ? handle_button_rbac : handle_generic_rbac(check_generic_rbac)
     $audit_log.failure("Username [#{current_userid}], Role ID [#{current_user.miq_user_role.try(:id)}] attempted to access area [#{controller_name}], type [Action], task [#{action_name}]") unless pass
   end
 
@@ -1441,7 +1325,7 @@ class ApplicationController < ActionController::Base
   def get_view_calculate_gtl_type(db_sym)
     gtl_type = settings(:views, db_sym) unless %w(scanitemset miqschedule pxeserver customizationtemplate).include?(db_sym.to_s)
     gtl_type = 'grid' if ['vm'].include?(db_sym.to_s) && request.parameters[:controller] == 'service'
-    gtl_type = 'grid' if params[:records] && params[:records].kind_of?(Array)
+    gtl_type ||= 'grid' if params[:records] && params[:records].kind_of?(Array)
     gtl_type ||= 'list' # return a sane default
     gtl_type
   end
@@ -1555,7 +1439,7 @@ class ApplicationController < ActionController::Base
     # Set up the list view type (grid/tile/list)
     @settings.store_path(:views, db_sym, params[:type]) if params[:type] # Change the list view type, if it's sent in
 
-    @gtl_type = get_view_calculate_gtl_type(db_sym)
+    @gtl_type = get_view_calculate_gtl_type(db_sym) unless fetch_data
 
     # Get the view for this db or use the existing one in the session
     view = refresh_view ? get_db_view(db.gsub('::', '_'), :association => association, :view_suffix => view_suffix) : session[:view]
@@ -1649,7 +1533,7 @@ class ApplicationController < ActionController::Base
 
       if chart_click.type == "bytag"
         ["\"#{model_downcase.pluralize}\".id IN (?)",
-         data_row["assoc_ids_#{report.extras[:group_by_tags][chart_click.legend_idx]}"][model_downcase.to_sym][:on]]
+         data_row["assoc_ids_#{report.extras[:group_by_tags][chart_click.legend_index]}"][model_downcase.to_sym][:on]]
       else
         ["\"#{model_downcase.pluralize}\".id IN (?)",
          data_row["assoc_ids"][model_downcase.to_sym][chart_click.type.to_sym]]
@@ -1726,8 +1610,6 @@ class ApplicationController < ActionController::Base
       javascript_redirect edit_ems_container_path(params[:id])
     elsif params[:pressed] == "ems_middleware_edit" && params[:id]
       javascript_redirect edit_ems_middleware_path(params[:id])
-    elsif params[:pressed] == "ems_datawarehouse_edit" && params[:id]
-      javascript_redirect edit_ems_datawarehouse_path(params[:id])
     elsif params[:pressed] == "ems_network_edit" && params[:id]
       javascript_redirect edit_ems_network_path(params[:id])
     elsif params[:pressed] == "ems_physical_infra_edit" && params[:id]
@@ -1814,9 +1696,9 @@ class ApplicationController < ActionController::Base
   def build_saved_audit_hash_angular(old_record_attributes, new_record, add)
     name  = new_record.respond_to?(:name) ? new_record.name : new_record.description
     msg   = if add
-              _("[%{name}] Record added (") % {:name => name}
+              "[#{name}] Record added ("
             else
-              _("[%{name}] Record updated (") % {:name => name}
+              "[#{name}] Record updated ("
             end
     event = "#{new_record.class.to_s.downcase}_record_#{add ? "add" : "update"}"
 
@@ -1826,7 +1708,7 @@ class ApplicationController < ActionController::Base
     difference_messages = []
 
     attribute_difference.each do |key, value|
-      difference_messages << _("%{key} changed to %{value}") % {:key => key, :value => value}
+      difference_messages << "#{key} changed to #{value}"
     end
 
     msg = msg + difference_messages.join(", ") + ")"
@@ -2272,6 +2154,8 @@ class ApplicationController < ActionController::Base
       "configuration_manager_provider"
     when "generic_object_definition" # tagging for nested list on the generic object class
       "generic_object"
+    when "ansible_playbook"
+      "embedded_configuration_script_payload"
     else
       controller_name
     end
@@ -2285,7 +2169,7 @@ class ApplicationController < ActionController::Base
   end
 
   def list_row_id(row)
-    to_cid(row['id'])
+    row['id'].to_s
   end
 
   def render_flash_not_applicable_to_model(type, model_type = nil)
@@ -2356,16 +2240,22 @@ class ApplicationController < ActionController::Base
   end
 
   # Build all trees and accordions accoding to features available to the current user.
-  #
-  def build_accordions_and_trees(x_node_to_set = nil)
+
+  def build_accordions_and_trees_only
     # Build the Explorer screen from scratch
     allowed_features = ApplicationController::Feature.allowed_features(features)
     @trees = allowed_features.collect { |feature| feature.build_tree(@sb) }
     @accords = allowed_features.map(&:accord_hash)
+
+    allowed_features
+  end
+
+  def build_accordions_and_trees(x_node_to_set = nil)
+    allowed_features = build_accordions_and_trees_only
     set_active_elements(allowed_features.first, x_node_to_set)
   end
 
   def fetch_name_from_object(klass, id)
-    klass.find_by(:id => from_cid(id)).try(:name)
+    klass.find_by(:id => id).try(:name)
   end
 end

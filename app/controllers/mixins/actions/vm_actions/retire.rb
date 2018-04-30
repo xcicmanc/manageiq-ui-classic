@@ -82,7 +82,7 @@ module Mixins
             if @sb[:explorer]
               replace_right_cell
             else
-              session[:flash_msgs] = @flash_array.dup
+              flash_to_session
               javascript_redirect previous_breadcrumb_url
             end
             return
@@ -93,7 +93,7 @@ module Mixins
           session[:cat] = nil                 # Clear current category
           build_targets_hash(@retireitems)
           @view = get_db_view(kls)              # Instantiate the MIQ Report view object
-          @view.table = MiqFilter.records2table(@retireitems, @view.cols + ['id'])
+          @view.table = ReportFormatter::Converter.records2table(@retireitems, @view.cols + ['id'])
           if @retireitems.length == 1 && !@retireitems[0].retires_on.nil?
             t = @retireitems[0].retires_on                                         # Single VM, set to current time
             w = @retireitems[0].retirement_warn if @retireitems[0].retirement_warn # Single VM, get retirement warn
@@ -129,7 +129,7 @@ module Mixins
             w = params[:retire_warn].to_i
 
             ts = t.strftime("%x %R %Z")
-            flash = n_("Retirement date set to #{ts}", "Retirement dates set to #{ts}", session[:retire_items].length)
+            flash = n_("Retirement date set to %{time}", "Retirement dates set to %{time}", session[:retire_items].length) % {:time => ts}
           end
           kls.retire(session[:retire_items], :date => t, :warn => w) # Call the model to retire the VM(s)
           @sb[:action] = nil

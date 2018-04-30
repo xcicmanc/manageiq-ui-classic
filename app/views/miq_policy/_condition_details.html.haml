@@ -89,7 +89,6 @@
                   "data-miq_check_max_length" => true,
                   "data-miq_observe"          => observe_with_interval)
           - else
-            %h3= _("Notes")
             - if @condition.notes.blank?
               = render :partial => 'layouts/info_msg', :locals => {:message => _("No notes have been entered.")}
             - else
@@ -104,7 +103,7 @@
               %table.table.table-striped.table-bordered.table-hover
                 %tbody
                   - @condition_policies.each do |p|
-                    - id = "xx-#{p.mode.downcase}_xx-#{p.mode.downcase}-#{p.towhat.camelize(:lower)}_p-#{to_cid(p.id)}"
+                    - id = "xx-#{p.mode.downcase}_xx-#{p.mode.downcase}-#{p.towhat.camelize(:lower)}_p-#{p.id}"
                     %tr{:title => _("Click to view Policy"),
                       :onclick => remote_function(:url => "/miq_policy/x_show/#{id}?accord=policy")}
                       %td.table-view-pf-select

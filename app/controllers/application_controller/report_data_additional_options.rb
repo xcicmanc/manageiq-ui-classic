@@ -18,8 +18,13 @@ class ApplicationController
     :embedded,
     :showlinks,
     :policy_sim,
+    :in_a_form,
     :lastaction,
-    :display
+    :display,
+    :gtl_type,
+    :supported_features_filter,
+    :clickable,
+    :no_checkboxes,
   ) do
     def self.from_options(options)
       additional_options = new
@@ -32,6 +37,8 @@ class ApplicationController
       additional_options.association = options[:association]
       additional_options.view_suffix = options[:view_suffix]
       additional_options.parent_method = options[:parent_method]
+      additional_options.supported_features_filter = options[:supported_features_filter]
+      additional_options.clickable = options[:clickable]
       additional_options
     end
 
@@ -41,11 +48,16 @@ class ApplicationController
       self.showlinks  = options[:showlinks]
       self.policy_sim = options[:policy_sim]
       self.lastaction = options[:lastaction]
+      self.in_a_form  = options[:in_a_form]
       self.display    = options[:display]
     end
 
     def with_row_button(row_button)
       self.row_button = row_button
+    end
+
+    def with_gtl_type(gtl_type)
+      self.gtl_type = gtl_type
     end
 
     def with_menu_click(menu_click)
@@ -58,6 +70,10 @@ class ApplicationController
 
     def with_model(curr_model)
       self.model = curr_model.kind_of?(String) ? curr_model : curr_model.name
+    end
+
+    def with_no_checkboxes(no_checkboxes)
+      self.no_checkboxes = no_checkboxes
     end
   end
 end

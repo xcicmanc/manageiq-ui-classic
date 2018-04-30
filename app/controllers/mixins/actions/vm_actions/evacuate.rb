@@ -12,7 +12,7 @@ module Mixins
           @evacuate_items = find_records_with_rbac(VmOrTemplate, session[:evacuate_items]).sort_by(&:name)
           build_targets_hash(@evacuate_items)
           @view = get_db_view(VmOrTemplate)
-          @view.table = MiqFilter.records2table(@evacuate_items, @view.cols + ['id'])
+          @view.table = ReportFormatter::Converter.records2table(@evacuate_items, @view.cols + ['id'])
 
           render :action => "show" unless @explorer
         end
@@ -42,7 +42,7 @@ module Mixins
           if @sb[:explorer]
             replace_right_cell
           else
-            session[:flash_msgs] = @flash_array.dup
+            flash_to_session
             javascript_redirect previous_breadcrumb_url
           end
         end
@@ -76,9 +76,9 @@ module Mixins
           @evacuate_items.each do |vm|
             if vm.supports_evacuate?
               options = {
-                :hostname          => params['auto_select_host']  == 'on' ? nil : params['destination_host'],
-                :on_shared_storage => params['on_shared_storage'] == 'on',
-                :admin_password    => params['on_shared_storage'] == 'on' ? nil : params['admin_password']
+                :hostname          => params['auto_select_host']  == 'true' ? nil : params['destination_host'],
+                :on_shared_storage => params['on_shared_storage'] == 'true',
+                :admin_password    => params['on_shared_storage'] == 'true' ? nil : params['admin_password']
               }
               task_id = vm.class.evacuate_queue(session[:userid], vm, options)
               add_flash(_("Instance evacuation task failed."), :error) unless task_id.kind_of?(Integer)

@@ -1,6 +1,4 @@
 describe EmsInfraController do
-  include CompressedIds
-
   let!(:server) { EvmSpecHelper.local_miq_server(:zone => zone) }
   let(:zone) { FactoryGirl.build(:zone) }
   context "#button" do
@@ -13,8 +11,10 @@ describe EmsInfraController do
 
     it "EmsInfra check compliance is called when Compliance is pressed" do
       ems_infra = FactoryGirl.create(:ems_vmware)
-      expect(controller).to receive(:check_compliance)
+      expect(controller).to receive(:check_compliance).and_call_original
       post :button, :params => {:pressed => "ems_infra_check_compliance", :format => :js, :id => ems_infra.id}
+      expect(controller.send(:flash_errors?)).not_to be_truthy
+      expect(assigns(:flash_array).first[:message]).to include('Check Compliance successfully initiated')
     end
 
     it "when VM Right Size Recommendations is pressed" do
@@ -74,7 +74,7 @@ describe EmsInfraController do
       allow(controller).to receive(:find_records_with_rbac) { [vm] }
       post :button, :params => { :pressed => "vm_right_size", :id => ems_infra.id, :display => 'vms', "check_#{vm.id}" => '1' }
       expect(controller.send(:flash_errors?)).not_to be_truthy
-      expect(response.body).to include("/vm/right_size/#{ApplicationRecord.uncompress_id(vm.id)}")
+      expect(response.body).to include("/vm/right_size/#{vm.id}")
     end
 
     it "when Host Analyze then Check Compliance is pressed" do
@@ -84,10 +84,10 @@ describe EmsInfraController do
       expect(controller.send(:flash_errors?)).not_to be_truthy
     end
 
-    it "when vm_transform is pressed" do
+    it "when vm_transform_mass is pressed" do
       ems_infra = FactoryGirl.create(:ems_vmware)
-      expect(controller).to receive(:vm_transform)
-      post :button, :params => {:pressed => "vm_transform", :id => ems_infra.id, :format => :js}
+      expect(controller).to receive(:vm_transform_mass)
+      post :button, :params => {:pressed => "vm_transform_mass", :id => ems_infra.id, :format => :js}
       expect(controller.send(:flash_errors?)).not_to be_truthy
     end
   end
@@ -146,7 +146,7 @@ describe EmsInfraController do
       expect(controller.send(:flash_errors?)).to be_falsey
       expect(response.body).to include("redirected")
       expect(response.body).to include("ems_infra")
-      expect(response.body).to include("1+to+2")
+      expect(session[:flash_msgs]).to match [a_hash_including(:message => "Scaling compute-1::count from 1 to 2 ", :level => :success)]
     end
 
     it "when no orchestration stack is available" do
@@ -204,7 +204,7 @@ describe EmsInfraController do
       expect(controller.send(:flash_errors?)).to be_falsey
       expect(response.body).to include("redirected")
       expect(response.body).to include("ems_infra")
-      expect(response.body).to include("down+to+1")
+      expect(session[:flash_msgs]).to match [a_hash_including(:message => " Scaling down to 1 compute nodes", :level => :success)]
     end
 
     it "when no orchestration stack is available" do
@@ -281,6 +281,11 @@ describe EmsInfraController do
     context "display=timeline" do
       let(:url_params) { {:display => 'timeline'} }
       it { is_expected.to have_http_status 200 }
+
+      it 'timeline toolbar is selected' do
+        expect(ApplicationHelper::Toolbar::TimelineCenter).to receive(:definition)
+        subject
+      end
     end
 
     context "render listnav partial" do
@@ -311,7 +316,7 @@ describe EmsInfraController do
       datastore.parent = @ems
       controller.instance_variable_set(:@_orig_action, "x_history")
       get :show, :params => {:id => @ems.id, :display => 'storages'}
-      post :button, :params => {:id => @ems.id, :display => 'storages', :miq_grid_checks => to_cid(datastore.id), :pressed => "storage_tag", :format => :js}
+      post :button, :params => {:id => @ems.id, :display => 'storages', :miq_grid_checks => datastore.id, :pressed => "storage_tag", :format => :js}
       expect(response.status).to eq(200)
       _breadcrumbs = controller.instance_variable_get(:@breadcrumbs)
       expect(assigns(:breadcrumbs)).to eq([{:name => "#{@ems.name} (All Datastores)",
@@ -354,7 +359,7 @@ describe EmsInfraController do
     end
     context "when previous breadcrumbs path contained 'Cloud Providers'" do
       it "shows 'Infrastructure Providers -> (Summary)' breadcrumb path" do
-        ems = FactoryGirl.create("ems_vmware")
+        ems = FactoryGirl.create(:ems_vmware)
         get :show, :params => { :id => ems.id }
         breadcrumbs = controller.instance_variable_get(:@breadcrumbs)
         expect(breadcrumbs).to eq([{:name => "#{ems.name} (Dashboard)", :url => "/ems_infra/#{ems.id}"}])
@@ -661,7 +666,7 @@ describe EmsInfraController do
         create
         rhevm = ManageIQ::Providers::Redhat::InfraManager.where(:name => "foo_rhevm").first
 
-        updated_metrics_params = { "default_hostname"      => "host_rhevm",
+        updated_metrics_params = { "default_hostname"      => "default.hostname.example.com",
                                    "metrics_hostname"      => "foo_metrics.com",
                                    "metrics_api_port"      => "5672",
                                    "metrics_userid"        => "metrics_foo",
@@ -685,6 +690,83 @@ describe EmsInfraController do
                 hash_including(:save => false, :database => creation_params["metrics_database_name"]))
         post :update, creation_params.merge(:button => "validate", :cred_type => "metrics", :id => rhevm.id)
       end
+    end
+  end
+
+  describe "Kubevirt - update" do
+    before do
+      allow(controller).to receive(:check_privileges).and_return(true)
+      allow(controller).to receive(:assert_privileges).and_return(true)
+      login_as FactoryGirl.create(:user, :features => "ems_infra_new")
+    end
+
+    render_views
+
+    it 'creates ems container with virtualization endpoint on post' do
+      expect do
+        post :create, :params => {
+          "button"                     => "add",
+          "cred_type"                  => "kubevirt",
+          "name"                       => "openshift_with_kubevirt",
+          "emstype"                    => "openshift",
+          "zone"                       => 'default',
+          "default_security_protocol"  => "ssl-without-validation",
+          "default_hostname"           => "server.example.com",
+          "default_api_port"           => "5000",
+          "default_userid"             => "",
+          "default_password"           => "",
+          "provider_region"            => "",
+          "virtualization_selection"   => "kubevirt",
+          "kubevirt_security_protocol" => "ssl-without-validation",
+          "kubevirt_hostname"          => "server.example.com",
+          "kubevirt_api_port"          => "5000",
+        }
+      end.to change { ManageIQ::Providers::Kubevirt::InfraManager.count }.by(1)
+    end
+
+    it 'creates and updates an authentication record on post' do
+      expect do
+        post :create, :params => {
+          "button"                     => "add",
+          "cred_type"                  => "kubevirt",
+          "name"                       => "openshift_with_kubevirt",
+          "emstype"                    => "openshift",
+          "zone"                       => 'default',
+          "default_security_protocol"  => "ssl-without-validation",
+          "default_hostname"           => "server.example.com",
+          "default_api_port"           => "5000",
+          "default_userid"             => "",
+          "default_password"           => "",
+          "provider_region"            => "",
+          "virtualization_selection"   => "kubevirt",
+          "kubevirt_security_protocol" => "ssl-without-validation",
+          "kubevirt_hostname"          => "server.example.com",
+          "kubevirt_api_port"          => "5000",
+          "kubevirt_password"          => "[FILTERED]"
+        }
+      end.to change { ManageIQ::Providers::Kubevirt::InfraManager.count }.by(1)
+
+      expect(response.status).to eq(200)
+      kubevirt = ManageIQ::Providers::Kubevirt::InfraManager.where(:name => "openshift_with_kubevirt Virtualization Manager").first
+      expect(kubevirt.authentications.size).to eq(2)
+      expect(kubevirt.authentication_token(:kubevirt)).to eq('[FILTERED]')
+
+      expect do
+        post :update, :params => {
+          "id"                => kubevirt.id,
+          "button"            => "save",
+          "name"              => "foo_kubevirt_name_changed",
+          "emstype"           => "kubevirt",
+          "cred_type"         => "kubevirt",
+          "kubevirt_password" => "XXXXXX",
+        }
+      end.not_to change { Authentication.count }
+
+      expect(response.status).to eq(200)
+
+      kubevirt.reload
+      expect(kubevirt.name).to eq('foo_kubevirt_name_changed')
+      expect(kubevirt.authentication_token(:kubevirt)).to eq('XXXXXX')
     end
   end
 

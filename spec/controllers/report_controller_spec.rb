@@ -724,23 +724,14 @@ describe ReportController do
     context "no schedules selected" do
       before do
         allow(controller).to receive(:find_checked_items).and_return([])
-        expect(controller).to receive(:render)
-        expect(controller).to receive(:schedule_get_all)
-        expect(controller).to receive(:replace_right_cell)
       end
 
       it "#miq_report_schedule_enable" do
-        controller.miq_report_schedule_enable
-        flash_messages = assigns(:flash_array)
-        expect(flash_messages.first[:message]).to eq("No Report Schedules were selected to be enabled")
-        expect(flash_messages.first[:level]).to eq(:error)
+        expect { controller.miq_report_schedule_enable }.to raise_error("Can't access records without an id")
       end
 
       it "#miq_report_schedule_disable" do
-        controller.miq_report_schedule_disable
-        flash_messages = assigns(:flash_array)
-        expect(flash_messages.first[:message]).to eq("No Report Schedules were selected to be disabled")
-        expect(flash_messages.first[:level]).to eq(:error)
+        expect { controller.miq_report_schedule_disable }.to raise_error("Can't access records without an id")
       end
     end
 
@@ -950,7 +941,7 @@ describe ReportController do
       end
 
       context "when the widget importer does not raise an error" do
-        let(:ret) { FactoryGirl.build_stubbed(:import_file_upload, :id => '123') }
+        let(:ret) { FactoryGirl.build(:import_file_upload, :id => '123') }
 
         before do
           allow(ret).to receive(:widget_list).and_return([])
@@ -1269,7 +1260,7 @@ describe ReportController do
       before do
         stub_user(:features => :all)
 
-        seed_session_trees('report', :reports_tree, "xx-0_xx-0-1_rep-#{controller.to_cid(rpt.id)}")
+        seed_session_trees('report', :reports_tree, "xx-0_xx-0-1_rep-#{rpt.id}")
         session[:sandboxes]["report"][:rep_tree_build_time] = rpt.created_on
         session[:sandboxes]["report"][:active_accord] = :reports
       end
@@ -1278,7 +1269,7 @@ describe ReportController do
         expect_any_instance_of(GtlHelper).to receive(:render_gtl).with match_gtl_options(
           :model_name                     => 'MiqReportResult',
           :report_data_additional_options => {
-            :named_scope => [[:with_current_user_groups_and_report, rpt.id]],
+            :named_scope => [[:with_current_user_groups_and_report, rpt.id.to_s]],
             :model       => 'MiqReportResult'
           }
         )
@@ -1327,7 +1318,7 @@ describe ReportController do
 
         it "is allowed to see miq report result for User1(with current group Group2)" do
           report_result_id = @rpt.miq_report_results.first.id
-          controller.instance_variable_set(:@_params, :id => controller.to_cid(report_result_id),
+          controller.instance_variable_set(:@_params, :id => report_result_id,
                                                       :controller => "report", :action => "explorer")
           controller.instance_variable_set(:@sb, :last_savedreports_id => nil)
           allow(controller).to receive(:get_all_reps)
@@ -1341,22 +1332,60 @@ describe ReportController do
     end
   end
 
-  describe "#reports_menu_in_sb" do
+  describe "#populate_reports_menu" do
     let(:user) { FactoryGirl.create(:user_with_group) }
-    subject! { FactoryGirl.create(:miq_report, :rpt_type => "Custom", :miq_group => user.current_group) }
+    let(:sandbox) { {} }
 
     before do
       EvmSpecHelper.local_miq_server
       login_as user
     end
 
-    it "it returns correct name for custom folder" do
-      controller.instance_variable_set(:@_params, :controller => "report", :action => "explorer")
+    it 'sets the sandbox' do
+      controller.instance_variable_set(:@sb, sandbox)
+      expect(controller).to receive(:get_reports_menu).and_return('yay')
+      controller.send(:populate_reports_menu)
+      expect(sandbox[:rpt_menu]).to eq('yay')
+    end
+  end
+
+  describe '#get_reports_menu' do
+    let(:group) { FactoryGirl.create(:miq_group, :settings => settings) }
+    let(:settings) { {:report_menus => []} }
+
+    before do
       controller.instance_variable_set(:@sb, {})
-      allow(controller).to receive(:get_node_info)
-      controller.send(:reports_menu_in_sb)
-      rpt_menu = controller.instance_variable_get(:@sb)[:rpt_menu]
-      expect(rpt_menu.first.first).to eq("#{user.current_tenant.name} (Group): #{user.current_group.name}")
+    end
+
+    context 'custom menus configured' do
+      it 'retrieves the custom menu' do
+        expect(controller).not_to receive(:default_reports_menu)
+        controller.send(:get_reports_menu, true, group)
+      end
+    end
+
+    context 'custom menus not configured' do
+      let(:settings) { nil }
+      it 'returns with the default menu' do
+        expect(controller).to receive(:default_reports_menu)
+        controller.send(:get_reports_menu, true, group)
+      end
+    end
+
+    context 'custom reports included' do
+      let(:user) { FactoryGirl.create(:user_with_group) }
+      let(:menu) { controller.instance_variable_get(:@sb)[:rpt_menu] }
+      subject { controller.send(:get_reports_menu, false, user.current_group) }
+
+      before do
+        EvmSpecHelper.local_miq_server
+        login_as user
+        FactoryGirl.create(:miq_report, :rpt_type => "Custom", :miq_group => user.current_group)
+      end
+
+      it 'returns with the correct name for custom folder' do
+        expect(subject.first.first).to eq("#{user.current_tenant.name} (Group): #{user.current_group.name}")
+      end
     end
   end
 

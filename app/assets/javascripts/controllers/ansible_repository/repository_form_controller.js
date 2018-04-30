@@ -96,14 +96,14 @@ ManageIQ.angular.app.controller('repositoryFormController', ['repositoryId', 'mi
       if (error) {
         message = __('Unable to add Repository ') +  vm.repositoryModel.name + ' .' +  response.results[0].message;
       } else {
-        message = sprintf(__('Add of Repository \"%s\" was successfully initialized.'), vm.repositoryModel.name);
+        message = sprintf(__('Add of Repository \"%s\" was successfully initiated.'), vm.repositoryModel.name);
       }
     } else {
       error = ! response.success;
       if (error) {
         message = __('Unable to edit Repository') +  vm.repositoryModel.name + ' .' +  response.message;
       } else {
-        message = sprintf(__('Edit of Repository \"%s\" was successfully initialized.'), vm.repositoryModel.name);
+        message = sprintf(__('Edit of Repository \"%s\" was successfully initiated.'), vm.repositoryModel.name);
       }
     }
 
@@ -125,6 +125,7 @@ ManageIQ.angular.app.controller('repositoryFormController', ['repositoryId', 'mi
 
   var getManagerResource = function(response) {
     if (!response.resources.length) {
+      vm.repositoryModel.manager_resource = null;
       miqService.miqFlash('error', __('Embedded Ansible Provider not found.'));
     } else {
       vm.repositoryModel.manager_resource = {'href': response.resources[0].href};

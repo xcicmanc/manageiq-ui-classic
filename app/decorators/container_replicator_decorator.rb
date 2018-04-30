@@ -3,7 +3,9 @@ class ContainerReplicatorDecorator < MiqDecorator
     'pficon pficon-replicator'
   end
 
-  def self.fileicon
-    '100/container_replicator.png'
+  def single_quad
+    {
+      :fonticon => fonticon
+    }
   end
 end

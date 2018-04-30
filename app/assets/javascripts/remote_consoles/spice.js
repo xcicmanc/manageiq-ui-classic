@@ -1,5 +1,5 @@
 //= require jquery
-//= require spice-html5-bower
+//= require bower_components/spice-html5-bower/spice-html5-rails
 //= require_tree ../locale
 //= require gettext/all
 
@@ -10,8 +10,6 @@ $(function() {
   if (window.location.port) {
     port = window.location.port;
   }
-
-  $('#ctrlaltdel').click(sendCtrlAltDel);
 
   var spice = new SpiceMainConn({
     uri: (encrypt ? 'wss://' : 'ws://') + host + ':' + port + '/' + $('#remote-console').attr('data-url'),
@@ -28,4 +26,6 @@ $(function() {
       $('#connection-status').text(__('Connected'));
     },
   });
+
+  $('#ctrlaltdel').click(function(){sendCtrlAltDel(spice);});
 });

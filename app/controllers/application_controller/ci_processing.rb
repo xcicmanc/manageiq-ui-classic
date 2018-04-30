@@ -13,13 +13,17 @@ module ApplicationController::CiProcessing
     include Mixins::Actions::VmActions::Resize
     include Mixins::Actions::VmActions::RightSize
     include Mixins::Actions::VmActions::Reconfigure
-    helper_method :supports_reconfigure_disks?
+    helper_method(:supports_reconfigure_disks?)
+    helper_method(:supports_reconfigure_disksize?)
+    helper_method(:supports_reconfigure_network_adapters?)
     include Mixins::Actions::VmActions::PolicySimulation
     include Mixins::Actions::VmActions::Transform
 
     include Mixins::Actions::HostActions::Discover
     include Mixins::Actions::HostActions::Power
     include Mixins::Actions::HostActions::Misc
+
+    include Mixins::Actions::ProviderActions::MassTransform
 
     include Mixins::ExplorerShow
   end
@@ -177,12 +181,10 @@ module ApplicationController::CiProcessing
   # find the record that was chosen
   def identify_record(id, klass = self.class.model)
     begin
-      record = find_record_with_rbac(klass, from_cid(id))
-    rescue ActiveRecord::RecordNotFound
+      record = find_record_with_rbac(klass, id)
     rescue => @bang
       self.x_node = "root" if @explorer
-      add_flash(@bang.message, :error, true)
-      session[:flash_msgs] = @flash_array.dup
+      flash_to_session(@bang.message, :error, true)
     end
     record
   end
@@ -209,7 +211,6 @@ module ApplicationController::CiProcessing
       bc_name += " - " + session["#{self.class.session_key_prefix}_type".to_sym].titleize if session["#{self.class.session_key_prefix}_type".to_sym]
       bc_name += " (filtered)" if @filters && (!@filters[:tags].blank? || !@filters[:cats].blank?)
       action = %w(service vm_cloud vm_infra vm_or_template storage service_template).include?(self.class.table_name) ? "explorer" : "show_list"
-      @breadcrumbs.clear
       drop_breadcrumb(:name => bc_name, :url => "/#{controller_name}/#{action}")
     end
     @layout = session["#{self.class.session_key_prefix}_type".to_sym] if session["#{self.class.session_key_prefix}_type".to_sym]
@@ -272,12 +273,18 @@ module ApplicationController::CiProcessing
 
     # Either a list or coming from a different controller (e.g. from host screen, go to its vms)
     if @lastaction == "show_list" ||
-       !%w(service vm_cloud vm_infra vm miq_template vm_or_template).include?(controller_name)
+       !%w(service vm_cloud vm_infra vm miq_template vm_or_template orchestration_stack).include?(controller_name)
 
       # FIXME: retrieving vms from DB two times
       items = find_checked_ids_with_rbac(klass, task)
 
       vm_button_operation_internal(items, task, display_name) || return
+
+      if task == 'retire_now' && role_allows?(:feature => "miq_request_show_list", :any => true)
+        javascript_redirect(:controller => 'miq_request',
+                            :action     => 'show_list',
+                            :flash_msg  => @flash_array[0][:message])
+      end
 
       # In non-explorer case, render the list (filling in @view).
       if @lastaction == "show_list"
@@ -295,6 +302,12 @@ module ApplicationController::CiProcessing
       end
 
       vm_button_operation_internal(items, task, display_name)
+
+      if task == 'retire_now' && role_allows?(:feature => "miq_request_show_list", :any => true)
+        javascript_redirect(:controller => 'miq_request',
+                            :action     => 'show_list',
+                            :flash_msg  => @flash_array[0][:message])
+      end
 
       # Tells callers to go back to show_list because this item may be gone.
       @single_delete = task == 'destroy' && !flash_errors?
@@ -408,7 +421,6 @@ module ApplicationController::CiProcessing
 
     options = {:ids => objs, :task => task, :userid => session[:userid]}
     options[:snap_selected] = session[:snap_selected] if task == "remove_snapshot" || task == "revert_to_snapshot"
-
     klass.process_tasks(options)
   rescue => err
     add_flash(_("Error during '%{task}': %{error_message}") % {:task => task, :error_message => err.message}, :error)
@@ -460,7 +472,7 @@ module ApplicationController::CiProcessing
     add_flash(_("Error during '%{task}': %{message}") % {:task => task, :message => err.message}, :error)
   else
     add_flash(n_("%{task} initiated for %{count} provider",
-                 "%{task} initiated for %{count} providers)", manager_ids.length) %
+                 "%{task} initiated for %{count} providers", manager_ids.length) %
                 {:task  => task_name(task),
                  :count => manager_ids.length})
   end
@@ -1073,11 +1085,7 @@ module ApplicationController::CiProcessing
     when "instance_add_security_group"      then add_security_group_vms
     when "instance_remove_security_group"   then remove_security_group_vms
     when "vm_transform"                     then vm_transform
+    when "vm_transform_mass"                then vm_transform_mass
     end
-  end
-
-  def owner_changed?(owner)
-    return false if @edit[:new][owner].blank?
-    @edit[:new][owner] != @edit[:current][owner]
   end
 end

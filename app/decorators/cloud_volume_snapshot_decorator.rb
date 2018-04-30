@@ -3,7 +3,9 @@ class CloudVolumeSnapshotDecorator < MiqDecorator
     'fa fa-camera'
   end
 
-  def self.fileicon
-    '100/cloud_volume_snapshot.png'
+  def single_quad
+    {
+      :fonticon => fonticon
+    }
   end
 end

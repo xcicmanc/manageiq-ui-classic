@@ -3,7 +3,9 @@ class AvailabilityZoneDecorator < MiqDecorator
     'pficon pficon-zone'
   end
 
-  def self.fileicon
-    '100/availability_zone.png'
+  def single_quad
+    {
+      :fonticon => fonticon
+    }
   end
 end

@@ -8,7 +8,7 @@ module Mixins
       obj
     end
 
-    def show_association(action, display_name, listicon, method, klass, association = nil, conditions = nil)
+    def show_association(action, display_name, listicon, method, klass, association = nil, scopes = nil)
       params[:display] = klass.name
       # Ajax request means in explorer, or if current explorer is one of the explorer controllers
       @explorer = true if request.xml_http_request? && explorer_controller?
@@ -24,7 +24,7 @@ module Mixins
 
       id = params[:show] ? params[:show] : params[:x_show]
       if id.present?
-        @item = send_nested(@record, method).find(from_cid(id))
+        @item = send_nested(@record, method).find(id)
 
         drop_breadcrumb(:name => "#{@record.name} (#{display_name})",
                         :url  => "/#{controller_name}/#{action}/#{@record.id}?page=#{@current_page}")
@@ -39,7 +39,7 @@ module Mixins
                         :url  => "/#{controller_name}/#{action}/#{@record.id}")
         @listicon = listicon
 
-        show_details(klass, :association => association, :conditions => conditions)
+        show_details(klass, :association => association, :scopes => scopes)
       end
     end
 
@@ -70,7 +70,7 @@ module Mixins
 
       id = params[:show] || params[:x_show]
       if id.present?
-        @item = @record.guest_applications.find(from_cid(id))
+        @item = @record.guest_applications.find(id)
         item_breadcrumbs(breadcrumb_name, 'guest_applications')
         @view = get_db_view(GuestApplication)
         show_item
@@ -95,7 +95,7 @@ module Mixins
       @lastaction = "patches"
       id = params[:show] || params[:x_show]
       if id.present?
-        @item = @record.patches.find(from_cid(id))
+        @item = @record.patches.find(id)
         item_breadcrumbs(_("Patches"), 'patches')
         @view = get_db_view(Patch)
         show_item
@@ -113,7 +113,7 @@ module Mixins
       @lastaction = "groups"
       id = params[:show] || params[:x_show]
       if id.present?
-        @item = @record.groups.find(from_cid(id))
+        @item = @record.groups.find(id)
         item_breadcrumbs(_("Groups"), 'groups')
         @user_names = @item.users
         @view = get_db_view(Account, :association => "groups")
@@ -132,7 +132,7 @@ module Mixins
       @lastaction = "users"
       id = params[:show] || params[:x_show]
       if id.present?
-        @item = @record.users.find(from_cid(id))
+        @item = @record.users.find(id)
         item_breadcrumbs(_("Users"), 'users')
         @group_names = @item.groups
         @view = get_db_view(Account, :association => "users")
@@ -153,7 +153,7 @@ module Mixins
       @lastaction = "hosts"
       id = params[:show] || params[:x_show]
       if id.present?
-        @item = @record.hosts.find(from_cid(id))
+        @item = @record.hosts.find(id)
         item_breadcrumbs(_("Hosts"), 'hosts')
         @view = get_db_view(Host)
         show_item
@@ -189,18 +189,17 @@ module Mixins
     # Build the vm detail gtl view
     def show_details(db, options = {})  # Pass in the db, parent vm is in @vm
       association = options[:association]
-      conditions  = options[:conditions]
+      scopes = options[:scopes]
       # generate the grid/tile/list url to come back here when gtl buttons are pressed
       @gtl_url       = "/#{@db}/#{@listicon.pluralize}/#{@record.id}?"
       @showtype      = "details"
       @display       = "main"
       @no_checkboxes = @no_checkboxes.nil? || @no_checkboxes
       @showlinks     = true
-
       @view, @pages = get_view(db,
                                :parent      => @record,
                                :association => association,
-                               :conditions  => conditions,
+                               :named_scope => scopes,
                                :dbname      => "#{@db}item")  # Get the records into a view & paginator
 
       if @explorer # In explorer?

@@ -214,11 +214,7 @@ module OpsController::Settings::Schedules
             _("The selected Schedules were disabled")
           end
     schedules = find_records_with_rbac(MiqSchedule, checked_or_params)
-    if schedules.empty?
-      add_flash(msg, :error)
-      javascript_flash
-    end
-    schedule_enable_disable(schedules, enable)  unless schedules.empty?
+    schedule_enable_disable(schedules, enable)
     add_flash(msg, :info, true) unless flash_errors?
     schedule_build_list
     settings_get_info("st")
@@ -676,7 +672,7 @@ module OpsController::Settings::Schedules
   end
 
   def schedule_set_start_time_record_vars(schedule)
-    run_at = create_time_in_utc("#{params[:start_date]} #{params[:start_hour]}:#{params[:start_min]}:00",
+    run_at = create_time_in_utc("#{Date.parse(params[:start_date])} #{params[:start_hour]}:#{params[:start_min]}:00",
                                 params[:time_zone])
     schedule.run_at[:start_time] = "#{run_at} Z"
   end

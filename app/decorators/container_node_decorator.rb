@@ -3,7 +3,9 @@ class ContainerNodeDecorator < MiqDecorator
     'pficon pficon-container-node'
   end
 
-  def self.fileicon
-    '100/container_node.png'
+  def single_quad
+    {
+      :fonticon => fonticon
+    }
   end
 end

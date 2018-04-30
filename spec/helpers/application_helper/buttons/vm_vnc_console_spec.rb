@@ -30,8 +30,8 @@ describe ApplicationHelper::Button::VmVncConsole do
 
     context 'when record.vendor == vmware' do
       let(:power_state) { 'on' }
-      let(:ems) { FactoryGirl.create(:ems_vmware, :api_version => api_version) }
-      let(:record) { FactoryGirl.create(:vm_vmware, :ems_id => ems.id) }
+      let(:host) { FactoryGirl.create(:host_vmware_esx, :vmm_version => api_version) }
+      let(:record) { FactoryGirl.create(:vm_vmware, :host => host) }
 
       context 'and vendor api is not supported' do
         let(:api_version) { 6.5 }
@@ -42,6 +42,11 @@ describe ApplicationHelper::Button::VmVncConsole do
 
         it_behaves_like 'vm_console_with_power_state_on_off', "The web-based VNC console is not available because \
 the VM is not powered on"
+      end
+      context 'and Host is nil' do
+        let(:api_version) { 6.4 }
+        let(:host) { nil }
+        it_behaves_like 'a disabled button', 'VNC consoles are unsupported on VMware ESXi 6.5 and later.'
       end
     end
   end

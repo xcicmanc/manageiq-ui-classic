@@ -20,21 +20,27 @@ class NetworkRouterController < ApplicationController
     params[:page] = @current_page unless @current_page.nil? # Save current page for list refresh
 
     @refresh_div = "main_div"
-    return tag("NetworkRouter") if params[:pressed] == "network_router_tag"
-    delete_network_routers if params[:pressed] == 'network_router_delete'
 
-    if params[:pressed] == "network_router_edit"
-      javascript_redirect :action => "edit", :id => checked_item_id
-    elsif params[:pressed] == "network_router_new"
-      javascript_redirect :action => "new"
-    elsif params[:pressed] == "custom_button"
+    case params[:pressed]
+    when "cloud_subnet_tag"
+      return tag("CloudSubnet")
+    when "custom_button"
       custom_buttons
-    elsif params[:pressed] == "network_router_add_interface"
-      javascript_redirect :action => "add_interface_select", :id => checked_item_id
-    elsif params[:pressed] == "network_router_remove_interface"
-      javascript_redirect :action => "remove_interface_select", :id => checked_item_id
-    elsif !flash_errors? && @refresh_div == "main_div" && @lastaction == "show_list"
-      replace_gtl_main_div
+    when "instance_tag"
+      return tag("VmOrTemplate")
+    when "network_router_add_interface"
+      javascript_redirect(:action => "add_interface_select", :id => checked_item_id)
+    when "network_router_delete"
+      delete_network_routers
+      javascript_redirect(previous_breadcrumb_url)
+    when "network_router_edit"
+      javascript_redirect(:action => "edit", :id => checked_item_id)
+    when "network_router_new"
+      javascript_redirect(:action => "new")
+    when "network_router_remove_interface"
+      javascript_redirect(:action => "remove_interface_select", :id => checked_item_id)
+    when "network_router_tag"
+      return tag("NetworkRouter")
     else
       render_flash
     end
@@ -94,11 +100,10 @@ class NetworkRouterController < ApplicationController
   def new
     @router = NetworkRouter.new
     assert_privileges("network_router_new")
+    assert_privileges("ems_network_show_list")
+    assert_privileges("cloud_tenant_show_list")
+
     @in_a_form = true
-    @network_provider_choices = {}
-    network_managers.each do |network_manager|
-      @network_provider_choices[network_manager.name] = network_manager.id
-    end
     drop_breadcrumb(
       :name => _("Add New Network Router"),
       :url  => "/network_router/new"
@@ -144,8 +149,7 @@ class NetworkRouterController < ApplicationController
 
     @breadcrumbs.pop if @breadcrumbs
     session[:edit] = nil
-    session[:flash_msgs] = @flash_array.dup if @flash_array
-
+    flash_to_session
     javascript_redirect :action => "show_list"
   end
 
@@ -182,9 +186,10 @@ class NetworkRouterController < ApplicationController
     elsif @lastaction == "show" && @layout == "network_router"
       @single_delete = true unless flash_errors?
       add_flash(_("The selected Router was deleted")) if @flash_array.nil?
+      flash_to_session
     else
       drop_breadcrumb(:name => 'dummy', :url => " ") # missing a bc to get correctly back so here's a dummy
-      session[:flash_msgs] = @flash_array.dup if @flash_array
+      flash_to_session
       redirect_to(previous_breadcrumb_url)
     end
   end
@@ -195,7 +200,6 @@ class NetworkRouterController < ApplicationController
     @router = find_record_with_rbac(NetworkRouter, params[:id])
     @in_a_form = true
     # needs to be initializes for haml
-    @network_provider_choices = {}
     drop_breadcrumb(
       :name => _("Edit Router \"%{name}\"") % {:name => @router.name},
       :url  => "/network_router/edit/#{@router.id}"
@@ -242,7 +246,7 @@ class NetworkRouterController < ApplicationController
     end
 
     session[:edit] = nil
-    session[:flash_msgs] = @flash_array.dup if @flash_array
+    flash_to_session
     javascript_redirect previous_breadcrumb_url
   end
 
@@ -252,7 +256,7 @@ class NetworkRouterController < ApplicationController
     @in_a_form = true
     @subnet_choices = {}
 
-    (@router.ext_management_system.cloud_subnets - @router.cloud_subnets).each do |subnet|
+    Rbac::Filterer.filtered(@router.ext_management_system.cloud_subnets - @router.cloud_subnets).each do |subnet|
       @subnet_choices[subnet.name] = subnet.id
     end
     if @subnet_choices.empty?
@@ -336,8 +340,7 @@ class NetworkRouterController < ApplicationController
 
     @breadcrumbs.pop if @breadcrumbs
     session[:edit] = nil
-    session[:flash_msgs] = @flash_array.dup if @flash_array
-
+    flash_to_session
     javascript_redirect :action => "show", :id => router_id
   end
 
@@ -431,19 +434,18 @@ class NetworkRouterController < ApplicationController
 
     @breadcrumbs.pop if @breadcrumbs
     session[:edit] = nil
-    session[:flash_msgs] = @flash_array.dup if @flash_array
-
+    flash_to_session
     javascript_redirect :action => "show", :id => router_id
   end
 
   private
 
   def get_networks_by_ems(id)
-    CloudNetwork.where(:ems_id => id).select(:id, :name).as_json
+    Rbac::Filterer.filtered(CloudNetwork.where(:ems_id => id)).select(:id, :name).as_json
   end
 
   def get_subnets_by_network(id)
-    CloudSubnet.where(:cloud_network_id => id).select(:id, :name).as_json
+    Rbac::Filterer.filtered(CloudSubnet.where(:cloud_network_id => id)).select(:id, :name).as_json
   end
 
   def textual_group_list

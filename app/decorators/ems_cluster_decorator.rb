@@ -3,7 +3,9 @@ class EmsClusterDecorator < MiqDecorator
     'pficon pficon-cluster'
   end
 
-  def self.fileicon
-    '100/ems_cluster.png'
+  def single_quad
+    {
+      :fonticon => fonticon
+    }
   end
 end

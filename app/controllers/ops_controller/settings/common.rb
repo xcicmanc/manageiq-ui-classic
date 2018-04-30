@@ -280,7 +280,8 @@ module OpsController::Settings::Common
         :password        => '●●●●●●●●',
         :port            => sub.port,
         :provider_region => sub.provider_region,
-        :backlog         => number_to_human_size(sub.backlog)
+        :backlog         => number_to_human_size(sub.backlog),
+        :status          => sub.status
       }
     end
   end
@@ -434,7 +435,6 @@ module OpsController::Settings::Common
         add_flash(_("Configuration changes saved"))
         @changed = false
       end
-      #     redirect_to :action => 'explorer', :flash_msg=>msg, :flash_error=>err, :no_refresh=>true
       get_node_info(x_node)
       replace_right_cell(:nodetype => @nodetype)
       return
@@ -485,7 +485,8 @@ module OpsController::Settings::Common
         if @sb[:active_tab] == "settings_server"
           replace_right_cell(:nodetype => @nodetype, :replace_trees => [:diagnostics, :settings])
         elsif @sb[:active_tab] == "settings_custom_logos"
-          javascript_redirect :action => 'explorer', :flash_msg => @flash_array[0][:message], :flash_error => @flash_array[0][:level] == :error, :escape => false # redirect to build the server screen
+          flash_to_session
+          javascript_redirect(:action => 'explorer', :escape => false) # redirect to build the server screen
           return
         else
           replace_right_cell(:nodetype => @nodetype)
@@ -588,7 +589,7 @@ module OpsController::Settings::Common
     server_id, child = id.split('__')
 
     if server_id.include?('svr')
-      server_id = from_cid(server_id.sub('svr-', ''))
+      server_id = server_id.sub('svr-', '')
     else
       server_id.sub!('xx-', '')
     end
@@ -674,7 +675,7 @@ module OpsController::Settings::Common
     new = @edit[:new]
 
     # WTF? here we can have a Zone or a MiqServer, what about Region? --> rescue from exception
-    @selected_server = (cls.find(from_cid(nodes.last)) rescue nil)
+    @selected_server = (cls.find(nodes.last) rescue nil)
 
     case @sb[:active_tab]                                               # No @edit[:current].config for Filters since there is no config file
     when 'settings_rhn_edit'
@@ -937,7 +938,7 @@ module OpsController::Settings::Common
       @edit[:current].config[:server][:locale] = "default" if @edit[:current].config[:server][:locale].blank?
       @edit[:current].config[:server][:remote_console_type] ||= "VNC"
       @edit[:current].config[:smtp][:enable_starttls_auto] = GenericMailer.default_for_enable_starttls_auto if @edit[:current].config[:smtp][:enable_starttls_auto].nil?
-      @edit[:current].config[:smtp][:openssl_verify_mode] ||= nil
+      @edit[:current].config[:smtp][:openssl_verify_mode] ||= "none"
       @edit[:current].config[:ntp] ||= {}
       @in_a_form = true
     when "settings_authentication"        # Authentication tab
@@ -1108,8 +1109,9 @@ module OpsController::Settings::Common
     nodes = nodetype.downcase.split("-")
     case nodes[0]
     when "root"
-      @right_cell_text = _("Settings Region \"%{name}\"") %
-                         {:name => "#{MiqRegion.my_region.description} [#{MiqRegion.my_region.region}]"}
+      @right_cell_text = _("%{product} Region \"%{name}\"") %
+                         {:name    => "#{MiqRegion.my_region.description} [#{MiqRegion.my_region.region}]",
+                          :product => Vmdb::Appliance.PRODUCT_NAME}
       case @sb[:active_tab]
       when "settings_details"
         settings_set_view_vars
@@ -1175,38 +1177,26 @@ module OpsController::Settings::Common
       when "msc"
         @right_cell_text = _("Settings Schedules")
         schedules_list
-      when "l"
-        @right_cell_text = _("Settings LDAP Regions")
-        ldap_regions_list
       end
     when "svr"
       # @sb[:tabform] = "operations_1" if @sb[:selected_server] && @sb[:selected_server].id != nodetype.downcase.split("-").last.to_i #reset tab if server node was changed, current server has 10 tabs, current active tab may not be available for other server nodes.
-      #     @sb[:selected_server] = MiqServer.find(from_cid(nodetype.downcase.split("-").last))
-      @selected_server = MiqServer.find(from_cid(nodes.last))
+      #     @sb[:selected_server] = MiqServer.find(nodetype.downcase.split("-").last)
+      @selected_server = MiqServer.find(nodes.last)
       @sb[:selected_server_id] = @selected_server.id
       settings_set_form_vars
     when "msc"
-      @record = @selected_schedule = MiqSchedule.find(from_cid(nodes.last))
+      @record = @selected_schedule = MiqSchedule.find(nodes.last)
       @right_cell_text = _("Settings Schedule \"%{name}\"") % {:name => @selected_schedule.name}
       schedule_show
-    when "ld", "lr"
-      nodes = nodetype.split('-')
-      if nodes[0] == "lr"
-        @record = @selected_lr = LdapRegion.find(from_cid(nodes[1]))
-        @right_cell_text = _("Settings LDAP Region \"%{name}\"") % {:name => @selected_lr.name}
-        ldap_region_show
-      else
-        @record = @selected_ld = LdapDomain.find(from_cid(nodes[1]))
-        @right_cell_text = _("Settings LDAP Domain \"%{name}\"") % {:name => @selected_ld.name}
-        ldap_domain_show
-      end
     when "sis"
-      @record = @selected_scan = ScanItemSet.find(from_cid(nodes.last))
+      @record = @selected_scan = ScanItemSet.find(nodes.last)
       @right_cell_text = _("Settings Analysis Profile \"%{name}\"") % {:name => @selected_scan.name}
       ap_show
     when "z"
       @servers = []
-      @record = @zone = @selected_zone = Zone.find(from_cid(nodes.last))
+      @record = @zone = @selected_zone = Zone.find(nodes.last)
+      @ntp_servers = @selected_zone&.settings_for_resource&.ntp ?
+        @selected_zone.settings_for_resource.ntp.to_h[:server].join(", ") : ''
       @right_cell_text = my_zone_name == @selected_zone.name ?
           _("Settings %{model} \"%{name}\" (current)") % {:name  => @selected_zone.description,
                                                           :model => ui_lookup(:model => @selected_zone.class.to_s)} :
@@ -1231,7 +1221,6 @@ module OpsController::Settings::Common
       # Enterprise Details tab
       @scan_items = ScanItemSet.all
       @zones = Zone.in_my_region
-      @ldap_regions = LdapRegion.in_my_region
       @miq_schedules = MiqSchedule.where("(prod_default != 'system' or prod_default is null) and adhoc IS NULL")
                        .sort_by { |s| s.name.downcase }
     end

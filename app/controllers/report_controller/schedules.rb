@@ -3,7 +3,8 @@ module ReportController::Schedules
 
   def show_schedule
     if @schedule.nil?
-      redirect_to :action => "schedules", :flash_msg => _("Error: Record no longer exists in the database"), :flash_error => true
+      flash_to_session
+      redirect_to(:action => 'schedules')
       return
     end
 
@@ -97,8 +98,7 @@ module ReportController::Schedules
       MiqSchedule.queue_scheduled_work(schedule.id, nil, Time.now.utc.to_i, nil)
       audit = {
         :event        => "queue_scheduled_work",
-        :message      => _("Schedule [%{schedule}] queued to run from the UI by user %{user}") %
-                          { :schedule => schedule.name, :user => current_user.name },
+        :message      => "Schedule [#{schedule.name}] queued to run from the UI by user #{current_user.name}",
         :target_id    => schedule.id,
         :target_class => "MiqSchedule",
         :userid       => session[:userid]
@@ -119,20 +119,10 @@ module ReportController::Schedules
 
   def schedule_toggle(enable)
     assert_privileges("miq_report_schedule_#{enable ? 'enable' : 'disable'}")
-    msg1, msg2 = if enable
-                   [_("No Report Schedules were selected to be enabled"),
-                    _("The selected Report Schedules were enabled")]
-                 else
-                   [_("No Report Schedules were selected to be disabled"),
-                    _("The selected Report Schedules were disabled")]
-                 end
+    msg = enable ? _("The selected Report Schedules were enabled") : _("The selected Report Schedules were disabled")
     scheds = find_records_with_rbac(MiqSchedule, checked_or_params)
-    if scheds.empty?
-      add_flash(msg1, :error)
-      javascript_flash
-    end
-    schedule_enable_disable(scheds, enable) unless scheds.empty?
-    add_flash(msg2, :info, true) unless flash_errors?
+    schedule_enable_disable(scheds, enable)
+    add_flash(msg, :info, true)
     schedule_get_all
     replace_right_cell
   end
@@ -175,7 +165,6 @@ module ReportController::Schedules
         page.replace("edit_email_div",
                      :partial => "layouts/edit_email",
                      :locals  => {:action_url => "schedule_form_field_changed",
-                                  :box_title  => "E-Mail after Running",
                                   :record     => @schedule})
         page.replace("schedule_email_options_div", :partial => "schedule_email_options")
       end
@@ -237,7 +226,7 @@ module ReportController::Schedules
 
         self.x_active_tree   = "schedules_tree"
         self.x_active_accord = "schedules"
-        self.x_node = "msc-#{to_cid(schedule.id)}"
+        self.x_node = "msc-#{schedule.id}"
         @_params[:accord] = "schedules"
         replace_right_cell(:replace_trees => [:schedules])
       else
@@ -477,7 +466,7 @@ module ReportController::Schedules
   end
 
   def get_schedule(nodeid)
-    @record = @schedule = MiqSchedule.find(from_cid(nodeid.split('__').last).to_i)
+    @record = @schedule = MiqSchedule.find(nodeid.split('__').last.to_i)
     show_schedule
     @right_cell_text = _("Schedule \"%{name}\"") % {:name => @schedule.name}
     @right_cell_div  = "schedule_list"

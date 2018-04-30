@@ -99,6 +99,26 @@ module MiqAeCustomizationController::Dialogs
     javascript_redirect :controller => 'miq_ae_customization', :action => 'editor', :id => @record.id
   end
 
+  # Edit dialog using the Dialog Editor
+  def dialog_edit_editor
+    assert_privileges("dialog_edit")
+    @record = find_records_with_rbac(Dialog, checked_or_params)
+    javascript_redirect :controller => 'miq_ae_customization',
+                        :action     => 'editor',
+                        :id         => Array.wrap(@record).first.id
+  end
+
+  # Copy dialog using the Dialog Editor
+  def dialog_copy_editor
+    assert_privileges("dialog_copy_editor")
+    record_to_copy = find_record_with_rbac(Dialog, checked_or_params)
+    @record = Dialog.new
+    javascript_redirect :controller => 'miq_ae_customization',
+                        :action     => 'editor',
+                        :copy       => record_to_copy.id,
+                        :id         => @record.id
+  end
+
   # Add new dialog
   def dialog_new
    assert_privileges("dialog_new")
@@ -179,15 +199,6 @@ module MiqAeCustomizationController::Dialogs
     end
   end
 
-  # Edit dialog using the Dialog Editor
-  def dialog_edit_editor
-    assert_privileges("dialog_edit")
-    @record = find_records_with_rbac(Dialog, checked_or_params)
-    javascript_redirect :controller => 'miq_ae_customization',
-                        :action     => 'editor',
-                        :id         => Array.wrap(@record).first.id
-  end
-
   # edit dialog
   def dialog_edit
     assert_privileges("dialog_edit")
@@ -238,7 +249,7 @@ module MiqAeCustomizationController::Dialogs
 
         if params[:button] == "add"
           d = Dialog.find_by_label(dialog.label)
-          self.x_node = "dg-#{to_cid(d.id)}"
+          self.x_node = "dg-#{d.id}"
         end
 
         get_node_info
@@ -527,7 +538,7 @@ module MiqAeCustomizationController::Dialogs
       page << "$('#field_default_value').selectpicker('destroy');"
       page.replace("field_default_value",
                    :text => select_tag('field_default_value', options_for_select(values, selected)))
-      page << "$('#field_default_value').selectpicker();"
+      page << "$('#field_default_value').selectpicker({noneSelectedText: __('Nothing selected')});"
       page << "miqSelectPickerEvent('field_default_value', '#{url}');"
     end
   end
@@ -570,7 +581,7 @@ module MiqAeCustomizationController::Dialogs
                    :text => select_tag('field_default_value',
                                        options_for_select(values, selected),
                                        'data-miq_observe' => {:interval => '.5', :url => url}.to_json))
-      page << "$('#field_default_value').selectpicker();"
+      page << "$('#field_default_value').selectpicker({noneSelectedText: __('Nothing selected')});"
     end
   end
 
@@ -606,20 +617,7 @@ module MiqAeCustomizationController::Dialogs
   end
 
   private     ############
-
-  # A new classificiation field value was selected
-  def field_value_new_cat
-    field_value_get_form_vars
-    if params[:classification_name]
-      @cat = Classification.find_by_name(params["classification_name"])
-      field_value_build_screen                                          # Build the Classification Edit screen
-      render :update do |page|
-        page << javascript_prologue
-        page.replace(:tab_div, :partial => "settings_co_tags_tab")
-      end
-    end
-  end
-
+  
   def field_value_get_form_vars
     @edit = session[:edit]
   end
@@ -1433,7 +1431,7 @@ module MiqAeCustomizationController::Dialogs
       @right_cell_text = _("All Dialogs")
     else
       @sb[:active_tab] = "sample_tab" unless params[:tab_id]     # reset active tab if not coming in from change_tab
-      @record = Dialog.find_by_id(from_cid(treenodeid.split('-').last))
+      @record = Dialog.find_by_id(treenodeid.split('-').last)
       if @record.nil?
         @replace_tree = true      # refresh tree and go back to root node if previously selected dialog record is deleted outside UI from vmdb
         self.x_node = "root"

@@ -2,18 +2,6 @@
 module PxeController::PxeServers
   extend ActiveSupport::Concern
 
-  def pxe_server_tree_select
-    typ, id = params[:id].split("_")
-    case typ
-    when "img"
-      @record = MiqServer.find(from_cid(id))
-    when "wimg"
-      @record = WindowsImage.find(from_cid(id))
-    when "ps"
-      @record = ServerRole.find(from_cid(id))
-    end
-  end
-
   def pxe_server_new
     assert_privileges("pxe_server_new")
     @ps = PxeServer.new
@@ -202,7 +190,7 @@ module PxeController::PxeServers
         return
       end
     when "reset", nil
-      @img = PxeImage.find_by_id(from_cid(params[:id]))
+      @img = PxeImage.find_by_id(params[:id])
       pxe_img_set_form_vars
       @in_a_form = true
       session[:changed] = false
@@ -252,7 +240,7 @@ module PxeController::PxeServers
         return
       end
     when "reset", nil
-      @wimg = WindowsImage.find_by_id(from_cid(params[:id]))
+      @wimg = WindowsImage.find_by_id(params[:id])
       pxe_wimg_set_form_vars
       @in_a_form = true
       session[:changed] = false
@@ -356,20 +344,6 @@ module PxeController::PxeServers
     wimg.pxe_image_type = @edit[:new][:img_type].blank? ? nil : PxeImageType.find_by_id(@edit[:new][:img_type])
   end
 
-  def identify_pxe_server
-    @ps = nil
-    begin
-      @record = @ps = find_record_with_rbac(PxeServer, from_cid(params[:id]))
-    rescue ActiveRecord::RecordNotFound
-    rescue => @bang
-    end
-  end
-
-  # Delete all selected or single displayed PXE Server(s)
-  def deletepxes
-    pxe_button_operation('destroy', 'deletion')
-  end
-
   def pxe_server_set_record_vars(pxe, mode = nil)
     pxe.name = @edit[:new][:name]
     pxe.access_url = @edit[:new][:access_url]
@@ -464,13 +438,13 @@ module PxeController::PxeServers
       nodes = treenodeid.split("-")
       if (nodes[0] == "ps" && nodes.length == 2) || (["pxe_xx", "win_xx"].include?(nodes[1]) && nodes.length == 3)
         # on pxe server node OR folder node is selected
-        @record = @ps = PxeServer.find_by_id(from_cid(nodes.last))
+        @record = @ps = PxeServer.find_by_id(nodes.last)
         @right_cell_text = _("PXE Server \"%{name}\"") % {:name => @ps.name}
       elsif nodes[0] == "pi"
-        @record = @img = PxeImage.find_by_id(from_cid(nodes.last))
+        @record = @img = PxeImage.find_by_id(nodes.last)
         @right_cell_text = _("PXE Image \"%{name}\"") % {:name => @img.name}
       elsif nodes[0] == "wi"
-        @record = @wimg = WindowsImage.find_by_id(from_cid(nodes[1]))
+        @record = @wimg = WindowsImage.find_by_id(nodes[1])
         @right_cell_text = _("Windows Image \"%{name}\"") % {:name => @wimg.name}
       end
     end

@@ -3,6 +3,7 @@ module ApplicationController::PolicySupport
 
   # Assign/unassign policies to/from a set of objects
   def protect
+    @gtl_type  = "grid"
     @display   = nil
     @edit      = session[:edit]
     profile_id = params[:id].to_i
@@ -85,6 +86,7 @@ module ApplicationController::PolicySupport
                     :url  => "/#{request.parameters["controller"]}/policy_sim?continue=true")
     session[:policies] = {} unless params[:continue]  # Clear current policies, unless continuing previous simulation
     records = session[:tag_items] if records.empty? && session[:tag_items].present?
+    session[:tag_items] = records
     policy_sim_build_screen(records)
 
     if @explorer
@@ -127,27 +129,6 @@ module ApplicationController::PolicySupport
     end
   end
 
-  def profile_toggle
-    if params[:pressed] == "tag_cat_toggle"
-      policy_escaped = j(params[:policy])
-      cat            = params[:cat]
-      render :update do |page|
-        page << javascript_prologue
-        if @catinfo[cat]
-          @catinfo[cat] = false
-          page << javascript_show("cat_#{policy_escaped}_div")
-          page << "$('#cat_#{policy_escaped}_icon').prop('src', #{ActionController::Base.helpers.image_path('tree/compress.png')});"
-        else
-          @catinfo[cat] = true # Set squashed = true
-          page << javascript_hide("cat_#{policy_escaped}_div")
-          page << "$('#cat_#{policy_escaped}_icon').prop('src', #{ActionController::Base.helpers.image_path('tree/expand.png')});"
-        end
-      end
-    else
-      render_flash(_("Button not yet implemented"), :error)
-    end
-  end
-
   private ############################
 
   # Assign policies to selected records of db
@@ -175,14 +156,8 @@ module ApplicationController::PolicySupport
       javascript_redirect :action => 'protect', :db => db # redirect to build policy screen
     end
   end
-  %w(image instance vm miq_template
-     container
-     container_replicator
-     container_group
-     container_node
-     container_image
-     ems_container
-     middleware_server).each do |old_name|
+  %w(image instance vm miq_template container container_replicator container_group
+     container_node container_image ems_container container_project).each do |old_name|
     alias_method "#{old_name}_protect".to_sym, :assign_policies
   end
 
@@ -197,7 +172,7 @@ module ApplicationController::PolicySupport
     # session[:pol_db] = session[:pol_db] == Vm ? VmOrTemplate : session[:pol_db]
     @politems = session[:pol_db].find(session[:pol_items]).sort_by(&:name)  # Get the db records
     @view = get_db_view(session[:pol_db])             # Instantiate the MIQ Report view object
-    @view.table = MiqFilter.records2table(@politems, @view.cols + ['id'])
+    @view.table = ReportFormatter::Converter.records2table(@politems, @view.cols + ['id'])
 
     @edit = {}
     @edit[:explorer] = true if @explorer
@@ -222,7 +197,7 @@ module ApplicationController::PolicySupport
 
   # Create policy assignment audit record
   def protect_audit(pp, mode, db, recs)
-    msg = _("[%{name}] Policy Profile %{mode} (db:[%{db}]") % {:name => pp.name, :mode => mode, :db => db}
+    msg = "[#{pp.name}] Policy Profile #{mode} (db:[#{db}]"
     msg += ", ids:[#{recs.sort_by(&:to_i).join(',')}])"
     event = "policyset_" + mode
     audit = {:event => event, :target_id => pp.id, :target_class => pp.class.base_class.name, :userid => session[:userid], :message => msg}
@@ -255,13 +230,13 @@ module ApplicationController::PolicySupport
   # Build the policy simulation screen
   def policy_sim_build_screen(records = [])
     @edit ||= {}
-    @tagitems = records ? records : session[:tag_db].find(session[:tag_items]) # Get the db records that are being tagged
+    @tagitems = records.presence || session[:tag_items] # Get the db records that are being tagged
     @tagitems = @tagitems.sort_by(&:name)
     @edit[:pol_items] = session[:tag_items]
     @catinfo = {}
     @lastaction = "policy_sim"
     @pol_view = get_db_view(session[:tag_db])       # Instantiate the MIQ Report view object
-    @pol_view.table = MiqFilter.records2table(@tagitems, @pol_view.cols + ['id'])
+    @pol_view.table = ReportFormatter::Converter.records2table(@tagitems, @pol_view.cols + ['id'])
 
     # Build the profiles selection list
     @all_profs = {}
@@ -275,6 +250,7 @@ module ApplicationController::PolicySupport
     else
       @all_profs["<select>"] = _("No Policy Profiles are available")
     end
+    @gtl_type = "grid"
     build_targets_hash(@tagitems)
   end
 end

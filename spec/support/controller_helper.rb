@@ -87,6 +87,7 @@ module Spec
       #   :parent_method
       #   :gtl_dbname
       #   :explorer (defaults to true)
+      #   :lastaction
       #
       # FIXME: This hash needs cleanups as we clenup the /report_data,
       #        angular/_gtl and the calling sites.
@@ -101,13 +102,14 @@ module Spec
           'model_id'    => options[:parent_id],
           'explorer'    => explorer,
           'additional_options' => {
-            'named_scope'           => nil,
+            'named_scope'           => options[:named_scope],
             'gtl_dbname'            => options[:gtl_dbname],
             'model'                 => options[:model],
             'match_via_descendants' => nil,
             'parent_id'             => options[:parent_id],
             'parent_class_name'     => options[:parent_model],
             'parent_method'         => options[:parent_method],
+            'lastaction'            => options[:lastaction],
             'association' => nil, 'view_suffix' => nil, 'listicon' => nil, 'embedded' => nil, 'showlinks' => nil, 'policy_sim' => nil
           }.compact
         }.compact
@@ -116,7 +118,8 @@ module Spec
       # Fires a POST request to the current controller's /report_data action
       #
       def report_data_request(options)
-        post :report_data, :params => report_data_request_data(options)
+        request.headers['Content-Type'] = 'application/json'
+        post :report_data, report_data_request_data(options)
       end
 
       # Assert a valid /report_data response, parse the response.

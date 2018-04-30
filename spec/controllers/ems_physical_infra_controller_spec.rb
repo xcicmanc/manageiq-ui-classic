@@ -1,6 +1,4 @@
 describe EmsPhysicalInfraController do
-  include CompressedIds
-
   let!(:server) { EvmSpecHelper.local_miq_server(:zone => zone) }
   let(:zone) { FactoryGirl.build(:zone) }
 
@@ -69,7 +67,7 @@ describe EmsPhysicalInfraController do
       get :show, :params => {:id => @ems.id, :display => 'storages'}
       post :button, :params => {:id              => @ems.id,
                                 :display         => 'storages',
-                                :miq_grid_checks => to_cid(datastore.id),
+                                :miq_grid_checks => datastore.id,
                                 :pressed         => "storage_tag",
                                 :format          => :js}
       expect(response.status).to eq(200)
@@ -96,7 +94,7 @@ describe EmsPhysicalInfraController do
     end
     context "when previous breadcrumbs path contained 'Cloud Providers'" do
       it "shows 'Physical Infrastructure Providers -> (Summary)' breadcrumb path" do
-        ems = FactoryGirl.create("ems_physical_infra")
+        ems = FactoryGirl.create(:ems_physical_infra)
         get :show, :params => { :id => ems.id }
         breadcrumbs = controller.instance_variable_get(:@breadcrumbs)
         expect(breadcrumbs).to eq([{:name => "Physical Infrastructure Providers",

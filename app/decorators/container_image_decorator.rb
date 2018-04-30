@@ -3,7 +3,9 @@ class ContainerImageDecorator < MiqDecorator
     'pficon pficon-image'
   end
 
-  def self.fileicon
-    '100/container_image.png'
+  def single_quad
+    {
+      :fonticon => fonticon
+    }
   end
 end

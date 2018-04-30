@@ -21,18 +21,18 @@ class TreeBuilderPolicy < TreeBuilder
                                  :ContainerGroup      => _("Pod Compliance Policies"),
                                  :ContainerNode       => _("Container Node Compliance Policies"),
                                  :ContainerImage      => _("Container Image Compliance Policies"),
+                                 :ContainerProject    => _("Container Project Compliance Policies"),
                                  :ExtManagementSystem => _("Provider Compliance Policies"),
-                                 :PhysicalServer      => _("Physical Infrastructure Compliance Policies"),
-                                 :MiddlewareServer    => _("Middleware Server Compliance Policies")},
+                                 :PhysicalServer      => _("Physical Infrastructure Compliance Policies")},
                  :control    => {:Host                => _("Host Control Policies"),
                                  :Vm                  => _("Vm Control Policies"),
                                  :ContainerReplicator => _("Replicator Control Policies"),
                                  :ContainerGroup      => _("Pod Control Policies"),
                                  :ContainerNode       => _("Container Node Control Policies"),
                                  :ContainerImage      => _("Container Image Control Policies"),
+                                 :ContainerProject    => _("Container Project Control Policies"),
                                  :ExtManagementSystem => _("Provider Control Policies"),
-                                 :PhysicalServer      => _("Physical Infrastructure Control Policies"),
-                                 :MiddlewareServer    => _("Middleware Server Control Policies")}}
+                                 :PhysicalServer      => _("Physical Infrastructure Control Policies")}}
 
     MiqPolicyController::UI_FOLDERS.collect do |model|
       text = text_i18n[mode.to_sym][model.name.to_sym]
@@ -49,12 +49,12 @@ class TreeBuilderPolicy < TreeBuilder
                'pficon pficon-container-node'
              when 'ContainerImage'
                'pficon pficon-image'
+             when 'ContainerProject'
+               'pficon pficon-project'
              when 'ExtManagementSystem'
                'pficon pficon-server'
              when 'PhysicalServer'
                'pficon pficon-enterprise'
-             when 'MiddlewareServer'
-               'pficon pficon-middleware'
              end
       {
         :id   => "#{mode}-#{model.name.camelize(:lower)}",

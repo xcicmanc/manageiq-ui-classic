@@ -12,25 +12,12 @@ module ReportController::Reports
     title = rep.name
     nodes = x_node.split('-')
     get_all_reps(nodes[4])
-    @sb[:selected_rep_id] = from_cid(nodes[3].split('_').last)
+    @sb[:selected_rep_id] = nodes[3].split('_').last
     if role_allows?(:feature => "miq_report_widget_editor")
       # all widgets for this report
-      get_all_widgets("report", from_cid(nodes[3].split('_').last))
+      get_all_widgets("report", nodes[3].split('_').last)
     end
     add_flash(_("Report has been successfully queued to run"))
-    replace_right_cell(:replace_trees => [:reports, :savedreports])
-  end
-
-  def miq_report_save
-    rr               = MiqReportResult.for_user(current_user).find(@sb[:pages][:rr_id])
-    rr.save_for_user(session[:userid])                # Save the current report results for this user
-    @_params[:sortby] = "last_run_on"
-    view, _page = get_view(MiqReportResult, :named_scope => [[:with_current_user_groups_and_report, @sb[:miq_report_id]]])
-    savedreports = view.table.data
-    r = savedreports.first
-    @right_cell_div  = "report_list"
-    @right_cell_text ||= _("Saved Report \"%{name}\"") % {:name => r.name}
-    add_flash(_("Report \"%{name}\" was saved") % {:name => r.name})
     replace_right_cell(:replace_trees => [:reports, :savedreports])
   end
 
@@ -87,7 +74,7 @@ module ReportController::Reports
       render_flash(_("Report cannot be deleted if it's being used by one or more Widgets"), :error)
     else
       begin
-        raise StandardError, "Default Report \"%{name}\" cannot be deleted" % {:name => rpt.name} if rpt.rpt_type == "Default"
+        raise StandardError, _("Default Report \"%{name}\" cannot be deleted") % {:name => rpt.name} if rpt.rpt_type == "Default"
         rpt_name = rpt.name
         audit = {:event => "report_record_delete", :message => "[#{rpt_name}] Record deleted", :target_id => rpt.id, :target_class => "MiqReport", :userid => session[:userid]}
         rpt.destroy
@@ -153,7 +140,7 @@ module ReportController::Reports
     nodeid = x_active_tree == :reports_tree ?
         x_node.split('-').last :
         x_node.split('-').last.split('_')[0] if nodeid.nil?
-    @sb[:miq_report_id] = from_cid(nodeid)
+    @sb[:miq_report_id] = nodeid
     @record = @miq_report = MiqReport.for_user(current_user).find(@sb[:miq_report_id])
     if @sb[:active_tab] == "saved_reports" || x_active_tree == :savedreports_tree
       @force_no_grid_xml   = true
@@ -168,7 +155,7 @@ module ReportController::Reports
       @sortcol = session["#{x_active_tree}_sortcol".to_sym].nil? ? 0 : session["#{x_active_tree}_sortcol".to_sym].to_i
       @sortdir = session["#{x_active_tree}_sortdir".to_sym].nil? ? "DESC" : session["#{x_active_tree}_sortdir".to_sym]
 
-      report_id = from_cid(nodeid.split('_')[0])
+      report_id = nodeid.split('_')[0]
       @view, @pages = get_view(MiqReportResult, :named_scope => [[:with_current_user_groups_and_report, report_id]])
       @sb[:timezone_abbr] = @timezone_abbr if @timezone_abbr
 
@@ -250,7 +237,7 @@ module ReportController::Reports
 
   # Build the main reports tree
   def build_reports_tree
-    reports_menu_in_sb
+    populate_reports_menu
     TreeBuilderReportReports.new('reports_tree', 'reports', @sb)
   end
 end

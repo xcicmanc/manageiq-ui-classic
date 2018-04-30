@@ -3,7 +3,9 @@ class NetworkRouterDecorator < MiqDecorator
     'pficon pficon-route'
   end
 
-  def self.fileicon
-    '100/network_router.png'
+  def single_quad
+    {
+      :fonticon => fonticon
+    }
   end
 end

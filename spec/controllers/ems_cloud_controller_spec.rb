@@ -1,6 +1,4 @@
 describe EmsCloudController do
-  include CompressedIds
-
   let!(:server) { EvmSpecHelper.local_miq_server(:zone => zone) }
   let(:zone) { FactoryGirl.build(:zone) }
   describe "#create" do
@@ -48,7 +46,7 @@ describe EmsCloudController do
       expect do
         post :create, :params => {
           "button"           => "add",
-          "default_hostname" => "host_openstack",
+          "default_hostname" => "openstack.example.com",
           "name"             => "foo_openstack",
           "emstype"          => "openstack",
           "provider_region"  => "",
@@ -67,7 +65,7 @@ describe EmsCloudController do
         post :update, :params => {
           "id"               => openstack.id,
           "button"           => "save",
-          "default_hostname" => "host_openstack_updated",
+          "default_hostname" => "openstack.example.com",
           "name"             => "foo_openstack",
           "emstype"          => "openstack",
           "provider_region"  => "",
@@ -142,7 +140,7 @@ describe EmsCloudController do
     it 'gets the ems cloud form fields on a get' do
       post :create, :params => {
         "button"           => "add",
-        "default_hostname" => "host_openstack",
+        "default_hostname" => "openstack.example.com",
         "name"             => "foo_openstack",
         "emstype"          => "openstack",
         "provider_region"  => "",
@@ -162,7 +160,7 @@ describe EmsCloudController do
     let(:openstack_form_params) do
       {
         "button"                 => "add",
-        "default_hostname"       => "host_openstack",
+        "default_hostname"       => "openstack.example.com",
         "name"                   => "foo_openstack",
         "emstype"                => "openstack",
         "tenant_mapping_enabled" => "on",
@@ -202,7 +200,7 @@ describe EmsCloudController do
     it 'strips whitespace from name, hostname and api_port form fields on create' do
       post :create, :params => {
         "button"           => "add",
-        "default_hostname" => "  host_openstack     ",
+        "default_hostname" => "openstack.example.com",
         "name"             => "  foo_openstack     ",
         "emstype"          => "openstack",
         "provider_region"  => "",
@@ -211,9 +209,8 @@ describe EmsCloudController do
         "default_userid"   => "foo",
         "default_password" => "[FILTERED]",
       }
-
       expect(response.status).to eq(200)
-      expect(ManageIQ::Providers::Openstack::CloudManager.with_hostname('host_openstack')
+      expect(ManageIQ::Providers::Openstack::CloudManager.with_hostname('openstack.example.com')
                                                          .with_port('5000')
                                                          .where(:name => 'foo_openstack')
                                                          .count).to eq(1)
@@ -231,7 +228,7 @@ describe EmsCloudController do
       session[:settings] = {:views => {:vm_summary_cool => ""}}
       post :create, :params => {
         "button"           => "add",
-        "default_hostname" => "host_openstack",
+        "default_hostname" => "openstack.example.com",
         "name"             => "foo_openstack",
         "emstype"          => "openstack",
         "provider_region"  => "",
@@ -400,13 +397,13 @@ describe EmsCloudController do
 
     it 'edit selected cloud provider' do
       ems = FactoryGirl.create(:ems_amazon)
-      post :button, :params => { :miq_grid_checks => to_cid(ems.id), :pressed => "ems_cloud_edit" }
+      post :button, :params => { :miq_grid_checks => ems.id, :pressed => "ems_cloud_edit" }
       expect(response.status).to eq(200)
     end
 
     it 'edit cloud provider tags' do
       ems = FactoryGirl.create(:ems_amazon)
-      post :button, :params => { :miq_grid_checks => to_cid(ems.id), :pressed => "ems_cloud_tag" }
+      post :button, :params => { :miq_grid_checks => ems.id, :pressed => "ems_cloud_tag" }
       expect(response.status).to eq(200)
     end
 
@@ -414,7 +411,7 @@ describe EmsCloudController do
       allow(controller).to receive(:protect_build_tree).and_return(nil)
       controller.instance_variable_set(:@protect_tree, OpenStruct.new(:name => "name"))
       ems = FactoryGirl.create(:ems_amazon)
-      post :button, :params => { :miq_grid_checks => to_cid(ems.id), :pressed => "ems_cloud_protect" }
+      post :button, :params => { :miq_grid_checks => ems.id, :pressed => "ems_cloud_protect" }
       expect(response.status).to eq(200)
 
       get :protect
@@ -433,7 +430,7 @@ describe EmsCloudController do
 
     it 'edit cloud providers' do
       ems = FactoryGirl.create(:ems_amazon)
-      post :button, :params => { :miq_grid_checks => to_cid(ems.id), :pressed => "ems_cloud_edit" }
+      post :button, :params => { :miq_grid_checks => ems.id, :pressed => "ems_cloud_edit" }
       expect(response.status).to eq(200)
     end
   end
@@ -485,9 +482,10 @@ describe EmsCloudController do
       allow(wf).to receive(:submit_request).and_return({})
       page = double('page')
       allow(page).to receive(:<<).with(any_args)
-      expect(page).to receive(:redirect_to).with("/ems_cloud/#{@ems.id}?flash_msg=Order+Request+was+Submitted")
+      expect(page).to receive(:redirect_to).with("/ems_cloud/#{@ems.id}")
       expect(controller).to receive(:render).with(:update).and_yield(page)
       controller.send(:dialog_form_button_pressed)
+      expect(session[:flash_msgs]).to match [a_hash_including(:message => "Order Request was Submitted", :level => :success)]
     end
   end
 
@@ -500,7 +498,7 @@ describe EmsCloudController do
     it "creates ceilometer endpoint and on update to AMQP deletes ceilometer endpoint" do
       post :create, :params => {
         "button"                    => "add",
-        "default_hostname"          => "default_hostname",
+        "default_hostname"          => "openstack.default.example.com",
         "default_userid"            => "",
         "default_password"          => "",
         "name"                      => "openstack_cloud",
@@ -525,7 +523,7 @@ describe EmsCloudController do
       post :update, :params => {
         "id"                        => ems_openstack.id,
         "button"                    => "save",
-        "default_hostname"          => "default_hostname",
+        "default_hostname"          => "openstack.default.example.com",
         "default_userid"            => "",
         "default_password"          => "",
         "name"                      => "openstack_cloud",
@@ -535,7 +533,7 @@ describe EmsCloudController do
         "default_api_port"          => "5000",
         "default_security_protocol" => "ssl-with-validation",
         "event_stream_selection"    => "amqp",
-        "amqp_hostname"             => "amqp_hostname",
+        "amqp_hostname"             => "amqp.example.com",
         "amqp_api_port"             => "5672",
         "amqp_security_protocol"    => "ssl",
         "amqp_userid"               => "",
@@ -550,7 +548,7 @@ describe EmsCloudController do
     it "restarts event monitor worker on endpoints or credentials change" do
       post :create, :params => {
         "button"                    => "add",
-        "default_hostname"          => "default_hostname",
+        "default_hostname"          => "openstack.default.example.com",
         "default_userid"            => "",
         "default_password"          => "",
         "name"                      => "openstack_cloud",
@@ -571,7 +569,7 @@ describe EmsCloudController do
       post :update, :params => {
         "id"                        => ems_openstack.id,
         "button"                    => "save",
-        "default_hostname"          => "default_hostname",
+        "default_hostname"          => "openstack.default.example.com",
         "default_userid"            => "",
         "default_password"          => "",
         "name"                      => "openstack_cloud",
@@ -581,7 +579,7 @@ describe EmsCloudController do
         "default_api_port"          => "5000",
         "default_security_protocol" => "ssl-with-validation",
         "event_stream_selection"    => "amqp",
-        "amqp_hostname"             => "amqp_hostname",
+        "amqp_hostname"             => "amqp.example.com",
         "amqp_api_port"             => "5672",
         "amqp_security_protocol"    => "ssl",
         "amqp_userid"               => "",
@@ -598,7 +596,7 @@ describe EmsCloudController do
       post :update, :params => {
         "id"                        => ems_openstack.id,
         "button"                    => "save",
-        "default_hostname"          => "default_hostname_changed",
+        "default_hostname"          => "openstack.default.changed.example.com",
         "default_userid"            => "changed",
         "default_password"          => "changed",
         "name"                      => "openstack_cloud",
@@ -608,7 +606,7 @@ describe EmsCloudController do
         "default_api_port"          => "5000",
         "default_security_protocol" => "ssl-with-validation",
         "event_stream_selection"    => "amqp",
-        "amqp_hostname"             => "amqp_hostname_changed",
+        "amqp_hostname"             => "amqp.changed.example.com",
         "amqp_api_port"             => "5672",
         "amqp_security_protocol"    => "ssl",
         "amqp_userid"               => "changed",
@@ -623,7 +621,7 @@ describe EmsCloudController do
       post :update, :params => {
         "id"                        => ems_openstack.id,
         "button"                    => "save",
-        "default_hostname"          => "default_hostname_changed",
+        "default_hostname"          => "openstack.default.changed.example.com",
         "default_userid"            => "changed",
         "default_password"          => "changed",
         "name"                      => "openstack_cloud",
@@ -651,8 +649,7 @@ describe EmsCloudController do
       expect(controller).to receive(:find_record_with_rbac).and_return(ems)
       expect(ems).to receive(:sync_users_queue)
       post :sync_users, :params => {:id => ems.id, :sync => "", :admin_role => 1, :member_role => 2}
-      expect(controller.send(:flash_errors?)).to be_falsey
-      expect(response.body).to include("Sync+users+queued.")
+      expect(session[:flash_msgs]).to match [a_hash_including(:message => "Sync users queued.", :level => :success)]
       expect(response.body).to include("redirected")
       expect(response.body).to include("ems_cloud/#{ems.id}")
     end

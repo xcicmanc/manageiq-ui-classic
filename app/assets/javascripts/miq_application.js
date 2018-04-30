@@ -707,7 +707,7 @@ function miqAjaxAuth(url) {
     serialized: miqSerializeForm('login_div'),
   };
 
-  vanillaJsAPI.login(credentials.login, credentials.password)
+  return vanillaJsAPI.login(credentials.login, credentials.password)
   .then(function() {
     return vanillaJsAPI.ws_init();
   })
@@ -737,7 +737,7 @@ function miqAjaxAuthSso(url) {
 
   // Note: /dashboard/kerberos_authenticate creates an API token
   //       based on the authenticated external user
-  //       and stores it in sessionStore.miq_token
+  //       and stores it in localStorage.miq_token
 
   miqJqueryRequest(url || '/dashboard/kerberos_authenticate', {
     beforeSend: true,
@@ -751,7 +751,7 @@ function miqAjaxExtAuth(url) {
 
   // Note: /dashboard/external_authenticate creates an API token
   //       based on the authenticated external user
-  //       and stores it in sessionStore.miq_token
+  //       and stores it in localStorage.miq_token
 
   var credentials = {
     login: $('#user_name').val(),
@@ -778,7 +778,7 @@ function miqEnableLoginFields(enabled) {
 
 // reset form fields on login failure
 function miqClearLoginFields() {
-  $('#user_name').val('');
+  $('#user_name').val('').focus();
   $('#user_password').val('');
 }
 
@@ -1186,6 +1186,7 @@ function miqInitSelectPicker() {
   $('.selectpicker').selectpicker({
     size: 10,
     dropupAuto: false,
+    noneSelectedText: __('Nothing selected')
   });
   $('.bootstrap-select > button[title]').not('.selectpicker').tooltip({container: 'none'});
 }
@@ -1316,7 +1317,10 @@ function miqInitToolbars() {
   $('#toolbar:not(.miq-toolbar-menu) button:not(.dropdown-toggle), ' +
   '#toolbar:not(.miq-toolbar-menu) ul.dropdown-menu > li > a, '+
   '#toolbar:not(.miq-toolbar-menu) .toolbar-pf-view-selector > ul.list-inline > li > a'
-  ).click(miqToolbarOnClick);
+  ).click(function() {
+    miqToolbarOnClick.bind(this)();
+    return false;
+  });
 }
 
 // Function to run transactions when toolbar button is clicked
@@ -1432,8 +1436,7 @@ function miqToolbarOnClick(_e) {
     data: paramstring,
   };
 
-  miqJqueryRequest(tb_url, options);
-  return false;
+  return miqJqueryRequest(tb_url, options);
 
   function getParams(urlParms, sendChecked) {
     var params = [];
@@ -1577,61 +1580,24 @@ function rbacGroupLoadTab(id) {
 }
 
 function chartData(type, data, data2) {
-  var empty = {
-    data: {
-      columns: [],
-    },
-  };
-
   if (type === undefined) {
-    return empty;
+    return emptyChart();
   }
 
   var config = _.cloneDeep(ManageIQ.charts.c3config[type]);
   if (config === undefined) {
-    return empty;
+    return emptyChart();
   }
 
   if (_.isObject(data.miq)) {
     if (data.miq.empty) {
       return _.defaultsDeep({}, data, data2);
     }
-    // set maximum count of x axis tick labels for C&U charts
-    if (data.miq.performance_chart) {
-      data.axis.x.tick.centered = true;
-      data.axis.x.tick.culling = { max: 5 };
-    }
-
-    // small C&U charts have very limited height
-    if (data.miq.flat_chart) {
-      var max = _.max(getChartColumnDataValues(data.data.columns));
-      data.axis.y.tick.values = [0, max];
-    }
-
-    if (data.miq.expand_tooltip) {
-      data.tooltip.format.name = function(_name, _ratio, id, _index) {
-        return data.miq.name_table[id];
-      };
-
-      data.tooltip.format.title = function(x) {
-        return data.miq.category_table[x];
-      };
-    }
-    if (data.miq.zoomed) {
-      data.size = { height: $('#lightbox-panel').height() - 200 };
-      data.data.names = data.miq.name_table;
-      data.legend = { position: 'bottom'};
-
-    }
+    customizeChart(data);
   }
 
   // set formating function for tooltip and y tick labels
-  if (_.isObject(data.axis) &&
-      _.isObject(data.axis.y) &&
-      _.isObject(data.axis.y.tick) &&
-      _.isObject(data.axis.y.tick.format) &&
-      data.axis.y.tick.format.function) {
-
+  if (validateChartAxis(data.axis)) {
     var format = data.axis.y.tick.format;
     var max = _.max(getChartColumnDataValues(data.data.columns));
     var min = _.min(getChartColumnDataValues(data.data.columns));
@@ -1649,6 +1615,7 @@ function chartData(type, data, data2) {
       format = recalculated.format;
     }
     data.axis.y.tick.format = ManageIQ.charts.formatters[format.function].c3(format.options);
+    data.miq.format = format;
     data.legend.item = {
       onclick: recalculateChartYAxisLabels,
     };
@@ -1660,18 +1627,70 @@ function chartData(type, data, data2) {
     };
   }
 
+  correctPatternflyOptions(config);
+  return _.defaultsDeep({}, data, config, data2);
+}
 
+function validateChartAxis(axis) {
+  return _.isObject(axis) &&
+         _.isObject(axis.y) &&
+         _.isObject(axis.y.tick) &&
+         _.isObject(axis.y.tick.format) &&
+         axis.y.tick.format.function
+}
+
+function emptyChart() {
+  return {
+           data: {
+             columns: [],
+           },
+         };
+}
+
+function customizeChart(data) {
+  // set maximum count of x axis tick labels for C&U charts
+  if (data.miq.performance_chart) {
+    data.axis.x.tick.centered = true;
+    data.axis.x.tick.culling = { max: 5 };
+  }
+
+  // small C&U charts have very limited height
+  if (data.miq.flat_chart) {
+    var max = _.max(getChartColumnDataValues(data.data.columns));
+    data.axis.y.tick.values = [0, max];
+  }
+
+  if (data.miq.expand_tooltip) {
+    data.tooltip.format.name = function(_name, _ratio, id, _index) {
+      return data.miq.name_table[id];
+    };
+
+    data.tooltip.format.title = function(x) {
+      return data.miq.category_table[x];
+    };
+  }
+  if (data.miq.zoomed) {
+    data.size = { height: $('#lightbox-panel').height() - 200 };
+    data.data.names = data.miq.name_table;
+    data.legend = { position: 'bottom'};
+  }
+}
+
+function correctPatternflyOptions(config) {
   // some PatternFly default configs define contents function, but it breaks formatting
   if (_.isObject(config.tooltip)) {
     config.tooltip.contents = undefined;
   }
   // some PatternFly default configs define size of chart
   config.size = {};
-  var ret = _.defaultsDeep({}, data, config, data2);
-  return ret;
 }
 
 $(function() {
+  if (window.__testing__) {
+    // in a jest test
+    return;
+  }
+
   $(window).on('resize', miqInitAccordions);
   $(window).on('resize', miqInitMainContent);
   $(window).on('resize', _.debounce(miqResetSizeTimer, 1000));
@@ -1685,14 +1704,6 @@ function miqScrollToSelected(div_name) {
   if (rowpos) {
     $('#' + div_name).scrollTop(rowpos.top);
   }
-}
-
-function miqUncompressedId(id) {
-  if (id.match(/r/)) {
-    var splat = id.split('r');
-    return sprintf('%s%012s', splat[0], splat[1]);
-  }
-  return id;
 }
 
 function queryParam(name) { return QS(window.location.href).get(name); }
@@ -1723,3 +1734,16 @@ var fontIconChar = _.memoize(function(klass) {
   }
   return {font: font, char: char};
 });
+
+function redirectLogin(msg) {
+  add_flash(msg, 'warning');
+  window.document.location.href = '/dashboard/login?timeout=true';
+}
+
+function camelizeQuadicon(quad) {
+  return _.reduce(quad, function(result, current, key) {
+    var item = {};
+    item[_.camelCase(key)] = current;
+    return Object.assign(result, item);
+  }, {})
+}

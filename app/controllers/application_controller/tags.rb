@@ -5,13 +5,15 @@ module ApplicationController::Tags
   def tagging_edit(db = nil, assert = true)
     assert_privileges("#{controller_for_common_methods}_tag") if assert
     @explorer = true if request.xml_http_request? # Ajax request means in explorer
+
+    @tagging = session[:tag_db] = params[:db] ? params[:db] : db if params[:db] || db
+    @tagging ||= session[:tag_db] if session[:tag_db]
     case params[:button]
     when "cancel"
       tagging_edit_tags_cancel
     when "save", "add"
       tagging_edit_tags_save
     when "reset", nil # Reset or first time in
-      @tagging = session[:tag_db] = params[:db] ? params[:db] : db if params[:db] || db
       tagging_edit_tags_reset
     end
   end
@@ -157,7 +159,7 @@ module ApplicationController::Tags
       replace_right_cell
     else
       @edit = nil
-      session[:flash_msgs] = @flash_array.dup   # Put msg in session for next transaction to display
+      flash_to_session
       javascript_redirect previous_breadcrumb_url
     end
   end
@@ -186,23 +188,12 @@ module ApplicationController::Tags
     add_flash(_("Tag edits were successfully saved"))
   end
 
-  # Build the pulldown containing the tags
-  def tagging_build_tags_pulldown
-    @mytags = Tag.all_tags(:cat => session[:userid]).sort     # Get all of the users tags
-    unless session[:mytags].blank?
-      session[:mytags].each do |t|                                    # Look thru the common tags
-        @mytags.delete(t.name.split("/")[-1])                     # Remove any tags from the pulldown that are in the common tags
-      end
-    end
-  end
 
   # Build the @edit elements for the tag edit screen
   def tag_edit_build_screen
-    @gtl_type = 'list' # show items in tagging screen a list
-    @embedded = true   # with no links
-    @showlinks = false
+    @showlinks = true
 
-    cats = Classification.categories.select(&:show).sort_by(&:name) # Get the categories, sort by name
+    cats = Classification.categories.select(&:show).sort_by { |t| t.description.try(:downcase) } # Get the categories, sort by description
     @categories = {}    # Classifications array for first chooser
     cats.delete_if { |c| c.read_only? || c.entries.length == 0 }  # Remove categories that are read only or have no entries
     cats.each do |c|
@@ -224,14 +215,14 @@ module ApplicationController::Tags
     end
 
     # Set to first category, if not already set
-    @edit[:cat] ||= cats.min_by(&:description)
+    @edit[:cat] ||= cats.first
 
     unless @object_ids.blank?
       @tagitems = @tagging.constantize.where(:id => @object_ids).sort_by { |t| t.name.try(:downcase).to_s }
     end
 
     @view = get_db_view(@tagging)               # Instantiate the MIQ Report view object
-    @view.table = MiqFilter.records2table(@tagitems, @view.cols + ['id'])
+    @view.table = ReportFormatter::Converter.records2table(@tagitems, @view.cols + ['id'])
 
     # Start with the first items assignments
     @edit[:new][:assignments] =

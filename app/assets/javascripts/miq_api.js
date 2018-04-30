@@ -49,8 +49,6 @@
   API.post = withData('POST');
   API.put = withData('PUT');
 
-  var base64encode = window.btoa; // browser api
-
   API.login = function(login, password) {
     API.logout();
 
@@ -62,7 +60,7 @@
       skipLoginRedirect: true,
     })
     .then(function(response) {
-      sessionStorage.miq_token = response.auth_token;
+      localStorage.miq_token = response.auth_token;
     });
   };
 
@@ -71,7 +69,7 @@
   };
 
   API.logout = function() {
-    if (sessionStorage.miq_token) {
+    if (localStorage.miq_token) {
       API.delete('/api/auth', {
         skipErrors: [401],
         skipLoginRedirect: true,
@@ -79,7 +77,7 @@
     }
 
     API.ws_destroy();
-    delete sessionStorage.miq_token;
+    delete localStorage.miq_token;
   };
 
   API.autorenew = function() {
@@ -150,9 +148,9 @@
       o.headers['X-Auth-Skip-Token-Renewal'] = 'true';
     }
 
-    if (sessionStorage.miq_token) {
+    if (localStorage.miq_token) {
       o.headers = o.headers || {};
-      o.headers['X-Auth-Token'] = sessionStorage.miq_token;
+      o.headers['X-Auth-Token'] = localStorage.miq_token;
     }
 
     if (o.headers) {
@@ -199,9 +197,7 @@
 
       if ((response.status === 401) && !options.skipLoginRedirect) {
         // Unauthorized - always redirect to dashboard#login
-        add_flash(__('API logged out, redirecting to the login page'), 'warning');
-        window.document.location.href = '/dashboard/login?timeout=true';
-
+        redirectLogin(__('API logged out, redirecting to the login page'));
         return ret;
       }
 

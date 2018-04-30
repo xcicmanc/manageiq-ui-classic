@@ -3,7 +3,25 @@ describe ServiceController do
     stub_user(:features => :all)
   end
 
-  context "#service_delete" do
+  let(:go_definition) do
+    FactoryGirl.create(:generic_object_definition, :properties => {:associations => {"vms" => "Vm", "services" => "Service"}})
+  end
+
+  let(:service_with_go) do
+    service = FactoryGirl.create(:service, :name => 'Services with a GO')
+
+    go = FactoryGirl.create(
+      :generic_object,
+      :generic_object_definition => go_definition,
+      :name                      => 'go_assoc',
+      :services                  => [service]
+    )
+    service.add_resource(go)
+
+    service
+  end
+
+  describe "#service_delete" do
     it "display flash message with description of deleted Service" do
       st  = FactoryGirl.create(:service_template)
       svc = FactoryGirl.create(:service, :service_template => st, :name => "GemFire", :description => "VMware vFabric GEMFIRE")
@@ -28,6 +46,41 @@ describe ServiceController do
 
       expect(controller.send(:flash_errors?)).not_to be_truthy
     end
+
+    it "replaces right cell after service is deleted" do
+      service = FactoryGirl.create(:service)
+      allow(controller).to receive(:x_build_tree)
+      controller.instance_variable_set(:@settings, {})
+      controller.instance_variable_set(:@sb, {})
+      controller.instance_variable_set(:@_params, :id => service.id)
+      expect(controller).to receive(:render)
+      expect(response.status).to eq(200)
+      controller.send(:service_delete)
+
+      flash_message = assigns(:flash_array).first
+      expect(flash_message[:message]).to include("Delete successful")
+      expect(flash_message[:level]).to be(:success)
+    end
+
+    context 'setting x_node properly after deleting a service from its details page' do
+      let(:service) { FactoryGirl.create(:service) }
+
+      before do
+        allow(controller).to receive(:replace_right_cell)
+        controller.instance_variable_set(:@_params, :id => service.id)
+      end
+
+      it 'sets x_node to return to Active Services' do
+        controller.send(:service_delete)
+        expect(controller.x_node).to eq("xx-asrv")
+      end
+
+      it 'sets x_node to return to Retired Services' do
+        service.update_attributes(:retired => true)
+        controller.send(:service_delete)
+        expect(controller.x_node).to eq("xx-rsrv")
+      end
+    end
   end
 
   describe 'x_button' do
@@ -50,23 +103,6 @@ describe ServiceController do
     end
   end
 
-  context "#service_delete" do
-    it "replaces right cell after service is deleted" do
-      service = FactoryGirl.create(:service)
-      allow(controller).to receive(:x_build_tree)
-      controller.instance_variable_set(:@settings, {})
-      controller.instance_variable_set(:@sb, {})
-      controller.instance_variable_set(:@_params, :id => service.id)
-      expect(controller).to receive(:render)
-      expect(response.status).to eq(200)
-      controller.send(:service_delete)
-
-      flash_message = assigns(:flash_array).first
-      expect(flash_message[:message]).to include("Delete successful")
-      expect(flash_message[:level]).to be(:success)
-    end
-  end
-
   context "#show" do
     render_views
 
@@ -78,24 +114,49 @@ describe ServiceController do
       expect(response.body).to include('Smart Management')
     end
 
+    it 'displays the associated custom attributes for the ansible service template' do
+      EvmSpecHelper.local_miq_server
+      record = FactoryGirl.create(:service_ansible_playbook)
+      record.custom_attributes << FactoryGirl.build(:miq_custom_attribute,
+                                                    :resource_type => "ServiceAnsiblePlaybook",
+                                                    :resource_id   => record.id,
+                                                    :name          => "custom_attribute_1",
+                                                    :value         => 'value1')
+      get :explorer, :params => { :id => "s-#{record.id}" }
+      expect(response.status).to eq(200)
+      expect(response.body).to include('Custom Attributes')
+    end
+
     it 'displays generic objects as a nested list' do
       EvmSpecHelper.create_guid_miq_server_zone
       login_as FactoryGirl.create(:user)
       controller.instance_variable_set(:@breadcrumbs, [])
-      service = FactoryGirl.create(:service, :name => "Abc")
-      definition = FactoryGirl.create(:generic_object_definition,
-                                      :properties => {:associations => {"vms" => "Vm", "services" => "Service"}})
-      go = FactoryGirl.create(
-        :generic_object,
-        :generic_object_definition => definition,
-        :name                      => 'go_assoc',
-        :services                  => [service]
-      )
-      service.add_resource(go)
 
-      get :show, :params => { :id => service.id, :display => 'generic_objects'}
+      get :show, :params => { :id => service_with_go.id, :display => 'generic_objects'}
       expect(response.status).to eq(200)
-      expect(assigns(:breadcrumbs)).to eq([{:name => "Abc (All Generic Objects)", :url => "/service/show/#{service.id}?display=generic_objects"}])
+      expect(assigns(:breadcrumbs)).to eq([{:name => "Services with a GO (All Generic Objects)", :url => "/service/show/#{service_with_go.id}?display=generic_objects"}])
+    end
+
+    it 'displays the selected generic object' do
+      EvmSpecHelper.create_guid_miq_server_zone
+      login_as FactoryGirl.create(:user)
+      controller.instance_variable_set(:@breadcrumbs, [])
+      service = FactoryGirl.create(:service, :name => "Abc")
+      go1 = FactoryGirl.create(:generic_object,
+                               :generic_object_definition => go_definition,
+                               :name                      => 'GOTest_1',
+                               :services                  => [service])
+      go1.add_to_service(service)
+
+      go2 = FactoryGirl.create(:generic_object,
+                               :generic_object_definition => go_definition,
+                               :name                      => 'GOTest_2',
+                               :services                  => [service])
+      go2.add_to_service(service)
+      get :show, :params => { :id => service.id, :display => 'generic_objects', :generic_object_id => go2.id}
+      expect(response.status).to eq(200)
+      expect(assigns(:breadcrumbs)).to eq([{:name => "Abc (All Generic Objects)", :url => "/service/show/#{service.id}?display=generic_objects"},
+                                           {:name => "GOTest_2", :url => "/service/show/#{service.id}?display=generic_objects&generic_object_id=#{go2.id}"}])
     end
 
     it 'redirects to service detail page when Services maintab is clicked right after viewing the GO object' do
@@ -103,11 +164,9 @@ describe ServiceController do
       login_as FactoryGirl.create(:user)
       controller.instance_variable_set(:@breadcrumbs, [])
       service = FactoryGirl.create(:service, :name => "Abc")
-      definition = FactoryGirl.create(:generic_object_definition,
-                                      :properties => {:associations => {"vms" => "Vm", "services" => "Service"}})
       go = FactoryGirl.create(
         :generic_object,
-        :generic_object_definition => definition,
+        :generic_object_definition => go_definition,
         :name                      => 'GOTest',
         :services                  => [service]
       )
@@ -116,7 +175,6 @@ describe ServiceController do
       expect(response.status).to eq(200)
       expect(assigns(:breadcrumbs)).to eq([{:name => "Abc (All Generic Objects)", :url => "/service/show/#{service.id}?display=generic_objects"},
                                            {:name => "GOTest", :url => "/service/show/#{service.id}?display=generic_objects&generic_object_id=#{go.id}"}])
-      is_expected.to render_template("layouts/_item")
       is_expected.to render_template("service/show")
 
       get :show, :params => { :id => service.id}
@@ -135,11 +193,9 @@ describe ServiceController do
 
       it "when Generic Object Tag is pressed for the generic object nested list" do
         service = FactoryGirl.create(:service, :name => "Service with Generic Objects")
-        definition = FactoryGirl.create(:generic_object_definition,
-                                        :properties => {:associations => {"vms" => "Vm", "services" => "Service"}})
         go = FactoryGirl.create(
           :generic_object,
-          :generic_object_definition => definition,
+          :generic_object_definition => go_definition,
           :name                      => 'go_assoc',
           :services                  => [service]
         )
@@ -251,6 +307,74 @@ describe ServiceController do
       record = FactoryGirl.create(:service)
       controller.instance_variable_set(:@record, record)
       expect(controller.send(:textual_group_list)).to include(array_including(:generic_objects))
+    end
+  end
+
+  context 'displaying a list of All Services' do
+    describe '#tree_select' do
+      render_views
+
+      let(:service_search) { FactoryGirl.create(:miq_search, :description => 'a', :db => 'Service') }
+
+      it 'renders GTL of All Services, filtered by choosen filter from accordion' do
+        expect_any_instance_of(GtlHelper).to receive(:render_gtl).with match_gtl_options(
+          :model_name                     => 'Service',
+          :report_data_additional_options => {
+            :model       => 'Service',
+            :named_scope => nil
+          }
+        )
+        expect(controller).to receive(:process_show_list).once.and_call_original
+        post :tree_select, :params => {:id => "ms-#{service_search.id}"}
+        expect(response.status).to eq(200)
+      end
+
+      it 'calls load_adv_search method to load filter from filters in accordion' do
+        expect(controller).to receive(:load_adv_search).once
+        post :tree_select, :params => {:id => "ms-#{service_search.id}"}
+        expect(response.status).to eq(200)
+      end
+    end
+
+    context 'applying filter from Advanced Search' do
+      describe '#get_node_info' do
+        let(:edit) { {:new => {}, :adv_search_applied => {:text => " - Filtered by Filter1"}} }
+
+        before do
+          controller.instance_variable_set(:@edit, edit)
+          controller.instance_variable_set(:@right_cell_text, nil)
+          controller.instance_variable_set(:@sb, {})
+        end
+
+        it 'does not call load_adv_search method' do
+          expect(controller).not_to receive(:load_adv_search)
+          controller.send(:get_node_info, "root")
+        end
+
+        it 'calls process_show_list method' do
+          expect(controller).to receive(:process_show_list)
+          controller.send(:get_node_info, "root")
+        end
+
+        it 'sets right cell text properly' do
+          allow(controller).to receive(:x_tree).and_return("type" => :svcs)
+          controller.send(:get_node_info, "root")
+          expect(controller.instance_variable_get(:@right_cell_text)).to eq("All Services - Filtered by Filter1")
+        end
+
+        context 'searching text' do
+          let(:search) { "Service" }
+
+          before do
+            controller.instance_variable_set(:@search_text, search)
+          end
+
+          it 'updates right cell text properly' do
+            controller.send(:get_node_info, "root")
+            expect(controller.instance_variable_get(:@right_cell_text)).to eq("All Services (Names with \"#{search}\")")
+          end
+        end
+      end
     end
   end
 

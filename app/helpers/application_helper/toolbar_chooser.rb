@@ -58,7 +58,7 @@ class ApplicationHelper::ToolbarChooser
 
   private
 
-  delegate :session, :from_cid, :x_node, :x_active_tree, :super_admin_user?, :render_gtl_view_tb?,
+  delegate :session, :x_node, :x_active_tree, :super_admin_user?, :render_gtl_view_tb?,
            :parse_nodetype_and_id, :to => :@view_context
 
   def initialize(view_context, view_binding, instance_data)
@@ -155,7 +155,7 @@ class ApplicationHelper::ToolbarChooser
   end
 
   def domain_or_namespace_toolbar(node_id)
-    ns = MiqAeNamespace.find(from_cid(node_id))
+    ns = MiqAeNamespace.find(node_id)
     if ns.domain?
       "miq_ae_domain_center_tb"
     elsif !ns.domain?
@@ -285,12 +285,6 @@ class ApplicationHelper::ToolbarChooser
         return "miq_schedules_center_tb"
       elsif x_node.split('-').first == "msc"
         return "miq_schedule_center_tb"
-      elsif x_node.split('-').last == "l"
-        return "ldap_regions_center_tb"
-      elsif x_node.split('-').first == "lr"
-        return "ldap_region_center_tb"
-      elsif x_node.split('-').first == "ld"
-        return "ldap_domain_center_tb"
       elsif x_node.split('-').last == "sis"
         return "scan_profiles_center_tb"
       elsif x_node.split('-').first == "sis"
@@ -445,9 +439,10 @@ class ApplicationHelper::ToolbarChooser
     to_display = %w(availability_zones cloud_networks cloud_object_store_containers cloud_subnets
                     cloud_tenants cloud_volumes ems_clusters flavors floating_ips host_aggregates hosts
                     load_balancers network_ports network_routers orchestration_stacks resource_pools
-                    security_groups storages middleware_deployments middleware_datasources
-                    middleware_messagings middleware_servers)
-    to_display_center = %w(stack_orchestration_template topology cloud_object_store_objects generic_objects physical_servers)
+                    security_groups storages middleware_deployments
+                    middleware_servers)
+    to_display_center = %w(stack_orchestration_template topology cloud_object_store_objects generic_objects physical_servers guest_devices)
+    performance_layouts = %w(vm host ems_container)
     if @lastaction == 'show' && (@view || @display != 'main') && !@layout.starts_with?("miq_request")
       if @display == "vms" || @display == "all_vms"
         return "vm_infras_center_tb"
@@ -457,7 +452,7 @@ class ApplicationHelper::ToolbarChooser
         return "vm_clouds_center_tb"
       elsif @display == "miq_templates"
         return "template_infras_center_tb"
-      elsif (@layout == "vm" || @layout == "host") && @display == "performance"
+      elsif performance_layouts.include?(@layout) && @display == "performance"
         return "#{@explorer ? "x_" : ""}vm_performance_tb"
       elsif @display == "dashboard"
         return "#{@layout}_center_tb"
@@ -465,9 +460,11 @@ class ApplicationHelper::ToolbarChooser
         return "#{@display}_center_tb"
       elsif to_display_center.include?(@display)
         return "#{@display}_center"
+      elsif @layout == 'ems_container'
+        return "#{@display}_center"
       end
     elsif @display == 'generic_objects'
-      return "#{@display}_center"
+      return @lastaction == 'generic_object' ? nil : 'generic_objects_center'
     elsif @lastaction == "compare_miq" || @lastaction == "compare_compress"
       return "compare_center_tb"
     elsif @lastaction == "drift_history"
@@ -475,89 +472,80 @@ class ApplicationHelper::ToolbarChooser
     elsif @lastaction == "drift"
       return "drift_center_tb"
     else
+      return nil if @in_a_form
+
       # show_list and show screens
-      unless @in_a_form
-        if %w(auth_key_pair_cloud
-              availability_zone
-              host_aggregate
-              cloud_object_store_object
-              cloud_object_store_container
-              cloud_tenant
-              cloud_volume
-              cloud_volume_backup
-              cloud_volume_snapshot
-              configuration_job
-              container
-              container_group
-              container_node
-              container_service
-              persistent_volume
-              ems_cloud
-              ems_cluster
-              ems_container
-              ems_datawarehouse
-              ems_middleware
-              container_project
-              container_route
-              container_replicator
-              container_image
-              ems_network
-              security_group
-              floating_ip
-              cloud_subnet
-              network_router
-              network_topology
-              network_port
-              cloud_network
-              load_balancer
-              container_image_registry
-              ems_infra
-              ems_physical_infra
-              flavor
-              host
-              container_build
-              infra_networking
-              infra_topology
-              ems_storage
-              container_topology
-              middleware_topology
-              cloud_topology
-              middleware_server
-              middleware_deployment
-              middleware_datasource
-              middleware_domain
-              middleware_server_group
-              middleware_messaging
-              orchestration_stack
-              physical_infra_topology
-              physical_server
-              resource_pool
-              container_template
-              ems_block_storage
-              ems_object_storage
-              timeline
-              usage
-              generic_object_definition).include?(@layout)
-          if ["show_list"].include?(@lastaction)
-            return "#{@layout.pluralize}_center_tb"
-          else
-            return "#{@layout}_center_tb"
-          end
-        elsif @layout == "configuration" && @tabform == "ui_4"
-          return "time_profiles_center_tb"
-        elsif @layout == "diagnostics"
-          return "diagnostics_center_tb"
-        elsif @layout == "miq_policy_logs" || @layout == "miq_ae_logs"
-          return "logs_center_tb"
-        elsif @layout.to_s.starts_with?("miq_request_")
-          if ["show_list"].include?(@lastaction)
-            return "miq_requests_center_tb"
-          else
-            return "miq_request_center_tb"
-          end
-        elsif %w(my_tasks all_tasks).include?(@layout)
-          return "tasks_center_tb"
-        end
+      if %w(auth_key_pair_cloud
+            availability_zone
+            host_aggregate
+            cloud_object_store_object
+            cloud_object_store_container
+            cloud_tenant
+            cloud_volume
+            cloud_volume_backup
+            cloud_volume_snapshot
+            configuration_job
+            container
+            container_group
+            container_node
+            container_service
+            persistent_volume
+            ems_cloud
+            ems_cluster
+            ems_container
+            ems_middleware
+            container_project
+            container_route
+            container_replicator
+            container_image
+            ems_network
+            security_group
+            floating_ip
+            cloud_subnet
+            network_router
+            network_topology
+            network_port
+            cloud_network
+            load_balancer
+            container_image_registry
+            ems_infra
+            ems_physical_infra
+            flavor
+            host
+            container_build
+            infra_networking
+            infra_topology
+            ems_storage
+            container_topology
+            cloud_topology
+            middleware_server
+            middleware_deployment
+            middleware_domain
+            middleware_server_group
+            orchestration_stack
+            physical_infra_topology
+            physical_server
+            resource_pool
+            container_template
+            ems_block_storage
+            ems_object_storage
+            timeline
+            usage
+            guest_device
+            generic_object_definition).include?(@layout)
+
+        return @lastaction == 'show_list' ? "#{@layout.pluralize}_center_tb" : "#{@layout}_center_tb"
+
+      elsif @layout == "configuration" && @tabform == "ui_4"
+        return "time_profiles_center_tb"
+      elsif @layout == "diagnostics"
+        return "diagnostics_center_tb"
+      elsif @layout == "miq_policy_logs" || @layout == "miq_ae_logs"
+        return "logs_center_tb"
+      elsif @layout.to_s.starts_with?("miq_request_")
+        return @lastaction == 'show_list' ? 'miq_requests_center_tb' : 'miq_request_center_tb'
+      elsif %w(my_tasks all_tasks).include?(@layout)
+        return "tasks_center_tb"
       end
     end
     nil

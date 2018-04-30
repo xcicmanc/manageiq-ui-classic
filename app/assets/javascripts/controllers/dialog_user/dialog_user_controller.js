@@ -24,6 +24,7 @@ ManageIQ.angular.app.controller('dialogUserController', ['API', 'dialogFieldRefr
   vm.submitButtonClicked = submitButtonClicked;
   vm.cancelClicked = cancelClicked;
   vm.saveable = saveable;
+  vm.isValid = false;
 
   function refreshField(field) {
     var idList = {
@@ -37,6 +38,7 @@ ManageIQ.angular.app.controller('dialogUserController', ['API', 'dialogFieldRefr
   }
 
   function setDialogData(data) {
+    vm.isValid = data.validations.isValid;
     vm.dialogData = data.data;
   }
 
@@ -45,25 +47,30 @@ ManageIQ.angular.app.controller('dialogUserController', ['API', 'dialogFieldRefr
     miqService.sparkleOn();
     var apiData;
     if (apiSubmitEndpoint.match(/generic_objects/)) {
-      apiData = {parameters: vm.dialogData};
+      apiData = {action: apiAction, parameters: _.omit(vm.dialogData, 'action')};
     } else {
       apiData = vm.dialogData;
     }
-    API.post(apiSubmitEndpoint, apiData).then(function() {
+    API.post(apiSubmitEndpoint, apiData, {skipErrors: [400]}).then(function() {
       miqService.redirectBack(__('Order Request was Submitted'), 'info', finishSubmitEndpoint);
     }).catch(function(err) {
       miqService.sparkleOff();
-      add_flash(__('Error requesting data from server'), 'error');
+      var fullErrorMessage = err.data.error.message;
+      var allErrorMessages = fullErrorMessage.split('-')[1].split(',');
+      clearFlash();
+      _.forEach(allErrorMessages, (function(errorMessage) {
+        add_flash(errorMessage, 'error');
+      }));
       console.log(err);
       return Promise.reject(err);
     });
   }
 
   function cancelClicked(_event) {
-    miqService.miqAjaxButton(cancelEndpoint);
+    miqService.redirectBack(__('Dialog Cancelled'), 'info', cancelEndpoint);
   }
 
   function saveable() {
-    return ! dialogFieldRefreshService.areFieldsBeingRefreshed;
+    return vm.isValid && ! dialogFieldRefreshService.areFieldsBeingRefreshed;
   }
 }]);

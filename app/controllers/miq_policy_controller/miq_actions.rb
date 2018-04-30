@@ -14,7 +14,7 @@ module MiqPolicyController::MiqActions
       end
       @sb[:action] = nil
       get_node_info(x_node)
-      replace_right_cell(:nodetype => @nodetype)
+      replace_right_cell(:nodetype => @nodetype, :remove_form_buttons => true)
       return
     when "reset", nil # Reset or first time in
       action_build_edit_screen
@@ -50,8 +50,8 @@ module MiqPolicyController::MiqActions
         action_get_info(MiqAction.find(action.id))
         @edit = nil
         @nodetype = "a"
-        @new_action_node = "a-#{to_cid(action.id)}"
-        replace_right_cell(:nodetype => "a", :replace_trees => params[:button] == "save" ? [:policy_profile, :policy, :action] : [:action])
+        @new_action_node = "a-#{action.id}"
+        replace_right_cell(:nodetype => "a", :replace_trees => params[:button] == "save" ? %i(policy_profile policy action) : %i(action), :remove_form_buttons => true)
         @sb[:action] = nil
       else
         action.errors.each do |field, msg|
@@ -78,7 +78,7 @@ module MiqPolicyController::MiqActions
     process_actions(actions, "destroy") unless actions.empty?
     @new_action_node = self.x_node = "root"
     get_node_info(x_node)
-    replace_right_cell(:nodetype => "root", :replace_trees => [:action])
+    replace_right_cell(:nodetype => "root", :replace_trees => %i(action))
   end
 
   def action_field_changed
@@ -162,7 +162,7 @@ module MiqPolicyController::MiqActions
     @edit = session[:edit]
     @action = @edit[:action_id] ? MiqAction.find_by_id(@edit[:action_id]) : MiqAction.new
     _, id = parse_nodetype_and_id(params[:id])
-    tag_name = Classification.find(from_cid(id)).tag.name
+    tag_name = Classification.find(id).tag.name
     @tag_selected = Classification.tag2human(tag_name)
     @edit[:new][:options][:tags] = {} unless tag_name.nil?
     @edit[:new][:options][:tags] = [tag_name] unless tag_name.nil?

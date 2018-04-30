@@ -94,6 +94,7 @@ class OrchestrationStackController < ApplicationController
         orchestration_stack_retire
       when "orchestration_stack_retire_now"
         orchestration_stack_retire_now
+        return
       when "orchestration_stack_tag"
         tag(OrchestrationStack)
       when params[:pressed] == "custom_button"
@@ -222,8 +223,7 @@ class OrchestrationStackController < ApplicationController
           {:error_message => bang.message}, :error)
         render_flash
       else
-        add_flash(_("Orchestration Template \"%{name}\" was saved") % {:name => ot.name})
-        session[:flash_msgs] = @flash_array.dup
+        flash_to_session(_("Orchestration Template \"%{name}\" was saved") % {:name => ot.name})
         javascript_redirect :controller => 'catalog',
                             :action     => 'ot_show',
                             :id         => ot.id

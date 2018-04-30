@@ -33,22 +33,8 @@ class StorageController < ApplicationController
   end
 
   def show_list
-    redirect_to :action => 'explorer', :flash_msg => @flash_array ? @flash_array[0][:message] : nil
-  end
-
-  def show_new(id = nil)
-    @flash_array = [] if params[:display]
-    @sb[:action] = nil
-
-    @display = params[:display] || "main"
-    @lastaction = "show"
-    @showtype = "config"
-    @record = find_record(Storage, id || params[:id])
-    return if record_no_longer_exists?(@record)
-
-    @explorer = true if request.xml_http_request? # Ajax request means in explorer
-
-    @gtl_url = "/show"
+    flash_to_session
+    redirect_to(:action => 'explorer')
   end
 
   def init_show
@@ -65,9 +51,8 @@ class StorageController < ApplicationController
         action = "explorer"
       else
         url = request.env['HTTP_REFERER'].split('/')
-        add_flash(_("User '%{username}' is not authorized to access '%{controller_name}'") %
+        flash_to_session(_("User '%{username}' is not authorized to access '%{controller_name}'") %
                     {:username => current_userid, :controller_name => ui_lookup(:table => controller_name)}, :warning)
-        session[:flash_msgs] = @flash_array.dup
         redirect_controller  = url[3]
         action               = url[4]
       end
@@ -218,7 +203,7 @@ class StorageController < ApplicationController
       @nodetype, id = parse_nodetype_and_id(valid_active_node(x_node))
 
       if x_tree[:type] == :storage && (@nodetype == "root" || @nodetype == "ms")
-        search_id = @nodetype == "root" ? 0 : from_cid(id)
+        search_id = @nodetype == "root" ? 0 : id
         listnav_search_selected(search_id) unless params.key?(:search_text) # Clear or set the adv search filter
         if @edit[:adv_search_applied] &&
            MiqExpression.quick_search?(@edit[:adv_search_applied][:exp]) &&
@@ -270,7 +255,7 @@ class StorageController < ApplicationController
     nodes = x_node.split('-')
     case nodes.first
     when "xx"  then @record = find_record(Storage, params[:id])
-    when "dsc" then @storage_record = find_record(EmsFolder, from_cid(params[:id]))
+    when "dsc" then @storage_record = find_record(EmsFolder, params[:id])
     end
   end
 
@@ -315,7 +300,7 @@ class StorageController < ApplicationController
       # treebuilder initializes x_node to root first time in locals_for_render,
       # need to set this here to force & activate node when link is clicked outside of explorer.
       self.x_active_tree = :storage_tree
-      self.x_node = "#{nodetype}-#{to_cid(id)}"
+      self.x_node = "#{nodetype}-#{id}"
     end
 
     build_accordions_and_trees
@@ -354,6 +339,7 @@ class StorageController < ApplicationController
     when :storage_tree     then storage_get_node_info(node)
     when :storage_pod_tree then storage_pod_get_node_info(node)
     end
+    @right_cell_text += _(" (Names with \"%{search_text}\")") % {:search_text => @search_text} if @search_text.present?
     @right_cell_text += @edit[:adv_search_applied][:text] if x_tree && x_tree[:type] == :storage && @edit && @edit[:adv_search_applied]
 
     if @edit && @edit.fetch_path(:adv_search_applied, :qs_exp) # If qs is active, save it in history
@@ -427,7 +413,7 @@ class StorageController < ApplicationController
     current_nodetype = search_text_type(@sb[:storage_search_text][:current_node])
 
     @sb[:storage_search_text]["#{previous_nodetype}_search_text"] = @search_text
-    @search_text = @sb[:storage_search_text]["#{current_nodetype}_search_text"]
+    @search_text = @sb[:storage_search_text]["#{current_nodetype}_search_text"] || @sb[:search_text]
     @sb[:storage_search_text]["#{x_active_accord}_search_text"] = @search_text
   end
 
@@ -465,9 +451,9 @@ class StorageController < ApplicationController
     # Handle bottom cell
     if @pages || @in_a_form
       if @pages && !@in_a_form
-        presenter.hide(:form_buttons_div).show(:pc_div_1)
+        presenter.hide(:form_buttons_div)
       elsif @in_a_form
-        presenter.hide(:pc_div_1).show(:form_buttons_div)
+        presenter.remove_paging.show(:form_buttons_div)
       end
       presenter.show(:paging_div)
     else
@@ -493,8 +479,9 @@ class StorageController < ApplicationController
     c_tb = build_toolbar(center_toolbar_filename) unless @in_a_form
     h_tb = build_toolbar('x_history_tb')
     v_tb = build_toolbar('x_gtl_view_tb') unless record_showing || (x_active_tree == :storage_pod_tree && x_node == 'root') || @in_a_form
+    cb_tb = build_toolbar(custom_toolbar_explorer)
 
-    presenter.reload_toolbars(:history => h_tb, :center => c_tb, :view => v_tb)
+    presenter.reload_toolbars(:history => h_tb, :center => c_tb, :view => v_tb, :custom => cb_tb)
     presenter.set_visibility(h_tb.present? || c_tb.present? || v_tb.present?, :toolbar)
     presenter[:record_id] = @record.try(:id)
 
@@ -537,6 +524,10 @@ class StorageController < ApplicationController
     ]
   end
   helper_method :textual_group_list
+
+  def custom_toolbar_explorer
+    @record.present? ? Mixins::CustomButtons::Result.new(:single) : Mixins::CustomButtons::Result.new(:list)
+  end
 
   menu_section :inf
   has_custom_buttons

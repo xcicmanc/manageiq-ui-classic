@@ -11,22 +11,14 @@ describe OpsController do
         silence_warnings { OpsController::Settings::Schedules::STGROOT = 'ST'.freeze }
 
         allow(controller).to receive(:find_checked_items).and_return([])
-        expect(controller).to receive(:render)
-        expect(controller).to receive(:schedule_build_list)
-        expect(controller).to receive(:settings_get_info)
-        expect(controller).to receive(:replace_right_cell)
       end
 
       it "#schedule_enable" do
-        controller.schedule_enable
-        flash_messages = controller.instance_variable_get(:@flash_array)
-        expect(flash_messages.first).to eq(:message => "The selected Schedules were enabled", :level => :error)
+        expect { controller.schedule_enable }.to raise_error("Can't access records without an id")
       end
 
       it "#schedule_disable" do
-        controller.schedule_disable
-        flash_messages = controller.instance_variable_get(:@flash_array)
-        expect(flash_messages.first).to eq(:message => "The selected Schedules were disabled", :level => :error)
+        expect { controller.schedule_disable }.to raise_error("Can't access records without an id")
       end
     end
 
@@ -39,7 +31,7 @@ describe OpsController do
         @sch = FactoryGirl.create(:miq_schedule)
         silence_warnings { OpsController::Settings::Schedules::STGROOT = 'ST'.freeze }
 
-        controller.params["check_#{controller.to_cid(@sch.id)}"] = '1'
+        controller.params["check_#{@sch.id}"] = '1'
         expect(controller).to receive(:render).never
         expect(controller).to receive(:schedule_build_list)
         expect(controller).to receive(:settings_get_info)
@@ -150,6 +142,7 @@ describe OpsController do
         expect(controller).to receive(:render)
         @zone = FactoryGirl.create(:zone, :name => 'zoneName', :description => "description1")
         allow(controller).to receive(:assert_privileges)
+        allow(controller).to receive(:x_node).and_return('root')
 
         @params = {:id     => 'new',
                    :action => "zone_edit",
@@ -165,7 +158,7 @@ describe OpsController do
         controller.send(:zone_edit)
 
         expect(controller.send(:flash_errors?)).to be_truthy
-        expect(assigns(:flash_array).first[:message]).to include("Name has already been taken")
+        expect(assigns(:flash_array).first[:message]).to include("Name is not unique within region")
       end
     end
 
@@ -237,6 +230,7 @@ describe OpsController do
                                        :active_accord => 'active_accord',
                                        :active_tab    => 'settings_server',
                                        :active_tree   => :settings_tree)
+      allow(controller).to receive(:x_node).and_return('xx-svr')
       expect(controller).to receive(:x_active_tree_replace_cell)
       expect(controller).to receive(:replace_explorer_trees)
       expect(controller).to receive(:rebuild_toolbars)

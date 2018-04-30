@@ -9,23 +9,24 @@ module MiqAeClassHelper
 
   def add_read_only_suffix(node_string, editable, enabled)
     if enabled && !editable
-      suffix = "Locked"
+      _("%{node_string} (Locked)") % {:node_string => node_string}
     elsif editable && !enabled
-      suffix = "Disabled"
+      _("%{node_string} (Disabled)") % {:node_string => node_string}
     else # !rec.enabled && !rec.editable?
-      suffix = "Locked & Disabled"
+      _("%{node_string} (Locked & Disabled)") % {:node_string => node_string}
     end
-    "#{node_string} (#{suffix})".html_safe
   end
 
   def domain_display_name(domain)
-    @record.fqname.split('/').first == domain.name ? "#{domain.name} (Same Domain)" : domain.name
+    @record.fqname.split('/').first == domain.name ? _("%{domain_name} (Same Domain)") % {:domain_name => domain.name} : domain.name
   end
 
   def domain_display_name_using_name(record, current_domain_name)
     domain_name = record.domain.name
     if domain_name == current_domain_name
-      return "#{domain_name} (Same Domain)", nil
+      return _("%{domain_name} (Same Domain)") % {:domain_name => domain_name}, nil
+    elsif !record.domain.enabled
+      return _("%{domain_name} (Disabled)") % {:domain_name => domain_name}, record.id
     else
       return domain_name, record.id
     end
@@ -124,5 +125,9 @@ module MiqAeClassHelper
       Rails.logger.warn("Missing fonticon for MiqAeField type \"#{field}\"")
       'fa fa-file-text-o'
     end
+  end
+
+  def state_class?(cls_id)
+    MiqAeClass.find_by(:id => cls_id).state_machine?
   end
 end

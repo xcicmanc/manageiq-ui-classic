@@ -1,13 +1,13 @@
 language: ruby
 rvm:
-- '2.3.1'
-- '2.4.2'
+- 2.3.6
+- 2.4.2
 sudo: false
 cache:
   bundler: true
   yarn: true
   directories:
-  - vendor/assets/bower_components
+  - vendor/assets/bower/bower_components
 addons:
   postgresql: '9.4'
 env:
@@ -15,12 +15,21 @@ env:
   - TEST_SUITE=spec
   - TEST_SUITE=spec:javascript
   - TEST_SUITE=spec:compile
-bundler_args: --no-deployment
+  - TEST_SUITE=spec:jest
+matrix:
+  exclude:
+  - rvm: 2.4.2
+    env: TEST_SUITE=spec:javascript
+  - rvm: 2.4.2
+    env: TEST_SUITE=spec:compile
+  - rvm: 2.4.2
+    env: TEST_SUITE=spec:jest
+bundler_args: "--no-deployment"
 before_install: source tools/ci/before_install.sh
 before_script: bundle exec rake $TEST_SUITE:setup
 script: bundle exec rake $TEST_SUITE
 before_cache:
-- cp bower.json vendor/assets/bower_components
+- cp bower.json vendor/assets/bower/bower_components
 after_script: source tools/ci/after_install.sh
 notifications:
   webhooks:

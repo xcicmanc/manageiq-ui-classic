@@ -1,5 +1,4 @@
 describe MiqAeClassController do
-  include CompressedIds
   context "#set_record_vars" do
     it "Namespace remains unchanged when a class is edited" do
       ns = FactoryGirl.create(:miq_ae_namespace)
@@ -220,8 +219,8 @@ describe MiqAeClassController do
   end
 
   context "get selected Class/Instance/Method record back" do
-    let(:miq_ae_domain) { double("MiqAeDomain", :name => "yet_another_fqname", :id => 1) }
-    let(:miq_ae_domain2) { double("MiqAeDomain", :name => "yet_another_fqname2", :id => 2) }
+    let(:miq_ae_domain) { double("MiqAeDomain", :name => "yet_another_fqname", :id => 1, :enabled => true) }
+    let(:miq_ae_domain2) { double("MiqAeDomain", :name => "yet_another_fqname2", :id => 2, :enabled => true) }
 
     let(:miq_ae_class) do
       double("MiqAeClass",
@@ -692,7 +691,7 @@ describe MiqAeClassController do
                                        :trees       => {},
                                        :active_tree => :ae_tree)
       allow(controller).to receive(:replace_right_cell)
-      controller.x_node = "aen-#{@namespace.compressed_id}"
+      controller.x_node = "aen-#{@namespace.id}"
     end
 
     it "Should delete multiple selected items from list" do
@@ -756,7 +755,7 @@ describe MiqAeClassController do
                                        :trees       => {},
                                        :active_tree => :ae_tree)
       allow(controller).to receive(:replace_right_cell)
-      controller.x_node = "aen-#{@namespace.compressed_id}"
+      controller.x_node = "aen-#{@namespace.id}"
       allow(controller).to receive(:find_records_with_rbac).and_return([@namespace])
     end
 
@@ -783,7 +782,7 @@ describe MiqAeClassController do
     end
 
     it "Should delete selected class in the tree" do
-      controller.x_node = "aec-#{@ae_class.compressed_id}"
+      controller.x_node = "aec-#{@ae_class.id}"
       controller.instance_variable_set(:@_params,
                                        :id => @namespace.id
                                       )
@@ -791,7 +790,7 @@ describe MiqAeClassController do
       controller.send(:deleteclasses)
       flash_messages = assigns(:flash_array)
       expect(flash_messages.first[:message]).to include("Automate Class \"foo_class\": Delete successful")
-      expect(controller.x_node).to eq("aen-#{@namespace.compressed_id}")
+      expect(controller.x_node).to eq("aen-#{@namespace.id}")
     end
   end
 
@@ -942,10 +941,10 @@ describe MiqAeClassController do
       )
       tree_node = controller.send(:open_parent_nodes, method)
       node_to_add = {
-        :key   => "aen-#{ApplicationRecord.compress_id(ns.id)}",
+        :key   => "aen-#{ns.id}",
         :nodes => [
           {
-            :key        => "aec-#{ApplicationRecord.compress_id(cls.id)}",
+            :key        => "aec-#{cls.id}",
             :text       => "foo_cls",
             :tooltip    => "Automate Class: foo_cls",
             :icon       => "ff ff-class",
@@ -957,6 +956,83 @@ describe MiqAeClassController do
         ]
       }
       expect(tree_node).to eq(node_to_add)
+    end
+  end
+
+  context "#deleteinstances" do
+    before do
+      stub_user(:features => :all)
+      domain = FactoryGirl.create(:miq_ae_domain, :tenant => Tenant.seed)
+      @namespace = FactoryGirl.create(:miq_ae_namespace, :name => "foo_namespace", :parent => domain)
+      @ae_class = FactoryGirl.create(:miq_ae_class, :name => "foo_class", :namespace_id => @namespace.id)
+      controller.instance_variable_set(:@sb,
+                                       :trees       => {},
+                                       :active_tree => :ae_tree)
+      @instance = FactoryGirl.create(:miq_ae_instance, :name => "instance01", :class_id => @ae_class.id)
+      allow(controller).to receive(:replace_right_cell)
+    end
+
+    it "Should delete selected instance from details screen" do
+      controller.x_node = "aei-#{@instance.id}"
+      controller.instance_variable_set(:@_params,
+                                       :pressed => "miq_ae_instance_delete",
+                                       :id      => @instance.id)
+      controller.send(:deleteinstances)
+    end
+
+    it "Should delete selected instance in the list" do
+      controller.x_node = "aec-#{@ae_class.id}"
+      controller.instance_variable_set(:@_params,
+                                       :miq_grid_checks => "aei-#{@instance.id}",
+                                       :pressed         => "miq_ae_instance_delete",
+                                       :id              => @ae_class.id)
+      controller.send(:deleteinstances)
+    end
+
+    after(:each) do
+      flash_messages = assigns(:flash_array)
+      expect(flash_messages.first[:message]).to include("Automate Instance \"#{@instance.name}\": Delete successful")
+      expect(controller.x_node).to eq("aec-#{@ae_class.id}")
+    end
+  end
+
+  context "#deletemethods" do
+    before do
+      stub_user(:features => :all)
+      domain = FactoryGirl.create(:miq_ae_domain, :tenant => Tenant.seed)
+      @namespace = FactoryGirl.create(:miq_ae_namespace, :name => "foo_namespace", :parent => domain)
+      @ae_class = FactoryGirl.create(:miq_ae_class, :name => "foo_class", :namespace_id => @namespace.id)
+      controller.instance_variable_set(:@sb,
+                                       :trees       => {},
+                                       :active_tree => :ae_tree)
+      @method = FactoryGirl.create(:miq_ae_method, :name => "method01", :scope => "class",
+                                   :language => "ruby", :class_id => @ae_class.id, :data => "exit MIQ_OK", :location => "inline")
+      @method2 = FactoryGirl.create(:miq_ae_method, :name => "method012", :scope => "class",
+                                   :language => "ruby", :class_id => @ae_class.id, :data => "exit MIQ_OK", :location => "inline")
+      allow(controller).to receive(:replace_right_cell)
+    end
+
+    it "Should delete selected method from details screen" do
+      controller.x_node = "aem-#{@method.id}"
+      controller.instance_variable_set(:@_params,
+                                       :pressed => "miq_ae_method_delete",
+                                       :id      => @method.id)
+      controller.send(:deletemethods)
+    end
+
+    it "Should delete selected method in the list" do
+      controller.x_node = "aec-#{@ae_class.id}"
+      controller.instance_variable_set(:@_params,
+                                       :miq_grid_checks => "aem-#{@method.id},aem-#{@method2.id}",
+                                       :pressed         => "miq_ae_method_delete",
+                                       :id              => @ae_class.id)
+      controller.send(:deletemethods)
+    end
+
+    after(:each) do
+      flash_messages = assigns(:flash_array)
+      expect(flash_messages.first[:message]).to include("Automate Method \"#{@method.name}\": Delete successful")
+      expect(controller.x_node).to eq("aec-#{@ae_class.id}")
     end
   end
 end

@@ -13,9 +13,9 @@ module ApplicationController::AdvancedSearch
   def adv_search_build(model)
     # Restore @edit hash if it's saved in @settings
     @expkey = :expression # Reset to use default expression key
-    if session.fetch_path(:adv_search, model.to_s)
+    if session.fetch_path(:adv_search, model.to_s) && %w(tag service_tag).exclude?(@sb[:action])
       adv_search_model = session[:adv_search][model.to_s]
-      @edit = copy_hash(adv_search_model[@expkey] ? adv_search_model : session[:edit])
+      @edit ||= copy_hash(adv_search_model[@expkey] ? adv_search_model : session[:edit])
       adv_search_clear_default_search_if_cant_be_seen
       @edit.delete(:exp_token)                                          # Remove any existing atom being edited
     else                                                                # Create new exp fields
@@ -149,14 +149,18 @@ module ApplicationController::AdvancedSearch
   end
 
   def adv_search_button_reset_fields
-    @edit[@expkey][:expression] = {"???" => "???"}            # Set as new exp element
-    @edit[:new][@expkey] = @edit[@expkey][:expression]        # Copy to new exp
+    @edit[@expkey][:exp_last_loaded] = nil                    # Clear the last search loaded
+    @edit[@expkey][:selected] = nil                           # Clear selected search
+    search_expression_reset_fields
+  end
+
+  def search_expression_reset_fields
+    @edit[@expkey][:expression] = {"???" => "???"}                            # Set as new exp element
+    @edit[:new][@expkey] = @edit[@expkey][:expression]                        # Copy to new exp
     @edit[@expkey].history.reset(@edit[@expkey][:expression])
     @edit[@expkey][:exp_table] = exp_build_table(@edit[@expkey][:expression]) # Rebuild the expression table
-    @edit[@expkey][:exp_last_loaded] = nil                    # Clear the last search loaded
-    @edit[:adv_search_name] = nil                             # Clear search name
-    @edit[:adv_search_report] = nil                           # Clear the report name
-    @edit[@expkey][:selected] = nil                           # Clear selected search
+    @edit[:adv_search_name] = @edit[:new_search_name] = nil                   # Clear search name
+    @edit[:adv_search_report] = nil                                           # Clear the report name
   end
 
   def adv_search_redraw_tree_and_main(tree)
@@ -182,15 +186,20 @@ module ApplicationController::AdvancedSearch
 
   def adv_search_redraw_left_div
     if x_active_tree.to_s == "configuration_manager_cs_filter_tree"
-      build_configuration_manager_tree(:configuration_manager_cs_filter, x_active_tree)
+      build_configuration_manager_cs_filter_tree(x_active_tree)
       build_accordions_and_trees
       load_or_clear_adv_search
     elsif @edit[:in_explorer] || %w(storage_tree configuration_scripts_tree svcs_tree).include?(x_active_tree.to_s)
       tree_type = x_active_tree.to_s.sub(/_tree/, '').to_sym
       builder = TreeBuilder.class_for_type(tree_type)
       tree = builder.new(x_active_tree, tree_type, @sb)
-      adv_search_redraw_tree_and_main(tree)
-      return
+      if tree_for_building_accordions?
+        @explorer = true
+        build_accordions_and_trees
+      else
+        adv_search_redraw_tree_and_main(tree)
+        return
+      end
     elsif %w(ems_cloud ems_infra).include?(@layout)
       build_listnav_search_list(@view.db)
     else
@@ -198,6 +207,18 @@ module ApplicationController::AdvancedSearch
     end
 
     adv_search_redraw_listnav_and_main
+  end
+
+  def tree_for_building_accordions?
+    %w(automation_manager_cs_filter_tree
+       configuration_scripts_tree
+       images_filter_tree
+       instances_filter_tree
+       svcs_tree
+       storage_tree
+       templates_filter_tree
+       vms_filter_tree
+       vms_instances_filter_tree).include?(x_active_tree.to_s)
   end
 
   def adv_search_redraw_search_partials(display_mode = nil)

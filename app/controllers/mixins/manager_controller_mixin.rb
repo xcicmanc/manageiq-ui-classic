@@ -12,7 +12,8 @@ module Mixins
     end
 
     def show_list
-      redirect_to :action => 'explorer', :flash_msg => @flash_array.try(:fetch_path, 0, :message)
+      flash_to_session
+      redirect_to(:action => 'explorer')
     end
 
     def find_or_build_provider
@@ -54,7 +55,7 @@ module Mixins
         else
           add_flash(_("%{model} \"%{name}\" was updated") % {:model => model, :name => @provider.name})
         end
-        replace_right_cell
+        replace_right_cell(:replace_trees => [x_active_accord])
       else
         @provider.errors.each do |field, msg|
           @sb[:action] = nil
@@ -188,7 +189,7 @@ module Mixins
                            else
                              'summary'
                            end
-        replace_right_cell
+        replace_right_cell unless @edit && @edit[:adv_search_applied] && MiqExpression.quick_search?(@edit[:adv_search_applied][:exp])
       end
     end
 
@@ -234,7 +235,7 @@ module Mixins
         save_provider
       else
         assert_privileges("#{privilege_prefix}_edit_provider")
-        manager_id            = from_cid(params[:miq_grid_checks] || params[:id] || find_checked_items[0])
+        manager_id            = params[:miq_grid_checks] || params[:id] || find_checked_items[0]
         @provider_manager     = find_record(concrete_model, manager_id)
         @providerdisplay_type = self.class.model_to_name(@provider_manager.type)
         render_form
@@ -328,7 +329,7 @@ module Mixins
         self.x_node = "root"
         get_node_info("root")
       else
-        show_record(from_cid(id))
+        show_record(id)
         model_string = ui_lookup(:model => @record.class.to_s)
         @right_cell_text = _("%{model} \"%{name}\"") % {:name => @record.name, :model => model_string}
       end
@@ -367,7 +368,7 @@ module Mixins
     end
 
     def miq_search_node
-      options = {:model => "ConfiguredSystem"}
+      options = {:model => model_from_active_tree(x_active_tree)}
       if x_active_tree == :configuration_scripts_tree
         options = {:model      => "ManageIQ::Providers::AnsibleTower::AutomationManager::ConfigurationScript",
                    :gtl_dbname => "automation_manager_configuration_scripts"}
@@ -452,9 +453,9 @@ module Mixins
       # Handle bottom cell
       if @pages || @in_a_form
         if @pages && !@in_a_form
-          presenter.hide(:form_buttons_div).show(:pc_div_1)
+          presenter.hide(:form_buttons_div)
         elsif @in_a_form
-          presenter.hide(:pc_div_1).show(:form_buttons_div)
+          presenter.remove_paging.show(:form_buttons_div)
         end
         presenter.show(:paging_div)
       else

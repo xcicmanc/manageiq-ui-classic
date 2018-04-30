@@ -9,6 +9,7 @@ module ReportController::Reports::Editor
   DEFAULT_PDF_PAGE_SIZE = "US-Letter".freeze
 
   CHARGEBACK_ALLOWED_FIELD_SUFFIXES = %w(
+    _rate
     _cost
     -owner_name
     _metric
@@ -19,6 +20,11 @@ module ReportController::Reports::Editor
     -chargeback_rates
     -vm_guid
     -vm_uid
+  ).freeze
+
+  METERING_VM_ALLOWED_FIELD_SUFFIXES = %w(
+    -beginning_of_resource_existence_in_report_interval
+    -end_of_resource_existence_in_report_interval
   ).freeze
 
   MAX_REPORT_COLUMNS = 100 # Default maximum number of columns in a report
@@ -102,7 +108,7 @@ module ReportController::Reports::Editor
         @edit = session[:edit] = nil # clean out the saved info
         if role_allows?(:feature => "miq_report_widget_editor")
           # all widgets for this report
-          get_all_widgets("report", from_cid(x_node.split('_').last))
+          get_all_widgets("report", x_node.split('_').last)
         end
         replace_right_cell(:replace_trees => [:reports])
       else
@@ -127,8 +133,8 @@ module ReportController::Reports::Editor
         @rpt = params[:id] && params[:id] != "new" ? MiqReport.for_user(current_user).find(params[:id]) :
                 MiqReport.new
         if @rpt.rpt_type == "Default"
-          flash = "Default reports can not be edited"
-          redirect_to :action => "show", :id => @rpt.id, :flash_msg => flash, :flash_error => true
+          flash_to_session(_('Default reports can not be edited'), :error)
+          redirect_to(:action => "show", :id => @rpt.id)
           return
         end
         set_form_vars
@@ -187,6 +193,7 @@ module ReportController::Reports::Editor
 
     get_time_profiles # Get time profiles list (global and user specific)
     cb_entities_by_provider if Chargeback.db_is_chargeback?(@edit[:new][:model]) && [ChargebackContainerImage, ChargebackContainerProject, MeteringContainerImage, MeteringContainerProject].include?(@edit[:new][:model].safe_constantize)
+    refresh_chargeback_filter_tab if Chargeback.db_is_chargeback?(@edit[:new][:model])
     case @sb[:miq_tab].split("_")[1]
     when "1"  # Select columns
       @edit[:models] ||= reportable_models
@@ -1331,16 +1338,6 @@ module ReportController::Reports::Editor
       cb_entities_by_provider if [ChargebackContainerImage, ChargebackContainerProject, MeteringContainerImage, MeteringContainerProject].include?(@rpt.db.safe_constantize)
     end
 
-    # Only show chargeback users choice if an admin
-    if admin_user?
-      @edit[:cb_users] = User.all.each_with_object({}) { |u, h| h[u.userid] = u.name }
-      @edit[:cb_tenant] = Tenant.all.each_with_object({}) { |t, h| h[t.id] = t.name }
-    else
-      @edit[:new][:cb_show_typ] = "owner"
-      @edit[:new][:cb_owner_id] = session[:userid]
-      @edit[:cb_owner_name] = current_user.name
-    end
-
     # Build trend limit cols array
     if model_report_type(@rpt.db) == :trend
       @edit[:limit_cols] = VimPerformanceTrend.trend_limit_cols(@edit[:new][:perf_trend_db], @edit[:new][:perf_trend_col], @edit[:new][:perf_interval])
@@ -1454,10 +1451,6 @@ module ReportController::Reports::Editor
       @edit[:cb_providers][:container_project][provider_name] = provider_id
       @edit[:cb_providers][:container_image][provider_name] = provider_id
     end
-  end
-
-  def cb_docker_image_labels
-    CustomAttribute.where(:section => "docker_labels").pluck(:name).uniq
   end
 
   def categories_hash
@@ -1628,7 +1621,7 @@ module ReportController::Reports::Editor
           # check if at least one report exists underneath it
           if level2_nodes[0].downcase == "custom" && level2_nodes[1].count > 1
             level2_nodes[1].each_with_index do |report|
-              self.x_node = "xx-#{i}_xx-#{i}-#{k}_rep-#{to_cid(@rpt.id)}" if report == @rpt.name
+              self.x_node = "xx-#{i}_xx-#{i}-#{k}_rep-#{@rpt.id}" if report == @rpt.name
             end
           end
         end

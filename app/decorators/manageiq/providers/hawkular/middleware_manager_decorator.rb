@@ -1,11 +1,9 @@
-module ManageIQ::Providers::Hawkular
-  class MiddlewareManagerDecorator < MiqDecorator
-    def self.fonticon
-      nil
-    end
+class ManageIQ::Providers::Hawkular::MiddlewareManagerDecorator < MiqDecorator
+  def self.fonticon
+    nil
+  end
 
-    def self.fileicon
-      "svg/vendor-hawkular.svg"
-    end
+  def self.fileicon
+    "svg/vendor-hawkular.svg"
   end
 end

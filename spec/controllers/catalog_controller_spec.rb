@@ -181,6 +181,30 @@ describe CatalogController do
     end
   end
 
+  context "#x_button catalogitem_edit" do
+    before do
+      vm = FactoryGirl.create(:vm_vmware,
+                              :ext_management_system => FactoryGirl.create(:ems_vmware),
+                              :storage               => FactoryGirl.create(:storage))
+      @miq_request = FactoryGirl.create(:miq_provision_request, :requester => admin_user, :src_vm_id => vm.id)
+      service_template_with_root_tenant.update_attributes(:prov_type => 'vmware')
+      service_template_with_root_tenant.add_resource(@miq_request)
+      service_template_with_root_tenant.save
+    end
+
+    it "shows flash message for missing Request" do
+      @miq_request.destroy
+      post :x_button, :params => {:id => service_template_with_root_tenant.id, :pressed => "catalogitem_edit", :format => :js}
+      expect(assigns(:flash_array).first[:message]).to include("Can not edit selected item, Request is missing")
+      expect(assigns(:edit)).to be_nil
+    end
+
+    it "continues with setting edit screen when Request is present" do
+      post :x_button, :params => {:id => service_template_with_root_tenant.id, :pressed => "catalogitem_edit", :format => :js}
+      expect(assigns(:edit)).not_to be_nil
+    end
+  end
+
   context "#st_edit" do
     it "@record is cleared out after Service Template is added" do
       controller.instance_variable_set(:@sb, {})
@@ -391,6 +415,42 @@ describe CatalogController do
       allow(controller).to receive(:replace_right_cell)
       controller.send(:ot_copy_submit)
       expect(OrchestrationTemplate.where(:name => @new_name).first.draft).to be_truthy
+    end
+  end
+
+  context "#ot_copy" do
+    it "Orchestration Template is copied but name is changed" do
+      controller.instance_variable_set(:@sb, {})
+      controller.instance_variable_set(:@_response, ActionDispatch::TestResponse.new)
+      ot = FactoryGirl.create(:orchestration_template_amazon)
+      controller.x_node = "xx-otcfn_ot-#{ot.id}"
+      name = "New Name"
+      description = "New Description"
+      new_content = "{\"AWSTemplateFormatVersion\" : \"new-version\"}"
+      session[:edit] = {
+        :new => {
+          :name        => name,
+          :description => description
+        },
+        :key => "ot_edit__#{ot.id}"
+      }
+
+      new_name = "New name for copied OT"
+      new_description = "New description for copied OT"
+
+      allow(controller).to receive(:replace_right_cell)
+      controller.instance_variable_set(:@_params,
+                                       :name        => new_name,
+                                       :description => new_description,
+                                       :id          => ot.id.to_s)
+      controller.send(:ot_form_field_changed)
+      controller.instance_variable_set(:@_params,
+                                       :button           => "add",
+                                       :original_ot_id   => ot.id,
+                                       :template_content => new_content)
+      controller.send(:ot_copy_submit)
+      expect(OrchestrationTemplate.where(:name        => new_name,
+                                         :description => new_description).first).to_not be_nil
     end
   end
 
@@ -610,7 +670,7 @@ describe CatalogController do
 
     it "Renders an orchestration template textual summary" do
       ot = FactoryGirl.create(:orchestration_template_amazon)
-      seed_session_trees('catalog', :ot_tree, "xx-otcfn_ot-#{controller.to_cid(ot.id)}")
+      seed_session_trees('catalog', :ot_tree, "xx-otcfn_ot-#{ot.id}")
       post :explorer
 
       expect(response).to have_http_status 200
@@ -757,6 +817,53 @@ describe CatalogController do
       controller.instance_variable_set(:@edit, :new => {:selected_resources => []})
       controller.send(:get_available_resources, "ServiceTemplate")
       expect(assigns(:edit)[:new][:available_resources].count).to eq(2)
+    end
+
+    context "#get_available_resources" do
+      let(:user_role) { FactoryGirl.create(:miq_user_role) }
+      let(:miq_group) { FactoryGirl.create(:miq_group, :miq_user_role => user_role, :entitlement => Entitlement.create!) }
+
+      before :each do
+        @st1 = FactoryGirl.create(:service_template, :type => "ServiceTemplate")
+        @st2 = FactoryGirl.create(:service_template, :type => "ServiceTemplate")
+        @st3 = FactoryGirl.create(:service_template, :type => "ServiceTemplate")
+        @st1.tag_with('/managed/service_level/one', :ns => '*')
+        @st2.tag_with('/managed/service_level/one', :ns => '*')
+        @st3.tag_with('/managed/service_level/two', :ns => '*')
+      end
+
+      it "list of available resources should contain the ones for the group matching tag Rbac" do
+        user = FactoryGirl.create(:user, :miq_groups => [miq_group])
+        user.current_group.entitlement = Entitlement.create!
+        user.current_group.entitlement.set_managed_filters([["/managed/service_level/one"]])
+        user.current_group.save
+        allow(User).to receive(:current_user).and_return(user)
+        controller.instance_variable_set(:@edit, :new => {:selected_resources => []})
+        controller.send(:get_available_resources, "ServiceTemplate")
+        expect(assigns(:edit)[:new][:available_resources].count).to eq(2)
+      end
+
+      it "list of available resources should not contain the ones for the group not matching tag Rbac" do
+        user = FactoryGirl.create(:user, :miq_groups => [miq_group])
+        user.current_group.entitlement = Entitlement.create!
+        user.current_group.entitlement.set_managed_filters([["/managed/service_level/zero"]])
+        user.current_group.save
+        allow(User).to receive(:current_user).and_return(user)
+        controller.instance_variable_set(:@edit, :new => {:selected_resources => []})
+        controller.send(:get_available_resources, "ServiceTemplate")
+        expect(assigns(:edit)[:new][:available_resources].count).to eq(0)
+      end
+
+      it "list of available resources for all tags matching Rbac" do
+        user = FactoryGirl.create(:user, :miq_groups => [miq_group])
+        user.current_group.entitlement = Entitlement.create!
+        user.current_group.entitlement.set_managed_filters([])
+        user.current_group.save
+        allow(User).to receive(:current_user).and_return(user)
+        controller.instance_variable_set(:@edit, :new => {:selected_resources => []})
+        controller.send(:get_available_resources, "ServiceTemplate")
+        expect(assigns(:edit)[:new][:available_resources].count).to eq(5)
+      end
     end
   end
 
@@ -993,6 +1100,23 @@ describe CatalogController do
 
         controller.send(:replace_right_cell, {:action => "dialog_provision", :presenter => @presenter})
         expect(@presenter[:set_visible_elements]).to include(:form_buttons_div => false)
+      end
+    end
+  end
+
+  describe '#service_template_list' do
+    let(:sandbox) { {:active_tree => tree} }
+
+    before do
+      controller.instance_variable_set(:@sb, sandbox)
+    end
+
+    context 'Service Catalogs accordion' do
+      let(:tree) { :svccat_tree }
+
+      it 'sets options for rendering proper type of view' do
+        expect(controller).to receive(:process_show_list).with(:gtl_dbname => :catalog, :named_scope => {})
+        controller.send(:service_template_list, {})
       end
     end
   end

@@ -26,18 +26,35 @@ describe OpsController do
 
     describe 'x_button actions' do
       it 'rbac group add' do
+        allow(controller).to receive(:x_node).and_return('xx-g')
         post :x_button, :params => {:pressed => 'rbac_group_add'}
         expect(response.status).to eq(200)
       end
 
-      it 'rbac group edit' do
-        post :x_button, :params => {:pressed => 'rbac_group_edit', :id => MiqGroup.first.id}
-        expect(response.status).to eq(200)
+      context 'with using real user' do
+        let(:feature) { MiqProductFeature.find_all_by_identifier(%w(rbac_group_edit)) }
+        let(:role)    { FactoryGirl.create(:miq_user_role, :miq_product_features => feature) }
+        let(:group)   { FactoryGirl.create(:miq_group, :miq_user_role => role) }
+        let(:user)    { FactoryGirl.create(:user, :miq_groups => [group], :role => "super_administrator") }
+
+        before do
+          EvmSpecHelper.seed_specific_product_features(%w(rbac_group_edit))
+          allow(User).to receive(:current_user).and_return(user)
+          allow(Rbac).to receive(:role_allows?).and_call_original
+          login_as user
+        end
+
+        it 'rbac group edit' do
+          allow(controller).to receive(:x_node).and_return('xx-g')
+          post :x_button, :params => {:pressed => 'rbac_group_edit', :id => group.id}
+          expect(response.status).to eq(200)
+        end
       end
 
       it 'rbac role add' do
         MiqProductFeature.seed
         session[:sandboxes] = {"ops" => {:trees => {}}}
+        allow(controller).to receive(:x_node).and_return('xx-ur')
         post :x_button, :params => {:pressed => 'rbac_role_add'}
         expect(response.status).to eq(200)
       end
@@ -65,9 +82,16 @@ describe OpsController do
   end
 
   describe 'rbac_user_edit' do
-    let(:group) { FactoryGirl.create(:miq_group) }
+    let(:group) { admin_user.miq_groups.first }
     before do
       ApplicationController.handle_exceptions = true
+    end
+
+    let(:admin_user) { FactoryGirl.create(:user_with_group, :role => 'super_administrator') }
+
+    before do
+      allow(User).to receive(:current_user).and_return(admin_user)
+      login_as admin_user
     end
 
     it 'can add a user w/ group' do
@@ -125,6 +149,25 @@ describe OpsController do
       flash_messages = assigns(:flash_array)
       expect(flash_messages.first[:message]).to eq("A User must be assigned to a Group")
       expect(flash_messages.first[:level]).to eq(:error)
+    end
+
+    it 'does not update the user without validation' do
+      user1 = FactoryGirl.create(:user, :name => "User1", :userid => "User1", :miq_groups => [group], :email => "user1@test.com")
+
+      session[:edit] = {:key => "rbac_user_edit__#{user1.id}",
+                        :new => {:name     => 'test8',
+                                 :userid   => 'test8',
+                                 :email    => 'test8@foo.bar',
+                                 :group    => nil,
+                                 :password => 'test8',
+                                 :verify   => 'test8'}}
+      expect(controller).to receive(:render_flash)
+      post :rbac_user_edit, :params => {:button => 'save', :id => user1.id}
+      flash_messages = assigns(:flash_array)
+      expect(flash_messages.first[:message]).to eq("A User must be assigned to a Group")
+      expect(flash_messages.first[:level]).to eq(:error)
+      expect(user1.miq_groups).to eq([group])
+      expect(user1.name).to eq('User1')
     end
   end
 
@@ -301,7 +344,7 @@ describe OpsController do
       _guid, @miq_server, @zone = EvmSpecHelper.remote_guid_miq_server_zone
       allow(controller).to receive(:check_privileges).and_return(true)
       allow(controller).to receive(:assert_privileges).and_return(true)
-      seed_session_trees('ops', :diagnostics_tree, "z-#{ApplicationRecord.compress_id(@zone.id)}")
+      seed_session_trees('ops', :diagnostics_tree, "z-#{@zone.id}")
       post :change_tab, :params => {:tab_id => "diagnostics_collect_logs"}
     end
 

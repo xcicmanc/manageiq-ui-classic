@@ -1,5 +1,6 @@
 module EmsCommon
   extend ActiveSupport::Concern
+  include EmsCommonHelper
 
   included do
     include Mixins::GenericSessionMixin
@@ -88,6 +89,7 @@ module EmsCommon
         cloud_tenants
         cloud_volumes
         cloud_volume_snapshots
+        cloud_volume_backups
         configuration_jobs
         container_builds
         container_groups
@@ -108,10 +110,8 @@ module EmsCommon
         images
         instances
         load_balancers
-        middleware_datasources
         middleware_deployments
         middleware_domains
-        middleware_messagings
         middleware_server_groups
         middleware_servers
         miq_templates
@@ -163,6 +163,28 @@ module EmsCommon
     session[:changed] = false
     drop_breadcrumb(:name => _("Edit %{object_type} '%{object_name}'") % {:object_type => ui_lookup(:tables => table_name), :object_name => @ems.name},
                     :url  => "/#{controller_name}/#{@ems.id}/edit")
+  end
+
+  def timeline_pressed
+    @record = find_record_with_rbac(model, params[:id])
+    session[:tl_record_id] = @record.id
+    javascript_redirect(polymorphic_path(@record, :display => 'timeline'))
+  end
+
+  def performance_pressed
+    @showtype = "performance"
+    @record = find_record_with_rbac(model, params[:id])
+    drop_breadcrumb(:name => _("%{name} Capacity & Utilization") % {:name => @record.name},
+                    :url  => show_link(@record, :refresh => "n", :display => "performance"))
+    perf_gen_init_options # Intialize options, charts are generated async
+    javascript_redirect(polymorphic_path(@record, :display => "performance"))
+  end
+
+  def ad_hoc_metrics_pressed
+    @showtype = "ad_hoc_metrics"
+    @record = find_record_with_rbac(model, params[:id])
+    drop_breadcrumb(:name => @record.name + _(" (Ad hoc Metrics)"), :url => show_link(@record))
+    javascript_redirect(polymorphic_path(@record, :display => "ad_hoc_metrics"))
   end
 
   # handle buttons pressed on the button bar
@@ -239,9 +261,9 @@ module EmsCommon
       when "orchestration_stack_delete"       then orchestration_stack_delete
       end
 
-      return if params[:pressed].include?("tag") && !%w(host_tag vm_tag miq_template_tag instance_tag).include?(params[:pressed])
+      return if params[:pressed].include?("tag") && !%w(host_tag vm_tag miq_template_tag instance_tag image_tag).include?(params[:pressed])
       if params[:pressed].include?("orchestration_stack_delete")
-        session[:flash_msgs] = @flash_array.dup
+        flash_to_session
         javascript_redirect(polymorphic_path(EmsCloud.find(params[:id]), :display => 'orchestration_stacks'))
         return
       end
@@ -279,10 +301,10 @@ module EmsCommon
       @refresh_div = "main_div" # Default div for button.rjs to refresh
       redirect_to :action => "new" if params[:pressed] == "new"
       deleteemss if params[:pressed] == "#{table_name}_delete"
-      refreshemss if params[:pressed] == "#{table_name}_refresh"
+      refresh_or_capture_emss("refresh_ems", _("Refresh")) if params[:pressed] == "#{table_name}_refresh"
+      refresh_or_capture_emss("capture_ems", _("Capture Metrics")) if params[:pressed] == "#{table_name}_capture_metrics"
       pause_or_resume_emss(:pause => true) if params[:pressed] == "#{table_name}_pause"
       pause_or_resume_emss(:resume => true) if params[:pressed] == "#{table_name}_resume"
-      #     scanemss if params[:pressed] == "scan"
       tag(model) if params[:pressed] == "#{table_name}_tag"
 
       # Edit Tags for Middleware Manager Relationship pages
@@ -292,36 +314,22 @@ module EmsCommon
       check_compliance(model) if params[:pressed] == "#{table_name}_check_compliance"
       edit_record if params[:pressed] == "#{table_name}_edit"
       if params[:pressed] == "#{table_name}_timeline"
-        @showtype = "timeline"
-        @record = find_record_with_rbac(model, params[:id])
-        @timeline = @timeline_filter = true
-        @lastaction = "show_timeline"
-        tl_build_timeline                       # Create the timeline report
-        drop_breadcrumb(:name => _("Timelines"), :url => show_link(@record, :refresh => "n", :display => "timeline"))
-        session[:tl_record_id] = @record.id
-        javascript_redirect polymorphic_path(@record, :display => 'timeline')
+        timeline_pressed
         return
       end
       if params[:pressed] == "#{table_name}_perf"
-        @showtype = "performance"
-        @record = find_record_with_rbac(model, params[:id])
-        drop_breadcrumb(:name => _("%{name} Capacity & Utilization") % {:name => @record.name},
-                        :url  => show_link(@record, :refresh => "n", :display => "performance"))
-        perf_gen_init_options # Intialize options, charts are generated async
-        javascript_redirect polymorphic_path(@record, :display => "performance")
+        performance_pressed
         return
       end
       if params[:pressed] == "#{table_name}_ad_hoc_metrics"
-        @showtype = "ad_hoc_metrics"
-        @record = find_record_with_rbac(model, params[:id])
-        drop_breadcrumb(:name => @record.name + _(" (Ad hoc Metrics)"), :url => show_link(@record))
-        javascript_redirect polymorphic_path(@record, :display => "ad_hoc_metrics")
+        ad_hoc_metrics_pressed
         return
       end
       if params[:pressed] == "refresh_server_summary"
         javascript_redirect :back
         return
       end
+
       if params[:pressed] == "ems_cloud_recheck_auth_status"          ||
          params[:pressed] == "ems_infra_recheck_auth_status"          ||
          params[:pressed] == "ems_physical_infra_recheck_auth_status" ||
@@ -432,14 +440,11 @@ module EmsCommon
     end
     process_emss(ids, "check_compliance")
     params[:display] = "main"
+    return if @display == 'dashboard'
     showlist ? show_list : show
   end
 
   private ############################
-
-  def generate_breadcrumb(name, url, replace = false)
-    drop_breadcrumb({:name => name, :url => url}, replace)
-  end
 
   # Set form variables for edit
   def set_form_vars
@@ -534,25 +539,12 @@ module EmsCommon
 
     return if emss.empty?
 
-    if task == "refresh_ems"
-      model.refresh_ems(emss, true)
-      add_flash(n_("%{task} initiated for %{count} %{model} from the %{product} Database",
-                   "%{task} initiated for %{count} %{models} from the %{product} Database", emss.length) % \
-        {:task    => task_name(task).gsub("Ems", ui_lookup(:tables => table_name)),
-         :count   => emss.length,
-         :product => Vmdb::Appliance.PRODUCT_NAME,
-         :model   => ui_lookup(:table => table_name),
-         :models  => ui_lookup(:tables => table_name)})
-      AuditEvent.success(:userid => session[:userid], :event => "#{table_name}_#{task}",
-          :message => _("'%{task}' successfully initiated for %{table}") %
-            {:task => task, :table => pluralize(emss.length, ui_lookup(:tables => table_name))},
-          :target_class => model.to_s)
-    elsif task == "destroy"
+    if task == "destroy"
       model.where(:id => emss).order("lower(name)").each do |ems|
         id = ems.id
         ems_name = ems.name
         audit = {:event        => "ems_record_delete_initiated",
-                 :message      => _("[%{name}] Record delete initiated") % {:name => ems_name},
+                 :message      => "[#{ems_name}] Record delete initiated",
                  :target_id    => id,
                  :target_class => model.to_s,
                  :userid       => session[:userid]}
@@ -571,7 +563,7 @@ module EmsCommon
         id = ems.id
         ems_name = ems.name
         audit = {:event        => "ems_record_#{action}_initiated",
-                 :message      => _("[%{name}] Record #{action} initiated") % {:name => ems_name},
+                 :message      => "[#{ems_name}] Record #{action} initiated",
                  :target_id    => id,
                  :target_class => model.to_s,
                  :userid       => session[:userid]}
@@ -589,14 +581,15 @@ module EmsCommon
         rescue => bang
           add_flash(_("%{model} \"%{name}\": Error during '%{task}': %{error_message}") %
             {:model => ui_lookup(:table => @table_name), :name => ems_name, :task => _(task.titleize), :error_message => bang.message}, :error)
-          AuditEvent.failure(:userid => session[:userid], :event => "#{table_name}_#{task}",
-            :message      => _("%{name}: Error during '%{task}': %{message}") %
-                          {:name => ems_name, :task => task, :message => bang.message},
-            :target_class => model.to_s, :target_id => id)
+          AuditEvent.failure(:userid       => session[:userid],
+                             :event        => "#{table_name}_#{task}",
+                             :message      => "#{ems_name}: Error during '#{task}': #{bang.message}",
+                             :target_class => model.to_s, :target_id => id)
         else
           add_flash(_("%{model} \"%{name}\": %{task} successfully initiated") % {:model => ui_lookup(:table => @table_name), :name => ems_name, :task => _(task.titleize)})
-          AuditEvent.success(:userid => session[:userid], :event => "#{table_name}_#{task}",
-                             :message      => _("%{name}: '%{task}' successfully initiated") % {:name => ems_name, :task => task},
+          AuditEvent.success(:userid       => session[:userid],
+                             :event        => "#{table_name}_#{task}",
+                             :message      => "#{ems_name}: '#{task}' successfully initiated",
                              :target_class => model.to_s, :target_id => id)
         end
       end
@@ -636,80 +629,6 @@ module EmsCommon
     end
   end
 
-  # Scan all selected or single displayed ems(s)
-  def scanemss
-    assert_privileges(params[:pressed])
-    emss = []
-    if @lastaction == "show_list" # showing a list, scan all selected emss
-      emss = find_checked_items
-      if emss.empty?
-        add_flash(_("No %{model} were selected for scanning") % {:model => ui_lookup(:table => table_name)}, :error)
-      end
-      process_emss(emss, "scan")  unless emss.empty?
-      add_flash(n_("Analysis initiated for %{count} %{model} from the %{product} Database",
-                   "Analysis initiated for %{count} %{models} from the %{product} Database", emss.length) %
-        {:count   => emss.length,
-         :product => Vmdb::Appliance.PRODUCT_NAME,
-         :model   => ui_lookup(:table => table_name),
-         :models  => ui_lookup(:tables => table_name)}) if @flash_array.nil?
-      show_list
-      @refresh_partial = "layouts/gtl"
-    else # showing 1 ems, scan it
-      if params[:id].nil? || model.find_by_id(params[:id]).nil?
-        add_flash(_("%{record} no longer exists") % {:record => ui_lookup(:tables => table_name)}, :error)
-      else
-        emss.push(params[:id])
-      end
-      process_emss(emss, "scan")  unless emss.empty?
-      add_flash(n_("Analysis initiated for %{count} %{model} from the %{product} Database",
-                   "Analysis initiated for %{count} %{models} from the %{product} Database", emss.length) %
-        {:count   => emss.length,
-         :product => Vmdb::Appliance.PRODUCT_NAME,
-         :model   => ui_lookup(:table => table_name),
-         :models  => ui_lookup(:tables => table_name)}) if @flash_array.nil?
-      params[:display] = @display
-      show
-      if ["vms", "hosts", "storages"].include?(@display)
-        @refresh_partial = "layouts/gtl"
-      else
-        @refresh_partial = "main"
-      end
-    end
-  end
-
-  def call_ems_refresh(emss)
-    process_emss(emss, "refresh_ems") unless emss.empty?
-    return if @flash_array.present?
-
-    add_flash(n_("Refresh initiated for %{count} %{model} from the %{product} Database",
-                 "Refresh initiated for %{count} %{models} from the %{product} Database", emss.length) %
-      {:count   => emss.length,
-       :product => Vmdb::Appliance.PRODUCT_NAME,
-       :model   => ui_lookup(:table => table_name),
-       :models  => ui_lookup(:tables => table_name)})
-  end
-
-  # Refresh VM states for all selected or single displayed ems(s)
-  def refreshemss
-    assert_privileges(params[:pressed])
-    if @lastaction == "show_list"
-      emss = find_checked_items
-      if emss.empty?
-        add_flash(_("No %{model} were selected for refresh") % {:model => ui_lookup(:table => table_name)}, :error)
-      end
-      call_ems_refresh(emss)
-      show_list
-      @refresh_partial = "layouts/gtl"
-    else
-      if params[:id].nil? || model.find_by_id(params[:id]).nil?
-        add_flash(_("%{record} no longer exists") % {:record => ui_lookup(:table => table_name)}, :error)
-      else
-        call_ems_refresh([params[:id]])
-      end
-      params[:display] = @display
-    end
-  end
-
   def call_ems_pause_resume(emss, options)
     action = if options[:resume]
                "resume"
@@ -719,9 +638,10 @@ module EmsCommon
 
     process_emss(emss, "#{action}_ems") unless emss.empty?
     return if @flash_array.present?
-    add_flash(n_("#{action.capitalize} initiated for %{count} %{model} from the %{product} Database",
-                 "#{action.capitalize} initiated for %{count} %{models} from the %{product} Database", emss.length) %
+    add_flash(n_("%{action} initiated for %{count} %{model} from the %{product} Database",
+                 "%{action} initiated for %{count} %{models} from the %{product} Database", emss.length) %
                 {:count   => emss.length,
+                 :action  => action.capitalize,
                  :product => Vmdb::Appliance.PRODUCT_NAME,
                  :model   => ui_lookup(:table => table_name),
                  :models  => ui_lookup(:tables => table_name)})
@@ -747,12 +667,6 @@ module EmsCommon
     end
   end
 
-  # true, if any of the given fields are either missing from or blank in hash
-  def any_blank_fields?(hash, fields)
-    fields = [fields] unless fields.kind_of? Array
-    fields.any? { |f| hash[f].blank? }
-  end
-
   def model
     self.class.model
   end
@@ -761,9 +675,4 @@ module EmsCommon
     self.class.permission_prefix
   end
 
-  def show_list_link(ems, options = {})
-    url_for_only_path(options.merge(:controller => controller_name,
-                                    :action     => "show_list",
-                                    :id         => ems.id))
-  end
 end

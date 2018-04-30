@@ -28,11 +28,13 @@ module VmRemote
     options = case console_type
               when "webmks"
                 # TODO: move this part to the launch_html5_console method
-                override_content_security_policy_directives(:connect_src => ["'self'", websocket_origin], :img_src => %w(data: self))
+                override_content_security_policy_directives(:connect_src => ["'self'", websocket_origin], :img_src => %w(data: 'self'))
                 %i(secret url).each { |p| params.require(p) }
                 @console = {
-                  :url    => j(params[:url]),
-                  :secret => j(params[:secret])
+                  :url       => j(params[:url]),
+                  :secret    => j(params[:secret]),
+                  :is_vcloud => j(params[:is_vcloud].to_s), # vcloud specific
+                  :vmx       => j(params[:vmx].to_s)        # vcloud specific
                 }
                 {} # This is just for compatibility, see the TODO above
               when "vmrc"

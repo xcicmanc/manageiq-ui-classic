@@ -2,7 +2,7 @@ module PhysicalServerHelper::TextualSummary
   def textual_group_properties
     TextualGroup.new(
       _("Properties"),
-      %i(name model product_name manufacturer machine_type serial_number ems_ref memory cores health_state loc_led_state)
+      %i(name model product_name manufacturer machine_type serial_number ems_ref capacity memory cores network_devices health_state loc_led_state)
     )
   end
 
@@ -13,16 +13,13 @@ module PhysicalServerHelper::TextualSummary
     )
   end
 
-  def textual_group_compliance
+  def textual_group_management_networks
+    TextualGroup.new(_("Management Networks"), %i(mac ipv4 ipv6))
   end
 
-  def textual_group_networks
-    TextualGroup.new(_("Networks"), %i(mac ipv4 ipv6))
-  end
-
-  def textual_group_assets
+  def textual_group_asset_details
     TextualGroup.new(
-      _("Assets"),
+      _("Asset Details"),
       %i(support_contact description location room_id rack_name lowest_rack_unit)
     )
   end
@@ -35,18 +32,13 @@ module PhysicalServerHelper::TextualSummary
   end
 
   def textual_group_firmware_details
-    TextualCustom.new(
-      _("Firmware"),
-      "textual_firmware_table",
-      %i(fw_details)
-    )
+    TextualTable.new(_('Firmwares'), firmware_details, [_('Name'), _('Version')])
   end
 
-  def textual_group_network_adapters
-    TextualCustom.new(
-      _("Network Devices"),
-      "textual_network_adapter_table",
-      %i(network_adapter)
+  def textual_group_firmware_compliance
+    TextualGroup.new(
+      _("Firmware Compliance"),
+      %i(compliance_name compliance_status)
     )
   end
 
@@ -71,19 +63,19 @@ module PhysicalServerHelper::TextualSummary
   end
 
   def textual_product_name
-    {:label => _("Product Name"), :value => @record.product_name }
+    {:label => _("Product Name"), :value => @record.asset_detail['product_name'] }
   end
 
   def textual_manufacturer
-    {:label => _("Manufacturer"), :value => @record.manufacturer }
+    {:label => _("Manufacturer"), :value => @record.asset_detail['manufacturer'] }
   end
 
   def textual_machine_type
-    {:label => _("Machine Type"), :value => @record.machine_type }
+    {:label => _("Machine Type"), :value => @record.asset_detail['machine_type'] }
   end
 
   def textual_serial_number
-    {:label => _("Serial Number"), :value => @record.serial_number }
+    {:label => _("Serial Number"), :value => @record.asset_detail['serial_number'] }
   end
 
   def textual_ems_ref
@@ -91,7 +83,11 @@ module PhysicalServerHelper::TextualSummary
   end
 
   def textual_model
-    {:label => _("Model"), :value => @record.model}
+    {:label => _("Model"), :value => @record.asset_detail['model']}
+  end
+
+  def textual_capacity
+    {:label => _("Disk Capacity (bytes)"), :value => @record.hardware.disk_capacity}
   end
 
   def textual_memory
@@ -117,7 +113,18 @@ module PhysicalServerHelper::TextualSummary
     # It is possible for guest devices not to have network data (or a network
     # hash). As a result, we need to exclude guest devices that don't have
     # network data to prevent a nil class error from occurring.
-    {:label =>  _("IPv4 Address"), :value => @record.hardware.guest_devices.reject { |device| device.network.nil? }.collect { |device| device.network.ipaddress }.join(", ") }
+    devices_with_networks = @record.computer_system.hardware.guest_devices.reject { |device| device.network.nil? }
+    ip_addresses = devices_with_networks.collect { |device| device.network.ipaddress }
+
+    # It is possible that each network entry can have multiple IP addresses, separated
+    # by commas, so first convert the array into a string, separating each array element
+    # with a comma. Then split this string back into an array using a comma, possibly
+    # followed by whitespace as the delimiter. Finally, iterate through the array
+    # and convert each element into a URL containing an IP address.
+    ip_addresses = ip_addresses.join(",").split(/,\s*/)
+    ip_address_urls = ip_addresses.collect { |ip_address| create_https_url(ip_address) }
+
+    {:label => _("IPv4 Address"), :value => sanitize(ip_address_urls.join(", "), :attributes => %w(href target)) }
   end
 
   def textual_ipv6
@@ -132,64 +139,59 @@ module PhysicalServerHelper::TextualSummary
   end
 
   def textual_support_contact
-    {:label => _("Support contact"), :value => @record.asset_details['contact']}
+    {:label => _("Support contact"), :value => @record.asset_detail['contact']}
   end
 
   def textual_description
-    {:label => _("Description"), :value => @record.asset_details['description']}
+    {:label => _("Description"), :value => @record.asset_detail['description']}
   end
 
   def textual_location
-    {:label => _("Location"), :value => @record.asset_details['location']}
+    {:label => _("Location"), :value => @record.asset_detail['location']}
   end
 
   def textual_room_id
-    {:label => _("Room"), :value => @record.asset_details['room_id']}
+    {:label => _("Room"), :value => @record.asset_detail['room_id']}
   end
 
   def textual_rack_name
-    {:label => _("Rack name"), :value => @record.asset_details['rack_name']}
+    {:label => _("Rack name"), :value => @record.asset_detail['rack_name']}
   end
 
   def textual_lowest_rack_unit
-    {:label => _("Lowest rack name"), :value => @record.asset_details['lowest_rack_unit']}
+    {:label => _("Lowest rack name"), :value => @record.asset_detail['lowest_rack_unit']}
   end
 
   def textual_health_state
     {:label => _("Health State"), :value => @record.health_state}
   end
 
-  def textual_fw_details
-    fw_details = []
-    @record.hardware.firmwares.each do |fw|
-      fw_details.push(:label => fw.name, :value => fw.version)
+  def textual_network_devices
+    hardware_nics_count = @record.hardware.nics.count
+    device = {:label => _("Network Devices"), :value => hardware_nics_count, :icon => "ff ff-network-card"}
+    if hardware_nics_count.positive?
+      device[:link] = "/physical_server/show/#{@record.id}?display=guest_devices"
     end
-
-    {:value => fw_details}
+    device
   end
 
-  def textual_network_adapter
-    network_adapters = []
+  def firmware_details
+    @record.hardware.firmwares.collect { |fw| [fw.name, fw.version] }
+  end
 
-    @record.hardware.nics.each do |nic|
-      port_names = []
-      mac_addresses = []
+  def textual_compliance_name
+    {:label => _("Name"), :value => @record.ems_compliance_name }
+  end
 
-      child_devices = nic.child_devices.sort_by(&:device_name)
+  def textual_compliance_status
+    {:label => _("Status"), :value => @record.ems_compliance_status }
+  end
 
-      child_devices.each do |child_device|
-        port_names.push(child_device.device_name)
-        mac_addresses.push(child_device.address)
-      end
+  private
 
-      network_adapters.push(:location      => nic.location,
-                            :adapter_name  => nic.device_name,
-                            :manufacturer  => nic.manufacturer,
-                            :fru           => nic.field_replaceable_unit,
-                            :port_names    => port_names,
-                            :mac_addresses => mac_addresses)
-    end
-
-    {:value => network_adapters}
+  def create_https_url(ip)
+    # A target argument with a value of "_blank" is passed so that the
+    # page loads in a new tab when the link is clicked.
+    ip.present? ? link_to(ip, URI::HTTPS.build(:host => ip).to_s, :target => "_blank") : ''
   end
 end

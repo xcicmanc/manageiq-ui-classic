@@ -1,4 +1,4 @@
-/* global add_flash */
+/* global add_flash camelizeQuadicon */
 (function() {
   var CONTROLLER_NAME = 'reportDataController';
   var MAIN_CONTETN_ID = 'main-content';
@@ -7,14 +7,23 @@
   var TREE_TABS_WITHOUT_PARENT = ['action_tree', 'alert_tree', 'schedules_tree'];
   var USE_TREE_ID = ['automation_manager'];
   var DEFAULT_VIEW = 'grid';
+  var TOOLBAR_CLICK_FINISH = 'TOOLBAR_CLICK_FINISH';
 
   function isAllowedParent(initObject) {
     return TREES_WITHOUT_PARENT.indexOf(ManageIQ.controller) === -1 &&
       TREE_TABS_WITHOUT_PARENT.indexOf(initObject.activeTree) === -1;
   }
 
+  function tileViewSelector() {
+    return document.querySelector('miq-tile-view');
+  }
+
+  function tableViewSelector() {
+    return document.querySelector('miq-data-table');
+  }
+
   function constructSuffixForTreeUrl(initObject, item) {
-    var itemId = initObject.showUrl.indexOf('xx-') !== -1 ? '_-' + item.id : '-' + item.id;
+    var itemId = _.isString(initObject.showUrl) && initObject.showUrl.indexOf('xx-') !== -1 ? '_-' + item.id : '-' + item.id;
     if (item.parent_id && item.parent_id[item.parent_id.length - 1] !== '-') {
       itemId = item.parent_id + '_' + item.tree_id;
     } else if (isAllowedParent(initObject)) {
@@ -35,22 +44,6 @@
 
   function isCurrentControllerOrPolicies(splitUrl) {
     return splitUrl && (splitUrl[1] === ManageIQ.controller || splitUrl[2] === 'policies');
-  }
-
-  function isCurrentOpsWorkerSelected(items, initObject) {
-    if (initObject.activeTree === 'diagnostics_tree' && ManageIQ.controller === 'ops') {
-      var lastSlash = initObject.showUrl.indexOf('/', 5) + 1;
-      var itemId = initObject.showUrl.substring(lastSlash);
-      if (itemId.indexOf('?id=') === -1) {
-        initObject.showUrl = initObject.showUrl.substring(0, lastSlash);
-        if (itemId) {
-          itemId = itemId[itemId.length - 1] === '/' ? itemId.substring(0, itemId.length - 1) : itemId;
-          return _.find(items, {id: itemId});
-        }
-      }
-    }
-
-    return;
   }
 
   /**
@@ -82,15 +75,19 @@
   * @returns {undefined}
   */
   function subscribeToSubject() {
-    this.subscription = ManageIQ.angular.rxSubject.subscribe(function(event) {
+    this.subscription = listenToRx(function(event) {
       if (event.initController && event.initController.name === CONTROLLER_NAME) {
         this.initController(event.initController.data);
       } else if (event.unsubscribe && event.unsubscribe === CONTROLLER_NAME) {
         this.onUnsubscribe();
       } else if (event.toolbarEvent && (event.toolbarEvent === 'itemClicked')) {
         this.setExtraClasses();
+      } else if (event.type === TOOLBAR_CLICK_FINISH && (tileViewSelector() || tableViewSelector())) {
+        this.setExtraClasses(this.initObject.gtlType);
       } else if (event.refreshData && event.refreshData.name === CONTROLLER_NAME) {
-        this.refreshData();
+        this.refreshData(event.data);
+      } else if (event.setScope && event.setScope.name === CONTROLLER_NAME) {
+        this.setScope(event.data);
       }
 
       if (event.controller === CONTROLLER_NAME && this.apiFunctions && this.apiFunctions[event.action]) {
@@ -148,8 +145,13 @@
     vm.perPage = defaultPaging();
   };
 
-  ReportDataController.prototype.refreshData = function() {
-    this.initController(this.initObject);
+  ReportDataController.prototype.refreshData = function(data) {
+    this.initController(_.merge(this.initObject, data));
+  };
+
+  ReportDataController.prototype.setScope = function(scope) {
+    this.initObject.additionalOptions.named_scope = [];
+    this.refreshData({additionalOptions: {named_scope: scope}});
   };
 
   ReportDataController.prototype.setSort = function(headerId, isAscending) {
@@ -162,7 +164,7 @@
   };
 
   ReportDataController.prototype.onUnsubscribe = function() {
-    this.subscription.dispose();
+    this.subscription.unsubscribe();
   };
 
   /**
@@ -207,30 +209,43 @@
   ReportDataController.prototype.onItemClicked = function(item, event) {
     event.stopPropagation();
     event.preventDefault();
-    if (this.initObject.showUrl) {
-      var prefix = this.initObject.showUrl;
-      var splitUrl = this.initObject.showUrl.split('/');
-      if (item.parent_path && item.parent_id) {
-        this.$window.DoNav(item.parent_path + '/' + item.parent_id);
-      } else if (this.initObject.isExplorer && isCurrentControllerOrPolicies(splitUrl)) {
-        var itemId = item.id;
-        if (this.initObject.showUrl.indexOf('?id=') !== -1 ) {
-          itemId = constructSuffixForTreeUrl(this.initObject, item);
-          this.activateNodeSilently(itemId);
-        }
-        if (itemId.indexOf('unassigned') !== -1) {
-          prefix = '/' + ManageIQ.controller + '/tree_select/?id=';
-        }
-        var url = prefix + itemId;
-        $.post(url).always(function() {
-          this.setExtraClasses();
-        }.bind(this));
-      } else if (prefix !== "true") {
-        var lastChar = prefix[prefix.length - 1];
-        prefix = (lastChar !== '/' && lastChar !== '=') ? prefix + '/' : prefix;
-        this.$window.DoNav(prefix + (item.long_id || item.id));
-      }
+
+    // nothing to do
+    if (! this.initObject.showUrl) {
+      return false;
     }
+
+    // clicks just outside the checkbox
+    if ($(event.target).is('.is-checkbox-cell')) {
+      return false;
+    }
+
+    var prefix = this.initObject.showUrl;
+    var splitUrl = this.initObject.showUrl.split('/');
+    if (item.parent_path && item.parent_id) {
+      miqSparkleOn();
+      this.$window.DoNav(item.parent_path + '/' + item.parent_id);
+    } else if (this.initObject.isExplorer && isCurrentControllerOrPolicies(splitUrl)) {
+      miqSparkleOn();
+      var itemId = item.id;
+      if (_.isString(this.initObject.showUrl) && this.initObject.showUrl.indexOf('?id=') !== -1) {
+        itemId = constructSuffixForTreeUrl(this.initObject, item);
+        this.activateNodeSilently(itemId);
+      }
+      if (itemId.indexOf('unassigned') !== -1) {
+        prefix = '/' + ManageIQ.controller + '/tree_select/?id=';
+      }
+      var url = prefix + itemId;
+      $.post(url).always(function() {
+        this.setExtraClasses();
+      }.bind(this));
+    } else if (prefix !== "true") {
+      miqSparkleOn();
+      var lastChar = prefix[prefix.length - 1];
+      prefix = (lastChar !== '/' && lastChar !== '=') ? prefix + '/' : prefix;
+      this.$window.DoNav(prefix + (item.long_id || item.id));
+    }
+
     return false;
   };
 
@@ -315,10 +330,16 @@
         }
         this.setDefaults();
         this.movePagination();
+
+        // pagination doesn't update on no records (components/data-table/data-table.html:4:99), hide it instead
+        if (! this.gtlData.rows.length) {
+          this.setExtraClasses();
+        }
+
         this.$timeout(function() {
           this.$window.ManageIQ.gtl.loading = false;
           this.$window.ManageIQ.gtl.isFirst = this.settings.current === 1;
-          this.$window.ManageIQ.gtl.isLast = this.settings.current === this.settings.totla;
+          this.$window.ManageIQ.gtl.isLast = this.settings.current === this.settings.total;
         }.bind(this));
         return data;
       }.bind(this));
@@ -364,6 +385,13 @@
     }
   };
 
+  window.miqGtlSetExtraClasses = function() {
+    // need this to work even if there is no GTL instance running
+    return ReportDataController.prototype.setExtraClasses.call({
+      $document: document,
+    });
+  };
+
   ReportDataController.prototype.activateNodeSilently = function(itemId) {
     var treeId = angular.element('.collapse.in .treeview').attr('id');
     if (EXPAND_TREES.indexOf(treeId) !== -1) {
@@ -404,6 +432,11 @@
         $(pagingDiv).append(col);
         col[0].appendChild(pagination[0]);
       }
+
+      if (this.initObject.pages) {
+        $(pagingDiv).show();
+      }
+
       // calculates the height of main content from toolbar and footer, needed
       // to make sure the paginator is not off the screen
       miqInitMainContent();
@@ -441,6 +474,12 @@
         if (this.settings.sort_col === -1) {
           this.settings.sort_col = 0;
         }
+
+        // Camelize the quadicon data received from the server
+        _.each(gtlData.rows, function(row, key) {
+          row.quad = camelizeQuadicon(row.quad);
+        });
+
         this.gtlData = gtlData;
         this.perPage.text = this.settings.perpage;
         this.perPage.value = this.settings.perpage;
@@ -453,10 +492,16 @@
             this.initObject.showUrl = splitUrl.join('/');
           }
         }
-        this.onItemSelect(isCurrentOpsWorkerSelected(this.gtlData.rows, this.initObject), true);
         gtlData.messages && gtlData.messages.forEach(function(oneMessage) {
           add_flash(oneMessage.msg, oneMessage.level);
         });
+        // Apply gettext __() on column headers
+        for (var i = 0;  i < gtlData.cols.length; i++) {
+          var column = gtlData.cols[i];
+          if (column.hasOwnProperty('text')) {
+            column.header_text = __(column.text);
+          }
+        }
         return gtlData;
       }.bind(this));
   };

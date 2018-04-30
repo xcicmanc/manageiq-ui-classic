@@ -70,6 +70,36 @@ describe CloudNetworkController do
     end
   end
 
+  describe "#new" do
+    let(:feature) { MiqProductFeature.find_all_by_identifier(%w(cloud_network_new)) }
+    let(:role)    { FactoryGirl.create(:miq_user_role, :miq_product_features => feature) }
+    let(:group)   { FactoryGirl.create(:miq_group, :miq_user_role => role) }
+    let(:user)    { FactoryGirl.create(:user, :miq_groups => [group]) }
+
+    before do
+      bypass_rescue
+
+      EvmSpecHelper.create_guid_miq_server_zone
+      EvmSpecHelper.seed_specific_product_features(%w(cloud_network_new ems_network_show_list))
+
+      allow(User).to receive(:current_user).and_return(user)
+      allow(Rbac).to receive(:role_allows?).and_call_original
+      login_as user
+    end
+
+    it "raises exception when user don't have privilege" do
+      expect { post :new, :params => { :button => "new", :format => :js } }.to raise_error(MiqException::RbacPrivilegeException)
+    end
+
+    context "user don't have privilege for cloud tenants" do
+      let(:feature) { MiqProductFeature.find_all_by_identifier(%w(cloud_network_new ems_network_show_list)) }
+
+      it "raises exception" do
+        expect { post :new, :params => { :button => "new", :format => :js } }.to raise_error(MiqException::RbacPrivilegeException)
+      end
+    end
+  end
+
   describe "#create" do
     before do
       stub_user(:features => :all)
@@ -85,6 +115,11 @@ describe CloudNetworkController do
           :userid => controller.current_user.userid
         }
       end
+
+      let(:cloud_tenant) do
+        FactoryGirl.create(:cloud_tenant)
+      end
+
       let(:queue_options) do
         {
           :class_name  => @ems.class.name,
@@ -93,7 +128,14 @@ describe CloudNetworkController do
           :priority    => MiqQueue::HIGH_PRIORITY,
           :role        => 'ems_operations',
           :zone        => @ems.my_zone,
-          :args        => [{:name => "test", :admin_state_up => false, :shared => false, :external_facing => false}]
+          :args        => [{
+            :admin_state_up        => true,
+            :external_facing       => false,
+            :name                  => 'test',
+            :provider_network_type => 'vxlan',
+            :shared                => false,
+            :tenant_id             => cloud_tenant.ems_ref,
+          }]
         }
       end
 
@@ -104,8 +146,19 @@ describe CloudNetworkController do
 
       it "queues the create action" do
         expect(MiqTask).to receive(:generic_action_with_callback).with(task_options, queue_options)
-        post :create, :params => { :button => "add", :format => :js, :name => 'test',
-                                   :tenant_id => 'id', :ems_id => @ems.id }
+        post :create, :params => {
+          :button                => 'add',
+          :controller            => 'cloud_network',
+          :format                => :js,
+          :cloud_tenant          => {:id => cloud_tenant.id},
+          :ems_id                => @ems.id,
+          :enabled               => true,
+          :external_facing       => false,
+          :id                    => 'new',
+          :name                  => 'test',
+          :provider_network_type => 'vxlan',
+          :shared                => false
+        }
       end
     end
   end
@@ -125,6 +178,7 @@ describe CloudNetworkController do
           :userid => controller.current_user.userid
         }
       end
+
       let(:queue_options) do
         {
           :class_name  => @network.class.name,
@@ -178,7 +232,41 @@ describe CloudNetworkController do
       end
       it "queues the delete action" do
         expect(MiqTask).to receive(:generic_action_with_callback).with(task_options, queue_options)
-        post :button, :params => { :id => @network.id, :pressed => "cloud_network_delete", :format => :js }
+        controller.instance_variable_set(:@_params,
+                                         :pressed => "cloud_network_delete",
+                                         :id      => @network.id)
+        allow(controller).to receive(:find_checked_ids_with_rbac).and_return([@network])
+        allow(controller).to receive(:find_id_with_rbac).and_return([@network])
+        controller.instance_variable_set(:@breadcrumbs, [{:url => "cloud_network/show_list"}, 'placeholder'])
+        expect(controller).to receive(:render)
+        controller.send(:button)
+        flash_messages = assigns(:flash_array)
+        expect(flash_messages.first).to eq(:message => "Delete initiated for 1 Cloud Network.",
+                                           :level   => :success)
+      end
+    end
+  end
+
+  describe '#button' do
+    before do
+      controller.instance_variable_set(:@_params, params)
+    end
+
+    context 'tagging instances from a list of instances, accessed from the details page of a network' do
+      let(:params) { {:pressed => "instance_tag"} }
+
+      it 'calls tag method for tagging instances' do
+        expect(controller).to receive(:tag).with("VmOrTemplate")
+        controller.send(:button)
+      end
+    end
+
+    context 'tagging network routers from a list of routers, accessed from the details page of a network' do
+      let(:params) { {:pressed => "network_router_tag"} }
+
+      it 'calls tag method for tagging network routers' do
+        expect(controller).to receive(:tag).with("NetworkRouter")
+        controller.send(:button)
       end
     end
   end

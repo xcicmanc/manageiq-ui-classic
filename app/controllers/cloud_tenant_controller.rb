@@ -29,7 +29,7 @@ class CloudTenantController < ApplicationController
         action = params[:pressed].sub("#{target_controller}_", '')
         action = "#{action}_#{target_controller.sub('cloud_','').pluralize}" if action == 'delete'
         if action == 'detach'
-          volume = find_record_with_rbac(CloudVolume, from_cid(params[:miq_grid_checks]))
+          volume = find_record_with_rbac(CloudVolume, params[:miq_grid_checks])
           if volume.attachments.empty?
             render_flash(_("Cloud Volume \"%{volume_name}\" is not attached to any Instances") % {
               :volume_name => volume.name}, :error)
@@ -54,11 +54,11 @@ class CloudTenantController < ApplicationController
     @tenant = CloudTenant.new
     @in_a_form = true
     @ems_choices = {}
-    ManageIQ::Providers::Openstack::CloudManager.all.each do |ems|
+    Rbac::Filterer.filtered(ManageIQ::Providers::Openstack::CloudManager).each do |ems|
       @ems_choices[ems.name] = ems.id
       # keystone v3 allows for hierarchical tenants
       if ems.api_version == "v3"
-        ems.cloud_tenants.each do |ems_cloud_tenant|
+        Rbac::Filterer.filtered(ems.cloud_tenants).each do |ems_cloud_tenant|
           tenant_choice_name = ems.name + " (" + ems_cloud_tenant.name + ")"
           tenant_choice_id = ems.id.to_s + ":" + ems_cloud_tenant.id.to_s
           @ems_choices[tenant_choice_name] = tenant_choice_id
@@ -113,8 +113,7 @@ class CloudTenantController < ApplicationController
 
     @breadcrumbs.pop if @breadcrumbs
     session[:edit] = nil
-    session[:flash_msgs] = @flash_array.dup if @flash_array
-
+    flash_to_session
     javascript_redirect :action => "show_list"
   end
 
@@ -171,8 +170,7 @@ class CloudTenantController < ApplicationController
 
     @breadcrumbs.pop if @breadcrumbs
     session[:edit] = nil
-    session[:flash_msgs] = @flash_array.dup if @flash_array
-
+    flash_to_session
     javascript_redirect :action => "show", :id => tenant_id
   end
 
@@ -218,7 +216,8 @@ class CloudTenantController < ApplicationController
       if flash_errors? # either show the errors and stay on the 'show'
         render_flash
       else             # or (if we deleted what we were showing) we redirect to the listing
-        javascript_redirect :action => 'show_list', :flash_msg => @flash_array[0][:message]
+        flash_to_session
+        javascript_redirect(:action => 'show_list')
       end
     end
   end

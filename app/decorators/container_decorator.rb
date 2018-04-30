@@ -3,7 +3,9 @@ class ContainerDecorator < MiqDecorator
     'fa fa-cube'
   end
 
-  def self.fileicon
-    '100/container.png'
+  def single_quad
+    {
+      :fonticon => fonticon
+    }
   end
 end

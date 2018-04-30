@@ -25,7 +25,7 @@ module Mixins
           @live_migrate_items = find_records_with_rbac(VmOrTemplate.order(:name), session[:live_migrate_items])
           build_targets_hash(@live_migrate_items)
           @view = get_db_view(VmOrTemplate)
-          @view.table = MiqFilter.records2table(@live_migrate_items, @view.cols + ['id'])
+          @view.table = ReportFormatter::Converter.records2table(@live_migrate_items, @view.cols + ['id'])
 
           render :action => "show" unless @explorer
         end
@@ -86,7 +86,7 @@ module Mixins
           if @sb[:explorer]
             replace_right_cell
           else
-            session[:flash_msgs] = @flash_array.dup
+            flash_to_session
             javascript_redirect previous_breadcrumb_url
           end
         end

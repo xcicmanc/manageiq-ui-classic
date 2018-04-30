@@ -70,6 +70,36 @@ describe NetworkRouterController do
     end
   end
 
+  describe "#new" do
+    let(:feature) { MiqProductFeature.find_all_by_identifier(%w(network_router_new)) }
+    let(:role)    { FactoryGirl.create(:miq_user_role, :miq_product_features => feature) }
+    let(:group)   { FactoryGirl.create(:miq_group, :miq_user_role => role) }
+    let(:user)    { FactoryGirl.create(:user, :miq_groups => [group]) }
+
+    before do
+      bypass_rescue
+
+      EvmSpecHelper.create_guid_miq_server_zone
+      EvmSpecHelper.seed_specific_product_features(%w(network_router_new ems_network_show_list))
+
+      allow(User).to receive(:current_user).and_return(user)
+      allow(Rbac).to receive(:role_allows?).and_call_original
+      login_as user
+    end
+
+    it "raises exception wheh used have not privilege" do
+      expect { post :new, :params => { :button => "new", :format => :js } }.to raise_error(MiqException::RbacPrivilegeException)
+    end
+
+    context "user don't have privilege for cloud tenants" do
+      let(:feature) { MiqProductFeature.find_all_by_identifier(%w(network_router_new ems_network_show_list)) }
+
+      it "raises exception" do
+        expect { post :new, :params => { :button => "new", :format => :js } }.to raise_error(MiqException::RbacPrivilegeException)
+      end
+    end
+  end
+
   describe "#create" do
     before do
       stub_user(:features => :all)
@@ -181,7 +211,19 @@ describe NetworkRouterController do
 
       it "queues the delete action" do
         expect(MiqTask).to receive(:generic_action_with_callback).with(task_options, queue_options)
-        post :button, :params => { :id => @router.id, :pressed => "network_router_delete", :format => :js }
+        controller.instance_variable_set(:@_params,
+                                         :pressed => "network_router_delete",
+                                         :id      => @router.id)
+        controller.instance_variable_set(:@lastaction, "show")
+        controller.instance_variable_set(:@layout, "network_router")
+        allow(controller).to receive(:find_checked_ids_with_rbac).and_return([@router])
+        allow(controller).to receive(:find_id_with_rbac).and_return([@router])
+        controller.instance_variable_set(:@breadcrumbs, [{:name => "foo", :url => "network_router/show_list"}, {:name => "bar", :url => "network_router/show"}])
+        expect(controller).to receive(:render)
+        controller.send(:button)
+        flash_messages = assigns(:flash_array)
+        expect(flash_messages.first).to eq(:message => "Delete initiated for 1 Network Router.",
+                                           :level   => :success)
       end
     end
   end
@@ -218,6 +260,51 @@ describe NetworkRouterController do
       it "builds add interface screen" do
         post :button, :params => { :pressed => "network_router_add_interface", :format => :js, :id => @router.id }
         expect(assigns(:flash_array)).to be_nil
+      end
+
+      it 'list subnet choices' do
+        allow(controller).to receive(:drop_breadcrumb)
+        controller.instance_variable_set(:@router, @router)
+        controller.instance_variable_set(:@_params, :id => @router.id)
+        controller.send(:add_interface_select)
+        subnet_choices = controller.instance_variable_get(:@subnet_choices)
+
+        expect(subnet_choices).to eq(@subnet.name => @subnet.id)
+        expect(assigns(:flash_array)).to be_nil
+      end
+
+      context 'with restricted user' do
+        let!(:subnet_2) { FactoryGirl.create(:cloud_subnet, :ext_management_system => @ems) }
+        let(:role)    { FactoryGirl.create(:miq_user_role) }
+        let(:group)   { FactoryGirl.create(:miq_group, :miq_user_role => role) }
+        let(:user)    { FactoryGirl.create(:user, :miq_groups => [group]) }
+        let(:tag)     { "/managed/environment/prod" }
+
+        before :each do
+          allow(controller).to receive(:drop_breadcrumb)
+          controller.instance_variable_set(:@router, @router)
+          controller.instance_variable_set(:@_params, :id => @router.id)
+
+          @router.tag_with(tag, :ns => '')
+          subnet_2.tag_with(tag, :ns => '')
+
+          group.entitlement = Entitlement.new
+          group.entitlement.set_managed_filters([["/managed/environment/prod"]])
+          group.save!
+
+          allow(User).to receive(:current_user).and_return(user)
+          login_as user
+        end
+
+        it 'list subnet choices' do
+          controller.instance_variable_set(:@router, @router)
+          controller.instance_variable_set(:@_params, :id => @router.id)
+
+          controller.send(:add_interface_select)
+          subnet_choices = controller.instance_variable_get(:@subnet_choices)
+          expect(subnet_choices).to eq(subnet_2.name => subnet_2.id)
+          expect(assigns(:flash_array)).to be_nil
+        end
       end
 
       it "queues the add interface action" do
@@ -274,6 +361,30 @@ describe NetworkRouterController do
           :id              => @router.id,
           :cloud_subnet_id => @subnet.id
         }
+      end
+    end
+  end
+
+  describe '#button' do
+    before do
+      controller.instance_variable_set(:@_params, params)
+    end
+
+    context 'tagging instances from a list of instances, accessed from the details page of a network router' do
+      let(:params) { {:pressed => "instance_tag"} }
+
+      it 'calls tag method for tagging instances' do
+        expect(controller).to receive(:tag).with("VmOrTemplate")
+        controller.send(:button)
+      end
+    end
+
+    context 'tagging cloud subnets from a list of subnets, accessed from the details page of a network router' do
+      let(:params) { {:pressed => "cloud_subnet_tag"} }
+
+      it 'calls tag method for tagging cloud subnets' do
+        expect(controller).to receive(:tag).with("CloudSubnet")
+        controller.send(:button)
       end
     end
   end

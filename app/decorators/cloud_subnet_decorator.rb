@@ -3,7 +3,9 @@ class CloudSubnetDecorator < MiqDecorator
     'pficon pficon-network'
   end
 
-  def self.fileicon
-    '100/cloud_subnet.png'
+  def single_quad
+    {
+      :fonticon => fonticon
+    }
   end
 end

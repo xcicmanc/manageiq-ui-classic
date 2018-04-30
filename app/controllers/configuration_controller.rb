@@ -115,6 +115,7 @@ class ConfigurationController < ApplicationController
     @changed = session[:changed]
     render :update do |page|
       page << javascript_prologue
+      page << javascript_for_miq_button_visibility(@changed)
       page.replace 'tab_div', :partial => "ui_2"
     end
   end
@@ -351,9 +352,8 @@ class ConfigurationController < ApplicationController
       @timeprofile = TimeProfile.new
     end
     if params[:button] == "cancel"
-      add_flash(_("Edit of Time Profile \"%{name}\" was cancelled by the user") % {:name => @timeprofile.description})
       params[:id] = @timeprofile.id.to_s
-      session[:flash_msgs] = @flash_array.dup                 # Put msgs in session for next transaction
+      flash_to_session(_("Edit of Time Profile \"%{name}\" was cancelled by the user") % {:name => @timeprofile.description})
       javascript_redirect :action => 'change_tab', :typ => "timeprofiles", :tab => 4, :id => @timeprofile.id.to_s
     elsif params[:button] == "save"
       if params[:all_days] == 'true'
@@ -388,8 +388,7 @@ class ConfigurationController < ApplicationController
       else
         construct_edit_for_audit(@timeprofile)
         AuditEvent.success(build_created_audit(@timeprofile, @edit))
-        add_flash(_("Time Profile \"%{name}\" was saved") % {:name => @timeprofile.description})
-        session[:flash_msgs] = @flash_array.dup                 # Put msgs in session for next transaction
+        flash_to_session(_("Time Profile \"%{name}\" was saved") % {:name => @timeprofile.description})
         javascript_redirect :action => 'change_tab', :typ => "timeprofiles", :tab => 4, :id => @timeprofile.id.to_s
       end
     end
@@ -473,6 +472,8 @@ class ConfigurationController < ApplicationController
         value.merge!(user_settings[key]) unless user_settings[key].nil?
       end
     end
+    # Override nil settings since we only expect 2 settings: true/false later on
+    settings[:display][:display_vms] = false if settings[:display][:display_vms].nil?
     settings
   end
 
@@ -550,6 +551,8 @@ class ConfigurationController < ApplicationController
       @edit[:new][:quadicons][:host] = params[:quadicons_host] == "true" if params[:quadicons_host]
       @edit[:new][:quadicons][:vm] = params[:quadicons_vm] == "true" if params[:quadicons_vm]
       @edit[:new][:quadicons][:physical_server] = params[:quadicons_physical_server] == "true" if params[:quadicons_physical_server]
+      @edit[:new][:quadicons][:ems_physical_infra] = params[:quadicons_ems_physical_infra] == "true" if params[:quadicons_ems_physical_infra]
+      @edit[:new][:quadicons][:ems_network] = params[:quadicons_ems_network] == "true" if params[:quadicons_ems_network]
       @edit[:new][:quadicons][:miq_template] = params[:quadicons_miq_template] == "true" if params[:quadicons_miq_template]
       if ::Settings.product.proto # Hide behind proto setting - Sprint 34
         @edit[:new][:quadicons][:service] = params[:quadicons_service] == "true" if params[:quadicons_service]

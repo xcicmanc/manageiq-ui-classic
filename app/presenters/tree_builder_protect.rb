@@ -53,12 +53,12 @@ class TreeBuilderProtect < TreeBuilder
                'pficon pficon-container-node'
              when 'ContainerImage'
                'pficon pficon-image'
+             when 'ContainerProject'
+               'pficon pficon-project'
              when 'ExtManagementSystem'
                'pficon pficon-server'
              when 'PhysicalServer'
                'pficon pficon-enterprise'
-             when 'MiddlewareServer'
-               'pficon pficon-middleware'
              end
       {
         :id           => "policy_#{policy.id}",

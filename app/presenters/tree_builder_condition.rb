@@ -33,12 +33,12 @@ class TreeBuilderCondition < TreeBuilder
       'pficon pficon-container-node'
     when 'ContainerImage'
       'pficon pficon-image'
+    when 'ContainerProject'
+      'pficon pficon-project'
     when 'ExtManagementSystem'
       'pficon pficon-server'
     when 'PhysicalServer'
       'pficon pficon-enterprise'
-    when 'MiddlewareServer'
-      'pficon pficon-middleware'
     end
   end
 
@@ -50,9 +50,9 @@ class TreeBuilderCondition < TreeBuilder
                  :ContainerGroup      => _("Pod Conditions"),
                  :ContainerNode       => _("Container Node Conditions"),
                  :ContainerImage      => _("Container Image Conditions"),
+                 :ContainerProject    => _("Container Project Conditions"),
                  :ExtManagementSystem => _("Provider Conditions"),
-                 :PhysicalServer      => _("Physical Infrastructure Conditions"),
-                 :MiddlewareServer    => _("Middleware Server Conditions")}
+                 :PhysicalServer      => _("Physical Infrastructure Conditions")}
 
     objects = MiqPolicyController::UI_FOLDERS.collect do |model|
       text = text_i18n[model.name.to_sym]

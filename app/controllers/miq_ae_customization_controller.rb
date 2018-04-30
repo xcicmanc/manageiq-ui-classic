@@ -17,7 +17,7 @@ class MiqAeCustomizationController < ApplicationController
   AE_CUSTOM_X_BUTTON_ALLOWED_ACTIONS = {
     'dialog_edit_editor'     => :dialog_edit_editor,
     'dialog_edit'            => :dialog_edit,
-    'dialog_copy'            => :dialog_copy,
+    'dialog_copy_editor'     => :dialog_copy_editor,
     'dialog_delete'          => :dialog_delete,
     'dialog_add_tab'         => :dialog_add_tab,
     'dialog_add_box'         => :dialog_add_box,
@@ -58,7 +58,7 @@ class MiqAeCustomizationController < ApplicationController
       rescue DialogImportValidator::ParsedNonDialogYamlError
         add_flash(_("Error during upload: incorrect Dialog format, only service dialogs can be imported"), :error)
       rescue DialogImportValidator::DialogFieldAssociationCircularReferenceError
-        add_flash(_("Error during upload: the following dialog fields to be imported contain circular association references: #{$ERROR_INFO}"), :error)
+        add_flash(_("Error during upload: the following dialog fields to be imported contain circular association references: %{error}") % {:error => $ERROR_INFO}, :error)
       rescue DialogImportValidator::InvalidDialogFieldTypeError
         add_flash(_("Error during upload: one of the DialogField types is not supported"), :error)
       end
@@ -141,6 +141,8 @@ class MiqAeCustomizationController < ApplicationController
   def editor
     if params[:id].present?
       @record = Dialog.find(params[:id])
+    elsif params[:copy].present?
+      @record = Dialog.find(params[:copy])
     else
       @record = Dialog.new
     end
@@ -188,7 +190,7 @@ class MiqAeCustomizationController < ApplicationController
   # Dialog show selected from catalog explorer
   def show
     nodes = params[:id].split("-")
-    record = Dialog.find_by(:id =>from_cid(nodes.last))
+    record = Dialog.find_by(:id =>nodes.last)
     self.x_active_accord = "dialogs"
     self.x_active_tree   = "#{x_active_accord}_tree"
     self.x_node = TreeBuilder.build_node_cid(record)
@@ -302,7 +304,7 @@ class MiqAeCustomizationController < ApplicationController
   def handle_bottom_cell(presenter)
     if @pages || @in_a_form
       if @pages
-        presenter.hide(:form_buttons_div).show(:pc_div_1)
+        presenter.hide(:form_buttons_div)
       elsif @in_a_form && @sb[:action]
         action_url = case x_active_tree
                      when :old_dialogs_tree then 'old_dialogs_update'
@@ -323,7 +325,7 @@ class MiqAeCustomizationController < ApplicationController
           :multi_record => @sb[:action] == 'ab_group_reorder',
         }
         presenter.update(:form_buttons_div, render_proc[:partial => "layouts/x_edit_buttons", :locals => locals])
-        presenter.hide(:pc_div_1).show(:form_buttons_div)
+        presenter.remove_paging.show(:form_buttons_div)
       end
       presenter.show(:paging_div)
     else
@@ -386,7 +388,7 @@ class MiqAeCustomizationController < ApplicationController
 
     if x_active_tree == :dialogs_tree && @sb[:active_tab] == "sample_tab" && nodetype != "root" && @record.buttons
       presenter.update(:form_buttons_div, render_proc[:partial => "dialog_sample_buttons"])
-      presenter.hide(:pc_div_1, :form_buttons_div).show(:paging_div)
+      presenter.remove_paging.hide(:form_buttons_div).show(:paging_div)
     end
   end
 
@@ -406,7 +408,7 @@ class MiqAeCustomizationController < ApplicationController
 
   def right_cell_text_for_node(record, model_name)
     if record && record.id
-      _("Editing %{model} \"%{name}\"") % {:name  => record.name,
+      _("Editing %{model} \"%{name}\"") % {:name  => record.kind_of?(CustomButtonSet) ? record.name.split("|").first : record.name,
                                            :model => ui_lookup(:model => model_name)}
     else
       _("Adding a new %{model}") % {:model => ui_lookup(:model => model_name)}
@@ -496,10 +498,6 @@ class MiqAeCustomizationController < ApplicationController
 
   def build_ab_tree
     TreeBuilderButtons.new("ab_tree", "ab", @sb)
-  end
-
-  def dialog_import_export_build_tree
-    TreeBuilderAeCustomization.new("dialog_import_export_tree", "dialog_import_export", @sb)
   end
 
   def group_button_add_save(typ)

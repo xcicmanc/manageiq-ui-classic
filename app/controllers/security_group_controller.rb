@@ -23,9 +23,13 @@ class SecurityGroupController < ApplicationController
     @refresh_div = "main_div"
 
     case params[:pressed]
+    when "instance_tag"
+      return tag("VmOrTemplate")
+    when "network_port_tag"
+      return tag("NetworkPort")
     when "security_group_tag"
       return tag("SecurityGroup")
-    when 'security_group_delete'
+    when "security_group_delete"
       delete_security_groups
     when "security_group_edit"
       javascript_redirect :action => "edit", :id => checked_item_id(params)
@@ -97,8 +101,7 @@ class SecurityGroupController < ApplicationController
 
     @breadcrumbs.pop if @breadcrumbs
     session[:edit] = nil
-    session[:flash_msgs] = @flash_array.dup if @flash_array
-
+    flash_to_session
     javascript_redirect :action => "show_list"
   end
 
@@ -139,7 +142,8 @@ class SecurityGroupController < ApplicationController
       if @flash_array.nil?
         add_flash(_("The selected Security Group was deleted"))
       else # or (if we deleted what we were showing) we redirect to the listing
-        javascript_redirect :action => 'show_list', :flash_msg => @flash_array[0][:message]
+        flash_to_session
+        javascript_redirect(:action => 'show_list')
       end
     end
   end
@@ -157,11 +161,6 @@ class SecurityGroupController < ApplicationController
     assert_privileges("security_group_new")
     @security_group = SecurityGroup.new
     @in_a_form = true
-    @ems_choices = {}
-    network_managers.each do |network_manager|
-      @ems_choices[network_manager.name] = network_manager.id
-    end
-
     drop_breadcrumb(:name => _("Add New Security Group"), :url => "/security_group/new")
   end
 
@@ -223,13 +222,14 @@ class SecurityGroupController < ApplicationController
     if MiqTask.status_ok?(task.status)
       add_flash(_("#{td[:resource]} #{td[:action]}d"))
     else
-      add_flash(_("Unable to #{td[:action]} #{td[:resource]}: %{details}") % {
-        :details => task.message
+      add_flash(_("Unable to %{action} %{resource}: %{details}") % {
+        :action   => td[:action],
+        :resource => td[:resource],
+        :details  => task.message
       }, :error)
     end
 
-    session[:flash_msgs] = @flash_array.dup if @flash_array
-
+    flash_to_session
     if !session[:security_group][:tasks].empty?
       task = session[:security_group][:tasks].shift
       session[:security_group][:task] = task
@@ -283,7 +283,7 @@ class SecurityGroupController < ApplicationController
 
   def task_started(task_id, message)
     unless task_id.kind_of?(Integer)
-      add_flash(_("#{message}: Task start failed: ID [%{id}]") % {:id => task_id.to_s}, :error)
+      add_flash(_("%{message}: Task start failed: ID [%{id}]") % {:message => message, :id => task_id.to_s}, :error)
       return nil
     end
     true

@@ -474,7 +474,7 @@
             -# Allow editing of the text field
             = select_tag("start_hour",
                          options_for_select((0..23).to_a, options[:start_hour].to_i),
-                         :class    => "selectpicker selectWidth")
+                         :class => "selectpicker selectWidth")
             %span h
             :javascript
               miqInitSelectPicker();

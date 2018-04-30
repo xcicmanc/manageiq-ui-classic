@@ -46,61 +46,48 @@ class HostController < ApplicationController
   alias display_storage_adapters display_tree_resources
 
   def filesystems_subsets
-    condition = nil
+    scope = nil
     label     = _('Files')
 
     host_service_group = HostServiceGroup.where(:id => params['host_service_group']).first
     if host_service_group
-      condition = host_service_group.host_service_group_filesystems_condition
+      scope = [[:host_service_group_filesystems, host_service_group.id]]
       label     = _("Configuration files of nova service")
     end
 
-    # HACK: UI get_view can't do arel relations, so I need to expose conditions
-    condition = condition.to_sql if condition
-
-    return label, condition
+    return label, scope
   end
 
   def filesystems
-    label, condition = filesystems_subsets
-    show_association('filesystems', label, 'filesystems', :filesystems, Filesystem, nil, condition)
+    label, scope = filesystems_subsets
+    show_association('filesystems', label, 'filesystems', :filesystems, Filesystem, nil, scope)
   end
 
   def host_services_subsets
-    condition = nil
+    scope = nil
     label     = _('Services')
 
     host_service_group = HostServiceGroup.where(:id => params['host_service_group']).first
     if host_service_group
       case params[:status]
       when 'running'
-        condition = host_service_group.running_system_services_condition
-        label     = _("Running system services of %{name}") % {:name => host_service_group.name}
+        scope = [[:host_service_group_running_systemd, host_service_group.id]]
+        label = _("Running system services of %{name}") % {:name => host_service_group.name}
       when 'failed'
-        condition =  host_service_group.failed_system_services_condition
-        label     = _("Failed system services of %{name}") % {:name => host_service_group.name}
+        scope = [[:host_service_group_failed_systemd, host_service_group.id]]
+        label = _("Failed system services of %{name}") % {:name => host_service_group.name}
       when 'all'
-        condition = nil
-        label     = _("All system services of %{name}") % {:name => host_service_group.name}
-      end
-
-      if condition
-        # Amend the condition with the openstack host service foreign key
-        condition = condition.and(host_service_group.host_service_group_system_services_condition)
-      else
-        condition = host_service_group.host_service_group_system_services_condition
+        scope = [[:host_service_group_systemd, host_service_group.id]]
+        label = _("All system services of %{name}") % {:name => host_service_group.name}
       end
     end
 
-    # HACK: UI get_view can't do arel relations, so I need to expose conditions
-    condition = condition.to_sql if condition
-
-    return label, condition
+    return label, scope
   end
 
   def host_services
-    label, condition = host_services_subsets
-    show_association('host_services', label, 'service', :host_services, SystemService, nil, condition)
+    label, scope = host_services_subsets
+    show_association('host_services', label, 'service', :host_services, SystemService, nil, scope)
     session[:host_display] = "host_services"
   end
 
@@ -207,7 +194,7 @@ class HostController < ApplicationController
       end
       build_targets_hash(hostitems)
       @view = get_db_view(Host)       # Instantiate the MIQ Report view object
-      @view.table = MiqFilter.records2table(hostitems, @view.cols + ['id'])
+      @view.table = ReportFormatter::Converter.records2table(hostitems, @view.cols + ['id'])
     end
   end
 
@@ -216,16 +203,14 @@ class HostController < ApplicationController
     case params[:button]
     when "cancel"
       session[:edit] = nil  # clean out the saved info
-      flash = "Edit for Host \""
       @breadcrumbs.pop if @breadcrumbs
       if !session[:host_items].nil?
-        flash = _("Edit of credentials for selected Hosts / Nodes was cancelled by the user")
-        # redirect_to :action => @lastaction, :display=>session[:host_display], :flash_msg=>flash
-        javascript_redirect :action => @lastaction, :display => session[:host_display], :flash_msg => flash
+        flash_to_session(_("Edit of credentials for selected Hosts / Nodes was cancelled by the user"))
+        javascript_redirect(:action => @lastaction, :display => session[:host_display])
       else
         @host = find_record_with_rbac(Host, params[:id])
-        flash = _("Edit of Host / Node \"%{name}\" was cancelled by the user") % {:name => @host.name}
-        javascript_redirect :action => @lastaction, :id => @host.id, :display => session[:host_display], :flash_msg => flash
+        flash_to_session(_("Edit of Host / Node \"%{name}\" was cancelled by the user") % {:name => @host.name})
+        javascript_redirect(:action => @lastaction, :id => @host.id, :display => session[:host_display])
       end
 
     when "save"
@@ -235,10 +220,9 @@ class HostController < ApplicationController
         valid_host = find_record_with_rbac(Host, params[:id])
         set_record_vars(valid_host, :validate)                      # Set the record variables, but don't save
         if valid_record? && set_record_vars(@host) && @host.save
-          add_flash(_("Host / Node \"%{name}\" was saved") % {:name => @host.name})
+          flash_to_session(_("Host / Node \"%{name}\" was saved") % {:name => @host.name})
           @breadcrumbs.pop if @breadcrumbs
           AuditEvent.success(build_saved_audit_hash_angular(old_host_attributes, @host, false))
-          session[:flash_msgs] = @flash_array.dup                 # Put msgs in session for next transaction
           if @lastaction == 'show_list'
             javascript_redirect :action => "show_list"
           else
@@ -264,20 +248,18 @@ class HostController < ApplicationController
           @error = Host.batch_update_authentication(session[:host_items], creds)
         end
         if @error || @error.blank?
-          # redirect_to :action => 'show_list', :flash_msg=>_("Credentials/Settings saved successfully")
-          javascript_redirect :action => 'show_list', :flash_msg => _("Credentials/Settings saved successfully")
+          flash_to_session(_("Credentials/Settings saved successfully"))
+          javascript_redirect(:action => 'show_list')
         else
           drop_breadcrumb(:name => _("Edit Host '%{name}'") % {:name => @host.name}, :url => "/host/edit/#{@host.id}")
           @in_a_form = true
-          # redirect_to :action => 'edit', :flash_msg=>@error, :flash_error =>true
           javascript_flash
         end
       end
     when "reset"
       params[:edittype] = @edit[:edittype]    # remember the edit type
-      add_flash(_("All changes have been reset"), :warning)
+      flash_to_session(_("All changes have been reset"), :warning)
       @in_a_form = true
-      session[:flash_msgs] = @flash_array.dup                 # Put msgs in session for next transaction
       javascript_redirect :action => 'edit', :id => @host.id.to_s
     when "validate"
       verify_host = find_record_with_rbac(Host, params[:validate_id] ? params[:validate_id].to_i : params[:id])

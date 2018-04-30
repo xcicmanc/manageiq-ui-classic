@@ -199,7 +199,7 @@ describe ProviderForemanController do
     end
 
     it "renders the edit page when the configuration manager id is selected from a grid/tile" do
-      post :edit, :params => { "check_#{ApplicationRecord.compress_id(@config_mgr.id)}" => "1" }
+      post :edit, :params => { "check_#{@config_mgr.id}" => "1" }
       expect(response.status).to eq(200)
     end
   end
@@ -225,8 +225,8 @@ describe ProviderForemanController do
 
     it "it refreshes a provider when the configuration manager id is selected from a grid/tile" do
       allow(controller).to receive(:replace_right_cell)
-      post :refresh, :params => { "check_#{ApplicationRecord.compress_id(@config_mgr.id)}"  => "1",
-                                  "check_#{ApplicationRecord.compress_id(@config_mgr2.id)}" => "1" }
+      post :refresh, :params => { "check_#{@config_mgr.id}"  => "1",
+                                  "check_#{@config_mgr2.id}" => "1" }
       expect(assigns(:flash_array).first[:message]).to include("Refresh Provider initiated for 2 providers")
     end
   end
@@ -250,7 +250,7 @@ describe ProviderForemanController do
 
     it "it deletes a provider when the configuration manager id is selected from a grid/tile" do
       allow(controller).to receive(:replace_right_cell)
-      post :delete, :params => { "check_#{ApplicationRecord.compress_id(@config_mgr.id)}" => "1" }
+      post :delete, :params => { "check_#{@config_mgr.id}" => "1" }
       expect(assigns(:flash_array).first[:message]).to include("Delete initiated for 1 Provider")
     end
   end
@@ -434,6 +434,22 @@ describe ProviderForemanController do
       controller.send(:accordion_select)
     end
 
+    it "calls get_view with the associated dbname for the Configuration Profiles list" do
+      stub_user(:features => :all)
+      allow(controller).to receive(:x_active_tree).and_return(:configuration_manager_providers_tree)
+      allow(controller).to receive(:x_active_accord).and_return(:configuration_manager_providers)
+      ems_id = ems_id_for_provider(@provider)
+      controller.instance_variable_set(:@in_report_data, true)
+      controller.instance_variable_set(:@_params, :id => ems_key_for_provider(@provider))
+      allow(controller).to receive(:build_listnav_search_list)
+      allow(controller).to receive(:apply_node_search_text)
+      expect(controller).to receive(:get_view).with("ConfigurationProfile", :match_via_descendants => "ConfiguredSystem",
+                                                                            :named_scope           => [[:with_manager, ems_id]],
+                                                                            :dbname                => :cm_configuration_profiles,
+                                                                            :gtl_dbname            => :cm_configuration_profiles).and_call_original
+      controller.send(:tree_select)
+    end
+
     it "calls get_view with the associated dbname for the Configured Systems accordion" do
       stub_user(:features => :all)
       allow(controller).to receive(:x_active_tree).and_return(:configuration_manager_cs_filter_tree)
@@ -529,7 +545,7 @@ describe ProviderForemanController do
   it "renders textual summary for a configured system" do
     stub_user(:features => :all)
 
-    tree_node_id = ApplicationRecord.compress_id(@configured_system.id)
+    tree_node_id = @configured_system.id
 
     # post to x_show sets session variables and redirects to explorer
     # then get to explorer renders the data for the active node
@@ -702,6 +718,22 @@ describe ProviderForemanController do
     end
   end
 
+  describe '#get_node_info' do
+    before do
+      controller.instance_variable_set(:@right_cell_text, "")
+      controller.instance_variable_set(:@search_text, search)
+    end
+
+    context 'searching text' do
+      let(:search) { "some_text" }
+
+      it 'updates right cell text according to search text' do
+        controller.send(:get_node_info, "root")
+        expect(controller.instance_variable_get(:@right_cell_text)).to eq(" (Names with \"#{search}\")")
+      end
+    end
+  end
+
   def user_with_feature(features)
     features = EvmSpecHelper.specific_product_features(*features)
     FactoryGirl.create(:user, :features => features)
@@ -715,12 +747,12 @@ describe ProviderForemanController do
 
   def ems_key_for_provider(provider)
     ems = ExtManagementSystem.where(:provider_id => provider.id).first
-    "fr-" + ApplicationRecord.compress_id(ems.id)
+    "fr-#{ems.id}"
   end
 
   def config_profile_key(config_profile)
     cp = ConfigurationProfile.where(:id => config_profile.id).first
-    "cp-" + ApplicationRecord.compress_id(cp.id)
+    "cp-#{cp.id}"
   end
 
   def ems_id_for_provider(provider)

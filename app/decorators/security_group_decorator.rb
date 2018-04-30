@@ -3,7 +3,9 @@ class SecurityGroupDecorator < MiqDecorator
     'pficon pficon-cloud-security'
   end
 
-  def self.fileicon
-    '100/security_group.png'
+  def single_quad
+    {
+      :fonticon => fonticon
+    }
   end
 end

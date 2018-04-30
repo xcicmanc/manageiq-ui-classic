@@ -58,6 +58,17 @@
                     'pf-select'        => true}
               %option{"value" => ""}
                 = "<#{_('Choose')}>"
+        .form-group{"ng-class" => "{'has-error': angularForm.#{prefix}_vault_credential_id.$invalid}"}
+          %label.col-md-3.control-label{"for" => "#{prefix}_vault_credential_id"}
+            = _('Vault Credential')
+          .col-md-9
+            %select{"ng-model"         => "vm._#{prefix}_vault_credential",
+                    "name"             => "#{prefix}_vault_credential_id",
+                    'ng-options'       => 'vault_credential as vault_credential.name for vault_credential in vm.vault_credentials',
+                    "data-live-search" => "true",
+                    'pf-select'        => true}
+              %option{"value" => ""}
+                = "<#{_('Choose')}>"
         -#.form-group
         -#  %label.col-md-3.control-label{"for" => "vm.#{prefix}_network_credential_id"}
         -#    = _('Network Credential')
@@ -174,11 +185,11 @@
         %label.col-md-3.control-label{"for" => "catalog_id"}
           = _('Remove resources?')
         .col-md-9
-          %select{"ng-model"   => "vm.#{ng_model}.retirement_remove_resources",
-                  "name"       => "vm.#{ng_model}.retirement_remove_resources",
-                  'ng-options' => "v as k for (k, v) in vm.remove_resources_types",
-                  :checkchange => true,
-                  "pf-select"  => true}
+          %select{"ng-model"    => "#{ng_model}.retirement_remove_resources",
+                  "name"        => "retirement_remove_resources",
+                  'ng-options'  => "v as k for (k, v) in vm.remove_resources_types",
+                  'checkchange' => "",
+                  "pf-select"   => true}
 
   .col-md-12.col-lg-6{'ng-if' => "#{ng_model}.#{prefix}_variables!==undefined"}
     .form-group
@@ -188,14 +199,14 @@
         %input{:type         => "text",
                'ng-model'    => "#{ng_model}.#{prefix}_key",
                :name         => "#{prefix}_key",
-               "placeholder" => "Variable",
+               "placeholder" => _("Variable"),
                "checkchange" => ""}
         %span.help-block{"ng-show" => "(#{ng_model}.#{prefix}_key === '' && #{ng_model}.#{prefix}_value !== '')"}
           = _("Required")
         %input{:type         => "text",
                'ng-model'    => "#{ng_model}.#{prefix}_value",
                :name         => "#{prefix}_value",
-               "placeholder" => "Default value",
+               "placeholder" => _("Default value"),
                "checkchange" => ""}
         %span.help-block{"ng-show" => "(#{ng_model}.#{prefix}_key !== '' && #{ng_model}.#{prefix}_value === '')"}
           = _("Required")

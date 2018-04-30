@@ -79,27 +79,23 @@ class ProviderForemanController < ApplicationController
   end
 
   def load_or_clear_adv_search
-    adv_search_build("ConfiguredSystem")
+    adv_search_build(model_from_active_tree(x_active_tree))
     session[:edit] = @edit
     @explorer = true
 
-    if (x_active_tree != :configuration_manager_cs_filter_tree || x_node == "root") && params[:button] != 'saveit'
-      listnav_search_selected(0)
-    else
+    if x_active_tree == :configuration_manager_cs_filter_tree && params[:button] != 'saveit' # Configured Systems accordion
       @nodetype, id = parse_nodetype_and_id(valid_active_node(x_node))
-
-      if x_active_tree == :cs_filter_tree && @nodetype == "xx-csf"
-        search_id = @nodetype == "root" ? 0 : from_cid(id)
-        listnav_search_selected(search_id) unless params.key?(:search_text) # Clear or set the adv search filter
-        if @edit[:adv_search_applied] &&
-           MiqExpression.quick_search?(@edit[:adv_search_applied][:exp]) &&
-           %w(reload tree_select).include?(params[:action])
-          self.x_node = params[:id]
-          quick_search_show
-        end
-      elsif x_active_tree == :configuration_manager_cs_filter_tree && params[:button].present? && params[:button] != 'saveit'
-        listnav_search_selected(from_cid(id))
+      search_id = @nodetype == "root" ? 0 : id
+      search_id = @edit[@expkey][:selected][:id] if params[:button] == "save"
+      listnav_search_selected(search_id) if !params.key?(:search_text) && params[:action] != 'x_show' # Clear or set the adv search filter
+      if @edit[:adv_search_applied] &&
+         MiqExpression.quick_search?(@edit[:adv_search_applied][:exp]) &&
+         %w(reload tree_select).include?(params[:action])
+        self.x_node = params[:id]
+        quick_search_show # User will input the value
       end
+    elsif x_active_tree == :configuration_manager_providers_tree && x_node != 'root' # Providers accordion, without Advanced Search
+      listnav_search_selected(0)
     end
   end
 
@@ -148,7 +144,7 @@ class ProviderForemanController < ApplicationController
     when "cp", "cs" then ManageIQ::Providers::Foreman::ConfigurationManager::ConfiguredSystem
     when "xx"       then
       case nodes.second
-      when "fr" then ManageIQ::Providers::Foreman::ConfigurationManager
+      when "fr" then ManageIQ::Providers::ConfigurationManager
       when "csf" then ConfiguredSystem
       end
     else
@@ -164,7 +160,7 @@ class ProviderForemanController < ApplicationController
     nodes = x_node.split('-')
     case nodes.first
     when "root", "xx" then find_record(ConfiguredSystem, params[:id])
-    when "ms"         then find_record(ConfiguredSystem, from_cid(params[:id]))
+    when "ms"         then find_record(ConfiguredSystem, params[:id])
     end
   end
 
@@ -197,6 +193,10 @@ class ProviderForemanController < ApplicationController
     true
   end
 
+  def provider_active_tree?
+    x_active_tree == :configuration_manager_providers_tree
+  end
+
   private
 
   def textual_group_list
@@ -226,11 +226,11 @@ class ProviderForemanController < ApplicationController
   end
 
   def build_configuration_manager_providers_tree(_type)
-    TreeBuilderConfigurationManager.new(:configuration_manager_providers, :configuration_manager_providers_tree, @sb)
+    TreeBuilderConfigurationManager.new(:configuration_manager_providers_tree, :configuration_manager_providers, @sb)
   end
 
   def build_configuration_manager_cs_filter_tree(_type)
-    TreeBuilderConfigurationManagerConfiguredSystems.new(:configuration_manager_cs_filter, :configuration_manager_cs_filter_tree, @sb)
+    TreeBuilderConfigurationManagerConfiguredSystems.new(:configuration_manager_cs_filter_tree, :configuration_manager_cs_filter, @sb)
   end
 
   def get_node_info(treenodeid, show_list = true)
@@ -260,6 +260,7 @@ class ProviderForemanController < ApplicationController
                   default_node
                 end
               end
+    @right_cell_text += _(" (Names with \"%{search_text}\")") % {:search_text => @search_text} if @search_text.present?
     @right_cell_text += @edit[:adv_search_applied][:text] if x_tree && x_tree[:type] == :configuration_manager_cs_filter && @edit && @edit[:adv_search_applied]
 
     if @edit && @edit.fetch_path(:adv_search_applied, :qs_exp) # If qs is active, save it in history
@@ -370,6 +371,13 @@ class ProviderForemanController < ApplicationController
     node
   end
 
+  def replace_search_box(presenter)
+    # Replace the searchbox
+    presenter.replace(:adv_searchbox_div,
+                      r[:partial => 'layouts/x_adv_searchbox',
+                        :locals  => {:nameonly => provider_active_tree?}])
+  end
+
   def update_partials(record_showing, presenter)
     if record_showing && valid_configured_system_record?(@configured_system_record)
       get_tagdata(@record)
@@ -394,6 +402,7 @@ class ProviderForemanController < ApplicationController
     else
       presenter.update(:main_div, r[:partial => 'layouts/x_gtl'])
     end
+    replace_search_box(presenter)
   end
 
   def group_summary_tab_selected?
@@ -422,7 +431,7 @@ class ProviderForemanController < ApplicationController
     if row['name'] == _("Unassigned Profiles Group") && row['id'].nil?
       "-#{row['manager_id']}-unassigned"
     else
-      to_cid(row['id'])
+      row['id'].to_s
     end
   end
 
@@ -476,11 +485,18 @@ class ProviderForemanController < ApplicationController
     @grid_hash = view_to_hash(@view)
   end
 
-  def update_options
-    options = {}
+  def update_options(options = {})
+    options ||= {}
     options[:dbname] = case x_active_accord
                        when :configuration_manager_providers
-                         options[:model] && options[:model] == 'ConfiguredSystem' ? :cm_configured_systems : :cm_providers
+                         case options[:model]
+                         when 'ConfiguredSystem'
+                           :cm_configured_systems
+                         when 'ConfigurationProfile'
+                           :cm_configuration_profiles
+                         else
+                           :cm_providers
+                         end
                        when :configuration_manager_cs_filter
                          :cm_configured_systems
                        end
@@ -490,7 +506,7 @@ class ProviderForemanController < ApplicationController
   private :update_options
 
   def process_show_list(options = {})
-    options.merge!(update_options)
+    options.merge!(update_options(options))
     process_show_list_options(options)
     super
   end

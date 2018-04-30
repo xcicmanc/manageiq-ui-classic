@@ -3,7 +3,6 @@ module ApplicationHelper
   include_concern 'PageLayouts'
   include_concern 'Tasks'
   include Sandbox
-  include CompressedIds
   include JsHelper
   include StiRoutingHelper
   include ToolbarHelper
@@ -12,11 +11,18 @@ module ApplicationHelper
   include NumberHelper
   include PlanningHelper
   include Title
+  include ReactjsHelper
+  include Webpack
 
   VALID_PERF_PARENTS = {
     "EmsCluster" => :ems_cluster,
     "Host"       => :host
   }
+
+  def flash_to_session(*args)
+    add_flash(*args) unless args.empty?
+    session[:flash_msgs] = @flash_array.dup if @flash_array
+  end
 
   # Need to generate paths w/o hostname by default to make proxying work.
   #
@@ -183,7 +189,7 @@ module ApplicationHelper
 
   def type_has_quadicon(type)
     !%w(
-      ManageIQ::Providers::Foreman::ConfigurationManager::ConfigurationProfile
+      ConfigurationProfile
       Account
       GuestApplication
       SystemService
@@ -201,7 +207,6 @@ module ApplicationHelper
       MiqTask
       MiqRequest
       PxeServer
-      Switch
     ).include? type
   end
 
@@ -236,12 +241,13 @@ module ApplicationHelper
   }.freeze
 
   HAS_ASSOCATION = {
-    "groups"         => "groups",
-    "users"          => "users",
-    "event_logs"     => "event_logs",
-    "OsProcess"      => "processes",
-    "scan_histories" => "scan_histories",
-    "based_volumes"  => "based_volumes"
+    "groups"           => "groups",
+    "users"            => "users",
+    "event_logs"       => "event_logs",
+    "OsProcess"        => "processes",
+    "scan_histories"   => "scan_histories",
+    "based_volumes"    => "based_volumes",
+    "PersistentVolume" => "persistent_volumes"
   }.freeze
 
   def model_to_report_data
@@ -274,7 +280,7 @@ module ApplicationHelper
   end
 
   def url_for_record(record, action = "show") # Default action is show
-    @id = to_cid(record.id)
+    @id = record.id
     db  = if controller.kind_of?(VmOrTemplateController)
             "vm_or_template"
           elsif record.kind_of?(VmOrTemplate)
@@ -345,9 +351,6 @@ module ApplicationHelper
       if controller == "ems_middleware" && action == "show"
         return ems_middlewares_path
       end
-      if controller == "ems_datawarehouse" && action == "show"
-        return ems_datawarehouses_path
-      end
       if controller == "ems_network" && action == "show"
         return ems_networks_path
       end
@@ -391,11 +394,17 @@ module ApplicationHelper
                  MiqReportResult).include?(view.db) &&
               %w(report automation_manager).include?(request.parameters[:controller])
           suffix = ''
-          suffix = x_node if params[:tab_id] == "saved_reports" || params[:pressed] == "miq_report_run"
+          if params[:tab_id] == "saved_reports" || params[:pressed] == "miq_report_run" || params[:action] == "reload"
+            suffix = x_node
+          end
           return "/" + request.parameters[:controller] + "/tree_select?id=" + suffix
         elsif %w(User MiqGroup MiqUserRole Tenant).include?(view.db) &&
               %w(ops).include?(request.parameters[:controller])
-          return "/" + request.parameters[:controller] + "/tree_select/?id=" + x_node.split("-")[1]
+          if @tagging
+            return false # when tagging Users, Groups, Roles and Tennants, the table is non-clickable
+          else
+            return "/" + request.parameters[:controller] + "/tree_select/?id=" + x_node.split("-")[1]
+          end
         elsif %w(VmdbTableEvm MiqServer).include?(view.db) &&
               %w(ops report).include?(request.parameters[:controller])
           return "/" + request.parameters[:controller] + "/tree_select/?id=" + TREE_WITH_TAB[active_tab]
@@ -500,7 +509,6 @@ module ApplicationHelper
       controller = "ansible_credential"
     when "MiqWorker"
       controller = request.parameters[:controller]
-      action = "diagnostics_worker_selected"
     when "OrchestrationStackOutput", "OrchestrationStackParameter", "OrchestrationStackResource",
         "ManageIQ::Providers::CloudManager::OrchestrationStack",
         "ManageIQ::Providers::AnsibleTower::AutomationManager::Job", "ConfigurationScriptBase"
@@ -862,6 +870,8 @@ module ApplicationHelper
        cloud_subnet
        cloud_tenant
        cloud_volume
+       cloud_volume_backup
+       cloud_volume_snapshot
        configuration_job
        configuration_scripts
        container
@@ -889,10 +899,8 @@ module ApplicationHelper
        host
        host_aggregate
        load_balancer
-       middleware_datasource
        middleware_deployment
        middleware_domain
-       middleware_messaging
        middleware_server
        miq_template
        network_port
@@ -989,8 +997,13 @@ module ApplicationHelper
 
   def model_from_active_tree(tree)
     case tree
-    when :configuration_manager_cs_filter_tree, :automation_manager_cs_filter_tree
-      "ConfiguredSystem"
+    when :automation_manager_cs_filter_tree
+      "ManageIQ::Providers::AnsibleTower::AutomationManager::ConfiguredSystem"
+    when :configuration_manager_cs_filter_tree
+      "ManageIQ::Providers::Foreman::ConfigurationManager::ConfiguredSystem"
+    when :configuration_manager_providers_tree
+      "ManageIQ::Providers::Foreman::ConfigurationManager" if x_node.include?("fr")
+      "ManageIQ::Providers::ConfigurationManager" if x_node == "root"
     when :instances_filter_tree
       "ManageIQ::Providers::CloudManager::Vm"
     when :images_filter_tree
@@ -1010,8 +1023,10 @@ module ApplicationHelper
 
   def configuration_manager_scripts_tree(tree)
     case tree
-    when :automation_manager_cs_filter_tree, :configuration_manager_cs_filter_tree
-      "ConfiguredSystem"
+    when :automation_manager_cs_filter_tree
+      "ManageIQ::Providers::AnsibleTower::AutomationManager::ConfiguredSystem"
+    when :configuration_manager_cs_filter_tree
+      "ManageIQ::Providers::Foreman::ConfigurationManager::ConfiguredSystem"
     when :configuration_scripts_tree
       "ManageIQ::Providers::AnsibleTower::AutomationManager::ConfigurationScript"
     end
@@ -1334,18 +1349,17 @@ module ApplicationHelper
                         floating_ip
                         generic_object
                         generic_object_definition
+                        guest_device
                         host
                         host_aggregate
                         load_balancer
                         manageiq/providers/embedded_ansible/automation_manager/playbook
                         manageiq/providers/embedded_automation_manager/authentication
-                        middleware_datasource
+                        manageiq/providers/embedded_automation_manager/configuration_script_source
                         middleware_deployment
                         middleware_domain
-                        middleware_messaging
                         middleware_server
                         middleware_server_group
-                        middleware_topology
                         miq_schedule
                         miq_template
                         monitor_alerts_overview
@@ -1429,7 +1443,6 @@ module ApplicationHelper
           ems_cloud
           ems_cluster
           ems_container
-          ems_datawarehouse
           ems_infra
           ems_middleware
           ems_network
@@ -1438,12 +1451,12 @@ module ApplicationHelper
           flavor
           floating_ip
           generic_object_definition
+          guest_device
           host
+          host_aggregate
           load_balancer
-          middleware_datasource
           middleware_deployment
           middleware_domain
-          middleware_messaging
           middleware_server
           middleware_server_group
           miq_template
@@ -1458,7 +1471,6 @@ module ApplicationHelper
           retired
           security_group
           service
-          storage
           templates
           vm).include?(@layout) && !@in_a_form
       "show_list"
@@ -1500,7 +1512,6 @@ module ApplicationHelper
              ems_cloud
              ems_cluster
              ems_container
-             ems_datawarehouse
              ems_infra
              ems_middleware
              ems_network
@@ -1509,13 +1520,12 @@ module ApplicationHelper
              flavor
              floating_ip
              generic_object_definition
+             guest_device
              host
              host_aggregate
              load_balancer
-             middleware_datasource
              middleware_deployment
              middleware_domain
-             middleware_messaging
              middleware_server
              middleware_server_group
              miq_schedule
@@ -1634,13 +1644,17 @@ module ApplicationHelper
       :showlinks  => @showlinks,
       :policy_sim => @policy_sim,
       :lastaction => @lastaction,
+      :in_a_form  => @in_a_form,
       :display    => @display
     )
     @report_data_additional_options.with_row_button(@row_button) if @row_button
     @report_data_additional_options.with_menu_click(params[:menu_click]) if params[:menu_click]
     @report_data_additional_options.with_sb_controller(params[:sb_controller]) if params[:sb_controller]
     @report_data_additional_options.with_model(curr_model) if curr_model
-    @report_data_additional_options.freeze
+    @report_data_additional_options.with_no_checkboxes(@no_checkboxes) if @no_checkboxes
+    # FIXME: we would like to freeze here, but the @gtl_type is calculated no sooner than in view templates.
+    # So until that if fixed we cannot freeze.
+    # @report_data_additional_options.freeze
   end
 
   def from_additional_options(additional_options)
@@ -1648,12 +1662,13 @@ module ApplicationHelper
       additional_options[:match_via_descendants] = additional_options[:match_via_descendants].constantize
     end
     if additional_options[:parent_id].present? && additional_options[:parent_class_name].present?
-      parent_id = from_cid(additional_options[:parent_id])
+      parent_id = additional_options[:parent_id]
       parent_class = additional_options[:parent_class_name].constantize
       additional_options[:parent] = parent_class.find(parent_id) if parent_class < ActiveRecord::Base
     end
 
     @row_button = additional_options[:row_button]
+    @no_checkboxes = additional_options[:no_checkboxes]
 
     additional_options
   end
@@ -1674,6 +1689,13 @@ module ApplicationHelper
     # we also need to pass the @display because @display passed throught the
     # session does not persist the null value
     @display = quadicon_options[:display]
+
+    # need to pass @in_a_form so get_view does not set advanced search options
+    # in the forms that render gtl that mess up @edit
+    @in_a_form = quadicon_options[:in_a_form]
+
+    # take GTL type from the component
+    @gtl_type = quadicon_options[:gtl_type]
   end
 
   # Wrapper around jquery-rjs' remote_function which adds an extra .html_safe()
@@ -1755,5 +1777,9 @@ module ApplicationHelper
     javascript_redirect :action      => 'show_list',
                         :flash_msg   => @flash_array[0][:message],
                         :flash_error => @flash_array[0][:level] == :error
+  end
+
+  def accessible_select_event_types
+    ApplicationController::Timelines::SELECT_EVENT_TYPE.map {|key, value| [_(key), value]}
   end
 end

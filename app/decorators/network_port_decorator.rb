@@ -3,7 +3,9 @@ class NetworkPortDecorator < MiqDecorator
     'ff ff-network-port'
   end
 
-  def self.fileicon
-    '100/network_port.png'
+  def single_quad
+    {
+      :fonticon => fonticon
+    }
   end
 end

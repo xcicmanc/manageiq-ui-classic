@@ -1,5 +1,3 @@
-require 'shared/presenters/tree_node/common'
-
 describe TreeNode::ExtManagementSystem do
   subject { described_class.new(object, nil, {}) }
 
@@ -34,7 +32,6 @@ describe TreeNode::ExtManagementSystem do
     :provisioning_manager_foreman        => {},
     :ems_physical_infra                  => {},
     :ems_openshift                       => {},
-    :ems_hawkular                        => {},
     :ems_azure_network                   => {},
     :ems_amazon_network                  => {},
     :ems_google_network                  => {},

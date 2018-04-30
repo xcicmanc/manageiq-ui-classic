@@ -115,28 +115,6 @@ module Menu
         ])
       end
 
-      def datawarehouse_menu_section
-        if ::Settings.product.datawarehouse_manager
-          Menu::Section.new(:dwh, N_("Datawarehouse"), 'pficon pficon-enterprise', [
-            Menu::Item.new('ems_datawarehouse', N_('Providers'), 'ems_datawarehouse',
-                           {:feature => 'ems_datawarehouse_show_list'}, '/ems_datawarehouse')
-            ])
-        end
-      end
-
-      def middleware_menu_section
-        Menu::Section.new(:mdl, N_("Middleware"), 'pficon pficon-middleware', [
-          Menu::Item.new('ems_middleware',        N_('Providers'),   'ems_middleware',        {:feature => 'ems_middleware_show_list'},          '/ems_middleware'),
-          Menu::Item.new('middleware_domain',     N_('Domains'),     'middleware_domain',     {:feature => 'middleware_domain_show_list'},       '/middleware_domain'),
-          Menu::Item.new('middleware_server',     N_('Servers'),     'middleware_server',     {:feature => 'middleware_server_show_list'},       '/middleware_server'),
-          Menu::Item.new('middleware_deployment', N_('Deployments'), 'middleware_deployment', {:feature => 'middleware_deployment_show_list'},   '/middleware_deployment'),
-          Menu::Item.new('middleware_datasource', N_('Datasources'), 'middleware_datasource', {:feature => 'middleware_datasource_show_list'},   '/middleware_datasource'),
-          Menu::Item.new('middleware_messaging',  N_('Messagings'),  'middleware_messaging',  {:feature => 'middleware_messaging_show_list'},    '/middleware_messaging'),
-          Menu::Item.new('middleware_topology',   N_('Topology'),    'middleware_topology',   {:feature => 'middleware_topology', :any => true}, '/middleware_topology')
-
-        ])
-      end
-
       def network_menu_section
         Menu::Section.new(:net, N_("Networks"), 'pficon pficon-network', [
           Menu::Item.new('ems_network',      N_('Providers'),       'ems_network',      {:feature => 'ems_network_show_list'},    '/ems_network'),
@@ -213,7 +191,7 @@ module Menu
       end
 
       def automation_menu_section
-        Menu::Section.new(:aut, N_("Automation"), 'fa fa-recycle', [
+        Menu::Section.new(:aut, N_("Automation"), 'pficon pficon-automation', [
           ansible_menu_section,
           automation_manager_menu_section,
           automate_menu_section
@@ -228,7 +206,7 @@ module Menu
       end
 
       def ansible_menu_section
-        Menu::Section.new(:ansible, N_("Ansible"), 'fa fa-recycle', [
+        Menu::Section.new(:ansible, N_("Ansible"), 'pficon pficon-automation', [
           Menu::Item.new('ansible_playbooks', N_('Playbooks'), 'embedded_configuration_script_payload', {:feature => 'embedded_configuration_script_payload', :any => true}, '/ansible_playbook'),
           Menu::Item.new('ansible_repositories', N_('Repositories'), 'embedded_configuration_script_source', {:feature => 'embedded_configuration_script_source', :any => true}, '/ansible_repository'),
           Menu::Item.new('ansible_credentials', N_('Credentials'), 'embedded_automation_manager_credentials', {:feature => 'embedded_automation_manager_credentials', :any => true}, '/ansible_credential'),
@@ -236,7 +214,7 @@ module Menu
       end
 
       def automate_menu_section
-        Menu::Section.new(:automate, N_("Automate"), 'fa fa-recycle', [
+        Menu::Section.new(:automate, N_("Automate"), 'pficon pficon-automation', [
           Menu::Item.new('miq_ae_class',         N_('Explorer'),        'miq_ae_class_explorer',         {:feature => 'miq_ae_domain_view'},            '/miq_ae_class/explorer'),
           Menu::Item.new('miq_ae_tools',         N_('Simulation'),      'miq_ae_class_simulation',       {:feature => 'miq_ae_class_simulation'},       '/miq_ae_tools/resolve'),
           Menu::Item.new('miq_ae_customization', N_('Customization'),   'miq_ae_customization_explorer', {:feature => 'miq_ae_customization_explorer'}, '/miq_ae_customization/explorer'),
@@ -248,7 +226,7 @@ module Menu
       end
 
       def optimize_menu_section
-        Menu::Section.new(:opt, N_("Optimize"), 'fa fa-lightbulb-o', [
+        Menu::Section.new(:opt, N_("Optimize"), 'pficon pficon-optimize', [
           Menu::Item.new('miq_capacity_utilization', N_('Utilization'), 'utilization', {:feature => 'utilization'}, '/utilization'),
           Menu::Item.new('miq_capacity_planning',    N_('Planning'),    'planning',    {:feature => 'planning'},    '/planning'),
           Menu::Item.new('miq_capacity_bottlenecks', N_('Bottlenecks'), 'bottlenecks', {:feature => 'bottlenecks'}, '/bottlenecks')
@@ -259,7 +237,6 @@ module Menu
         Menu::Section.new(:monitor_alerts, N_("Alerts"), 'fa fa-bullhorn-o fa-2x', [
                             Menu::Item.new('monitor_alerts_overview', N_('Overview'), 'monitor_alerts_overview', {:feature => 'monitor_alerts_overview', :any => true}, '/alerts_overview'),
                             Menu::Item.new('monitor_alerts_list', N_('All Alerts'), 'monitor_alerts_list', {:feature => 'monitor_alerts_list', :any => true}, '/alerts_list'),
-                            Menu::Item.new('monitor_alerts_most_recent', N_('Most Recent Alerts'), 'monitor_alerts_most_recent', {:feature => 'monitor_alerts_most_recent', :any => true}, '/alerts_most_recent')
                           ])
       end
 
@@ -296,6 +273,7 @@ module Menu
                          {:feature => key.to_s},
                          help_menu_field(key, :href, value[:href]),
                          help_menu_field(key, :type, value[:type]),
+                         nil,
                          value)
         end
 
@@ -304,9 +282,8 @@ module Menu
 
       def default_menu
         [cloud_inteligence_menu_section, services_menu_section, compute_menu_section, configuration_menu_section,
-         network_menu_section, middleware_menu_section, datawarehouse_menu_section, storage_menu_section,
-         control_menu_section, automation_menu_section, optimize_menu_section, monitor_menu_section,
-         settings_menu_section, help_menu_section].compact
+         network_menu_section, storage_menu_section, control_menu_section, automation_menu_section,
+         optimize_menu_section, monitor_menu_section, settings_menu_section, help_menu_section].compact
       end
 
       private

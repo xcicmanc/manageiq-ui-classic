@@ -35,6 +35,11 @@ class EmsInfraController < ApplicationController
     redirect_to :action => 'show_list'
   end
 
+  def new
+    @disabled_ems_infra_types = [['KubeVirt', 'kubevirt']]
+    super
+  end
+
   def scaling
     assert_privileges("ems_infra_scale")
 
@@ -215,7 +220,9 @@ class EmsInfraController < ApplicationController
     if stack_parameters_changed?(stack_parameters)
       begin
         stack.scale_up_queue(session[:userid], stack_parameters)
-        redirect_to(ems_infra_path(provider_id, :flash_msg => return_message))
+        add_flash(return_message)
+        flash_to_session
+        redirect_to(ems_infra_path(provider_id))
       rescue => ex
         add_flash(_("Unable to initiate scale up: %{message}") % {:message => ex}, :error)
       end
@@ -227,7 +234,9 @@ class EmsInfraController < ApplicationController
     if stack_parameters_changed?(stack_parameters)
       begin
         stack.scale_down_queue(session[:userid], stack_parameters, hosts)
-        redirect_to(ems_infra_path(provider_id, :flash_msg => return_message))
+        add_flash(return_message)
+        flash_to_session
+        redirect_to(ems_infra_path(provider_id))
       rescue => ex
         add_flash(_("Unable to initiate scale down: %{message}") % {:message => ex}, :error)
       end

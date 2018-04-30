@@ -49,11 +49,13 @@ module GtlHelper
   #
   def render_gtl_outer(no_flash_div)
     parent_id = @report_data_additional_options.try(:[], :parent_id)
+    gtl_type_string = @gtl_type || 'list'
+    @report_data_additional_options.with_gtl_type(gtl_type_string) if @report_data_additional_options
 
     options = {
       :model_name                     => model_to_report_data,
       :no_flash_div                   => no_flash_div || false,
-      :gtl_type_string                => @gtl_type,
+      :gtl_type_string                => gtl_type_string,
       :active_tree                    => (x_active_tree unless params[:display]),
       :parent_id                      => parent_id,
       :selected_records               => gtl_selected_records,
@@ -65,6 +67,7 @@ module GtlHelper
       :view                           => @view,
       :db                             => @db,
       :parent                         => @parent,
+      :pages                          => @pages,
 
       :report_data_additional_options => @report_data_additional_options,
     }
@@ -119,9 +122,22 @@ module GtlHelper
           isExplorer: '#{options[:explorer]}' === 'true' ? true : false,
           records: #{!options[:selected_records].nil? ? h(j_str(options[:selected_records].to_json)) : "\'\'"},
           hideSelect: #{options[:selected_records].kind_of?(Array)},
-          showUrl: '#{view_to_url(options[:view], options[:parent]) if options[:view].present? && options[:view].db.present?}'
+          showUrl: '#{gtl_show_url(options)}',
+          pages: #{options[:pages].to_json},
         }
       }});
 EOJ
+  end
+
+  def gtl_show_url(options)
+    # FIXME: fetch_path doesn't work on structs in a hash
+    if options[:report_data_additional_options].present?
+      # only false, nil is true
+      return false if options[:report_data_additional_options].clickable == false
+    end
+
+    # TODO: the "what happens on nil" logic should probably live here, not in ReportDataController.prototype.initObjects
+
+    view_to_url(options[:view], options[:parent]) if options[:view].present? && options[:view].db.present?
   end
 end

@@ -3,7 +3,9 @@ class FlavorDecorator < MiqDecorator
     'pficon pficon-flavor'
   end
 
-  def self.fileicon
-    '100/flavor.png'
+  def single_quad
+    {
+      :fonticon => fonticon
+    }
   end
 end

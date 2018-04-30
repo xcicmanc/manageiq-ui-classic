@@ -39,7 +39,7 @@ module OpsController::OpsRbac
   def rbac_user_copy
     # get users id either from gtl check or detail id
     user_id = params[:miq_grid_checks].present? ? params[:miq_grid_checks] : params[:id]
-    user = User.find(from_cid(user_id))
+    user = User.find(user_id)
     # check if it is allowed to copy the user
     if rbac_user_copy_restriction?(user)
       rbac_restricted_user_copy_flash(user)
@@ -98,7 +98,7 @@ module OpsController::OpsRbac
     assert_privileges("rbac_tenant_add")
     @_params[:typ] = "new"
     @tenant_type = params[:tenant_type] == "tenant"
-    @tenant_parent = Tenant.find(from_cid(x_node.split('-').last)).id
+    @tenant_parent = Tenant.find(x_node.split('-').last).id
     rbac_tenant_edit
   end
   alias_method :rbac_project_add, :rbac_tenant_add
@@ -193,7 +193,7 @@ module OpsController::OpsRbac
     tenant.description = params[:description]
     tenant.use_config_for_attributes = tenant.root? && (params[:use_config_for_attributes] == "on")
     unless tenant.id # only set for new records
-      tenant.parent    = Tenant.find(from_cid(x_node.split('-').last))
+      tenant.parent    = Tenant.find(x_node.split('-').last)
       tenant.divisible = params[:divisible] == "true"
     end
   end
@@ -306,7 +306,7 @@ module OpsController::OpsRbac
       process_users(users, "destroy") unless users.empty?
       self.x_node = "xx-u" # reset node to show list
     else # showing 1 user, delete it
-      ids = find_checked_items.collect { |r| from_cid(r.to_s.split("-").last) }
+      ids = find_checked_items.collect { |r| r.to_s.split("-").last }
       users = User.where(:id => ids).compact
       if users.empty?
         add_flash(_("Default EVM User \"Administrator\" cannot be deleted"), :error)
@@ -334,7 +334,7 @@ module OpsController::OpsRbac
     assert_privileges("rbac_role_delete")
     roles = []
     if !params[:id] # showing a role list
-      ids = find_checked_items.collect { |r| from_cid(r.to_s.split("-").last) }
+      ids = find_checked_items.collect { |r| r.to_s.split("-").last }
       roles = MiqUserRole.where(:id => ids)
       process_roles(roles, "destroy") unless roles.empty?
     else # showing 1 role, delete it
@@ -374,7 +374,7 @@ module OpsController::OpsRbac
     else # showing 1 tenant, delete it
       tenants.push(params[:id])
       parent_id = Tenant.find(params[:id]).parent.id
-      self.x_node = "tn-#{to_cid(parent_id)}"
+      self.x_node = "tn-#{parent_id}"
     end
     process_tenants(tenants, "destroy") unless tenants.empty?
     get_node_info(x_node)
@@ -385,7 +385,7 @@ module OpsController::OpsRbac
     assert_privileges("rbac_group_delete")
     groups = []
     if !params[:id] # showing a list
-      ids = find_checked_items.collect { |r| from_cid(r.to_s.split("-").last) }
+      ids = find_checked_items.collect { |r| r.to_s.split("-").last }
       groups = MiqGroup.where(:id => ids)
       process_groups(groups, "destroy") unless groups.empty?
       self.x_node = "xx-g" # reset node to show list
@@ -440,15 +440,6 @@ module OpsController::OpsRbac
       end
       replace_right_cell(:nodetype => "group_seq")
     end
-  end
-
-  def rbac_group_filter_expression
-    rbac_group_set_form_vars
-    @changed = session[:changed] = (@edit[:new] != @edit[:current])
-    @expkey = params[:button].to_sym
-    @edit[:filter_expression_table] = exp_build_table_or_nil(@edit[:new][:filter_expression])
-    @in_a_form = true
-    replace_right_cell(:nodetype => x_node)
   end
 
   def rbac_group_seq_edit_screen
@@ -616,6 +607,7 @@ module OpsController::OpsRbac
       session[:tag_db] = @tagging = tagging
     end
 
+    @gtl_type = "list" # No quad icons for user/group list views
     x_tags_set_form_vars
     @in_a_form = true
     session[:changed] = false
@@ -716,12 +708,6 @@ module OpsController::OpsRbac
     session[:changed] = false
     add_flash(_("All changes have been reset"), :warning) if params[:button] == "reset"
     @sb[:pre_edit_node] = x_node  unless params[:button] # Save active tree node before edit
-    if @edit["#{key}_id".to_sym]
-      caption = key == :group ? @record.description : @record.name
-      @right_cell_text = _("Editing %{model} \"%{name}\"") % {:name => caption, :model => what.titleize}
-    else
-      @right_cell_text = _("Adding a new %{name}") % {:name => what.titleize}
-    end
     replace_right_cell(:nodetype => x_node)
   end
 
@@ -740,7 +726,7 @@ module OpsController::OpsRbac
     when :group then
       record = @edit[:group_id] ? MiqGroup.find_by(:id => @edit[:group_id]) : MiqGroup.new
       validated = rbac_group_validate?
-      rbac_group_set_record_vars(record)
+      rbac_group_set_record_vars(record) if validated
     when :role  then
       record = @edit[:role_id] ? MiqUserRole.find_by(:id => @edit[:role_id]) : MiqUserRole.new
       validated = rbac_role_validate?
@@ -748,6 +734,7 @@ module OpsController::OpsRbac
     end
 
     if record.valid? && validated && record.save!
+      record.miq_groups = Rbac.filtered(MiqGroup.find(rbac_user_get_group_ids)) if key == :user # only set miq_groups if everything is valid
       populate_role_features(record) if what == "role"
       self.current_user = record if what == 'user' && @edit[:current][:userid] == current_userid
       AuditEvent.success(build_saved_audit(record, add_pressed))
@@ -813,7 +800,7 @@ module OpsController::OpsRbac
   # AJAX driven routine to check for changes in ANY field on the form
   def rbac_field_changed(rec_type)
     id = params[:id].split('__').first # Get the record id
-    id = from_cid(id) unless %w(new seq).include?(id)
+    id = id unless %w(new seq).include?(id)
     return unless load_edit("rbac_#{rec_type}_edit__#{id}", "replace_cell__explorer")
 
     case rec_type
@@ -822,11 +809,13 @@ module OpsController::OpsRbac
     when "role"  then rbac_role_get_form_vars
     end
 
+    @edit[:new][:group] = rbac_user_get_group_ids.map(&:to_i) if rec_type == "user"
     session[:changed] = changed = (@edit[:new] != @edit[:current])
     bad = false
     if rec_type == "group"
       bad = (@edit[:new][:role].blank? || @edit[:new][:group_tenant].blank?)
     end
+    bad = @edit[:new][:name].blank? if rec_type == 'role'
 
     render :update do |page|
       page << javascript_prologue
@@ -837,7 +826,7 @@ module OpsController::OpsRbac
         end
         bad = false
       else
-        # only do following if groups of a user change (adding/editing a user)
+        # only do following for user (adding/editing a user)
         if x_node.split("-").first == "u" || x_node == "xx-u"
           page.replace("group_selected",
                        :partial => "ops/rbac_group_selected")
@@ -903,14 +892,14 @@ module OpsController::OpsRbac
         rbac_tenants_list
       end
     when "u"
-      @right_cell_text = _("EVM User \"%{name}\"") % {:name => User.find(from_cid(id)).name}
+      @right_cell_text = _("EVM User \"%{name}\"") % {:name => User.find(id).name}
       rbac_user_get_details(id)
     when "g"
-      @right_cell_text = _("EVM Group \"%{name}\"") % {:name => MiqGroup.find(from_cid(id)).description}
+      @right_cell_text = _("EVM Group \"%{name}\"") % {:name => MiqGroup.find(id).description}
       @edit = nil
       rbac_group_get_details(id)
     when "ur"
-      @right_cell_text = _("Role \"%{name}\"") % {:name => MiqUserRole.find(from_cid(id)).name}
+      @right_cell_text = _("Role \"%{name}\"") % {:name => MiqUserRole.find(id).name}
       rbac_role_get_details(id)
     when "tn"
       rbac_tenant_get_details(id)
@@ -928,17 +917,17 @@ module OpsController::OpsRbac
 
   def rbac_user_get_details(id)
     @edit = nil
-    @record = @user = User.find(from_cid(id))
+    @record = @user = User.find(id)
     get_tagdata(@user)
   end
 
   def rbac_tenant_get_details(id)
-    @record = @tenant = Tenant.find(from_cid(id))
+    @record = @tenant = Tenant.find(id)
     get_tagdata(@tenant)
   end
 
   def rbac_group_get_details(id)
-    @record = @group = MiqGroup.find_by(:id => from_cid(id))
+    @record = @group = MiqGroup.find_by(:id => id)
     @belongsto = {}
     @filters = {}
     @filter_expression = []
@@ -993,7 +982,7 @@ module OpsController::OpsRbac
 
   def rbac_role_get_details(id)
     @edit = nil
-    @record = @role = MiqUserRole.find(from_cid(id))
+    @record = @role = MiqUserRole.find(id)
     @rbac_menu_tree = build_rbac_feature_tree
   end
 
@@ -1025,17 +1014,22 @@ module OpsController::OpsRbac
     @edit[:groups] = Rbac.filtered(MiqGroup.non_tenant_groups_in_my_region).sort_by { |g| g.description.downcase }.collect { |g| [g.description, g.id] }
     # store current state of the new users information
     @edit[:current] = copy_hash(@edit[:new])
+    @right_cell_text = if @edit[:user_id]
+                         _("Editing User \"%{name}\"") % {:name => @record.name}
+                       else
+                         _('Adding a new User')
+                       end
   end
 
   # Get variables from user edit form
   def rbac_user_get_form_vars
-    @edit[:new][:name] = params[:name] if params[:name]
-    @edit[:new][:userid] = params[:userid].strip if params[:userid]
-    @edit[:new][:email] = params[:email].strip if params[:email]
+    @edit[:new][:name] = params[:name].presence if params[:name]
+    @edit[:new][:userid] = params[:userid].strip.presence if params[:userid]
+    @edit[:new][:email] = params[:email].strip.presence if params[:email]
     @edit[:new][:group] = params[:chosen_group] if params[:chosen_group]
 
-    @edit[:new][:password] = params[:password] if params[:password]
-    @edit[:new][:verify] = params[:verify] if params[:verify]
+    @edit[:new][:password] = params[:password].presence if params[:password]
+    @edit[:new][:verify] = params[:verify].presence if params[:verify] # Confirm Password form
   end
 
   # Set user record variables to new values
@@ -1043,7 +1037,6 @@ module OpsController::OpsRbac
     user.name       = @edit[:new][:name]
     user.userid     = @edit[:new][:userid]
     user.email      = @edit[:new][:email]
-    user.miq_groups = Rbac.filtered(MiqGroup.find(rbac_user_get_group_ids))
     user.password   = @edit[:new][:password] if @edit[:new][:password]
   end
 
@@ -1053,9 +1046,9 @@ module OpsController::OpsRbac
     when 'null', nil
       []
     when String
-      @edit[:new][:group].split(',').delete_if(&:blank?)
+      @edit[:new][:group].split(',').delete_if(&:blank?).sort
     when Array
-      @edit[:new][:group]
+      @edit[:new][:group].sort
     end
   end
 
@@ -1122,7 +1115,7 @@ module OpsController::OpsRbac
     if params[:check]                               # User checked/unchecked a tree node
       if params[:tree_typ] == "tags"                # MyCompany tag checked
         cat, tag = params[:id].split('cl-').last.split("_xx-") # Get the category and tag
-        cat_name = Classification.find_by(:id => from_cid(cat)).name
+        cat_name = Classification.find_by(:id => cat).name
         tag_name = Classification.find_by(:id => tag).name
         if params[:check] == "0" #   unchecked
           @edit[:new][:filters].except!("#{cat_name}-#{tag_name}") # Remove the tag from the filters array
@@ -1132,16 +1125,16 @@ module OpsController::OpsRbac
       else # Belongsto tag checked
         class_prefix, id = parse_nodetype_and_id(params[:id])
         klass = TreeBuilder.get_model_for_prefix(class_prefix)
-        # If ExtManagementSystem is returned get specific class
-        if klass == 'ExtManagementSystem'
-          klass = ExtManagementSystem.find(from_cid(id)).class.to_s
+        # If ExtManagementSystem/Host is returned get specific class
+        if %w(ExtManagementSystem Host).include?(klass)
+          klass = find_record_with_rbac(klass.constantize, id).class.to_s
         end
         if params[:check] == "0" #   unchecked
-          @edit[:new][:belongsto].delete("#{klass}_#{from_cid(id)}") # Remove the tag from the belongsto hash
+          @edit[:new][:belongsto].delete("#{klass}_#{id}") # Remove the tag from the belongsto hash
         else
-          object = klass.safe_constantize.find(from_cid(id))
+          object = klass.safe_constantize.find(id)
           # Put the tag into the belongsto hash
-          @edit[:new][:belongsto]["#{klass}_#{from_cid(id)}"] = MiqFilter.object2belongsto(object)
+          @edit[:new][:belongsto]["#{klass}_#{id}"] = MiqFilter.object2belongsto(object)
         end
       end
     end
@@ -1212,6 +1205,12 @@ module OpsController::OpsRbac
 
     rbac_group_filter_expression_vars(:filter_expression, :filter_expression_table)
     @edit[:current] = copy_hash(@edit[:new])
+
+    @right_cell_text = if @edit[:group_id]
+                         _("Editing Group \"%{name}\"") % {:name => @record.description}
+                       else
+                         _('Adding a new Group')
+                       end
 
     rbac_group_right_tree(@edit[:new][:belongsto].keys)
   end
@@ -1293,12 +1292,18 @@ module OpsController::OpsRbac
     @edit[:new][:name] = @record.name
     vmr = @record.settings.fetch_path(:restrictions, :vms) if @record.settings
     @edit[:new][:vm_restriction] = vmr || :none
-    @edit[:new][:features] = rbac_expand_features(@record.feature_identifiers).sort
+    @edit[:new][:features] = rbac_expand_features(@record.miq_product_features.map(&:identifier)).sort
 
     @edit[:current] = copy_hash(@edit[:new])
 
-    @role_features = @record.feature_identifiers.sort
+    @role_features = @edit[:new][:features]
     @rbac_menu_tree = build_rbac_feature_tree
+
+    @right_cell_text = if @edit[:role_id]
+                         _("Editing Role \"%{name}\"") % {:name => @record.name}
+                       else
+                         _('Adding a new Role')
+                       end
   end
 
   # Get array of total set of features from the children of selected features
@@ -1417,6 +1422,7 @@ module OpsController::OpsRbac
 
   # Validate some of the role fields
   def rbac_group_validate?
+    return false if @edit[:new][:description].nil?
     @assigned_filters = [] if @edit[:new][:filters].empty? || @edit[:new][:use_filter_expression]
     @filter_expression = [] if @edit[:new][:filter_expression].empty? || @edit[:new][:use_filter_expression] == false
     if @edit[:new][:role].nil? || @edit[:new][:role] == ""

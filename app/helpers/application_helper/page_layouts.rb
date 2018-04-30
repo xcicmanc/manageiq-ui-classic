@@ -10,7 +10,6 @@ module ApplicationHelper::PageLayouts
       container_topology
       ems_infra_dashboard
       infra_topology
-      middleware_topology
       network_topology
       cloud_topology
       diagnostics
@@ -181,10 +180,8 @@ module ApplicationHelper::PageLayouts
       host
       host_aggregate
       load_balancer
-      middleware_datasource
       middleware_deployment
       middleware_domain
-      middleware_messaging
       middleware_server
       miq_template
       network_port

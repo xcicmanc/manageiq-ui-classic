@@ -72,4 +72,27 @@ describe ServiceHelper::TextualSummary do
       expect(textual_aggregate_all_vm_memory_on_disk).to eq(:label => "Memory on Disk", :value => "0 Bytes")
     end
   end
+
+  describe ".textual_cloud_credential" do
+    subject { textual_cloud_credential }
+    it 'displays only cloud credentials if available' do
+      @job = FactoryGirl.create(:embedded_ansible_job)
+      machine_credential = FactoryGirl.create(:embedded_ansible_machine_credential)
+      cloud_credential = FactoryGirl.create(:embedded_ansible_amazon_credential)
+      allow(@job).to receive(:authentications).and_return([cloud_credential, machine_credential])
+      allow(self).to receive(:url_for_only_path).and_return('link')
+      expect(textual_cloud_credential).to eq({:label=>"Cloud", :value=>nil, :title=>"Credential (Amazon)", :link=>"link"})
+    end
+  end
+
+  describe ".textual_vault_credential" do
+    subject { textual_vault_credential }
+    it 'displays only vault credentials if available' do
+      @job = FactoryGirl.create(:embedded_ansible_job)
+      vault_credential = FactoryGirl.create(:embedded_ansible_vault_credential)
+      allow(@job).to receive(:authentications).and_return(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::VaultCredential.where(:id => vault_credential.id))
+      allow(self).to receive(:url_for_only_path).and_return('link')
+      expect(textual_vault_credential).to eq(:label => "Vault", :value => nil, :title => "Credential (Vault)", :link => "link")
+    end
+  end
 end

@@ -71,8 +71,7 @@ module ApplicationController::MiqRequestMethods
   # Pre provisioning, select a template
   def pre_prov
     if params[:button] == "cancel"
-      add_flash(_("Add of new %{type} Request was cancelled by the user") % {:type => session[:edit][:prov_type]})
-      session[:flash_msgs] = @flash_array.dup unless session[:edit][:explorer]  # Put msg in session for next transaction to display
+      flash_to_session(_("Add of new %{type} Request was cancelled by the user") % {:type => session[:edit][:prov_type]})
       @explorer = session[:edit][:explorer] ? session[:edit][:explorer] : false
       @edit = session[:edit] =  nil                                               # Clear out session[:edit]
       prov_request_cancel_submit_response
@@ -181,14 +180,15 @@ module ApplicationController::MiqRequestMethods
   # Add/edit a provision request
   def prov_edit
     if params[:button] == "cancel"
-      req = MiqRequest.find_by_id(from_cid(session[:edit][:req_id])) if session[:edit] && session[:edit][:req_id]
-      add_flash(if req && req.id
-                  _("Edit of %{model} Request \"%{name}\" was cancelled by the user") %
-                    {:model => session[:edit][:prov_type], :name => req.description}
-                else
-                  _("Provision %{type} Request was cancelled by the user") % {:type => session[:edit][:prov_type]}
-                end)
-      session[:flash_msgs] = @flash_array.dup unless session[:edit][:explorer]  # Put msg in session for next transaction to display
+      req = MiqRequest.find_by_id(session[:edit][:req_id]) if session[:edit] && session[:edit][:req_id]
+      flash_to_session(
+        if req && req.id
+          _("Edit of %{model} Request \"%{name}\" was cancelled by the user") %
+            {:model => session[:edit][:prov_type], :name => req.description}
+        else
+          _("Provision %{type} Request was cancelled by the user") % {:type => session[:edit][:prov_type]}
+        end
+      )
       @explorer = session[:edit][:explorer] ? session[:edit][:explorer] : false
       @edit = session[:edit] =  nil                                               # Clear out session[:edit]
       @breadcrumbs.pop if @breadcrumbs
@@ -405,7 +405,7 @@ module ApplicationController::MiqRequestMethods
       "mem_cpu"                       => _("Memory"),
       "allocated_disk_storage"        => _("Disk Size"),
       "deprecated"                    => _("Deprecated"),
-      "ext_management_system.name"    => ui_lookup(:model => 'ExtManagementSystem'),
+      "ext_management_system.name"    => _("Provider"),
       "v_total_snapshots"             => _("Snapshots"),
     }
 
@@ -624,7 +624,7 @@ module ApplicationController::MiqRequestMethods
       add_flash(flash_message)
 
       if role_allows?(:feature => "miq_request_show_list", :any => true)
-        session[:flash_msgs] = @flash_array.dup
+        flash_to_session
         javascript_redirect :controller => 'miq_request',
                             :action     => 'show_list',
                             :typ        => org_controller

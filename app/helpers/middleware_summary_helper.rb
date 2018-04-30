@@ -25,10 +25,6 @@ module MiddlewareSummaryHelper
     textual_link(@record.middleware_deployments)
   end
 
-  def textual_middleware_datasources
-    textual_link(@record.middleware_datasources)
-  end
-
   def textual_middleware_domain
     textual_link(@record.middleware_domain)
   end
@@ -43,9 +39,5 @@ module MiddlewareSummaryHelper
 
   def textual_middleware_server_groups
     textual_link(@record.middleware_server_groups)
-  end
-
-  def textual_middleware_messagings
-    textual_link(@record.middleware_messagings)
   end
 end

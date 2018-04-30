@@ -79,10 +79,6 @@ class OpsController < ApplicationController
     'schedule_delete'           => :schedule_delete,
     'schedule_enable'           => :schedule_enable,
     'schedule_disable'          => :schedule_disable,
-    'ldap_region_add'           => :ldap_region_add,
-    'ldap_region_edit'          => :ldap_region_edit,
-    'ldap_domain_add'           => :ldap_domain_add,
-    'ldap_domain_edit'          => :ldap_domain_edit,
   }.freeze
 
   def collect_current_logs
@@ -224,11 +220,6 @@ class OpsController < ApplicationController
     end
   end
 
-  def change_subtab
-    @sb[:active_tab] = params[:tab_id]
-    change_tab
-  end
-
   def rbac_group_load_tab
     tab_id = params[:tab_id]
     _, group_id = TreeBuilder.extract_node_model_and_id(x_node)
@@ -311,7 +302,7 @@ class OpsController < ApplicationController
     end
 
     if x_active_tree == :diagnostics_tree
-      x_node_set("svr-#{to_cid(my_server.id)}", :diagnostics_tree) unless x_node(:diagnostics_tree)
+      x_node_set("svr-#{my_server.id}", :diagnostics_tree) unless x_node(:diagnostics_tree)
       @sb[:active_tab] ||= "diagnostics_summary"
     end
 
@@ -444,12 +435,6 @@ class OpsController < ApplicationController
         if %w(ap_copy ap_edit ap_host_edit ap_vm_edit).include?(@sb[:action])
           action_url = "ap_edit"
           record_id = @edit[:scan_id] ? @edit[:scan_id] : nil
-        elsif %w(ldap_region_add ldap_region_edit).include?(@sb[:action])
-          action_url = "ldap_region_edit"
-          record_id = @edit[:ldap_region_id] ? @edit[:ldap_region_id] : nil
-        elsif %w(ldap_domain_add ldap_domain_edit).include?(@sb[:action])
-          action_url = "ldap_domain_edit"
-          record_id = @edit[:ldap_domain_id] ? @edit[:ldap_domain_id] : nil
         elsif %w(schedule_add schedule_edit).include?(@sb[:action])
           action_url = "schedule_edit"
           record_id = @edit[:sched_id] ? @edit[:sched_id] : nil
@@ -552,13 +537,14 @@ class OpsController < ApplicationController
   def replace_right_cell(options = {}) # replace_trees can be an array of tree symbols to be replaced
     nodetype, replace_trees = options.values_at(:nodetype, :replace_trees)
     if params[:pressed] == "custom_button"
-      presenter = set_custom_button_dialog_presenter
+      presenter = set_custom_button_dialog_presenter(options)
       render :json => presenter.for_render
       return
     end
     # get_node_info might set this
     replace_trees = @replace_trees if @replace_trees
     @explorer = true
+    tree_selected_model if @tree_selected_model.nil?
 
     # Clicked on right cell record, open the tree enough to show the node,
     # if not already showing a record
@@ -665,28 +651,6 @@ class OpsController < ApplicationController
           _("Editing %{model} \"%{name}\"") % {:name => @schedule.name, :model => model} :
           _("%{model} \"%{name}\"") % {:model => model, :name => @schedule.name}
       end
-    when "lde"          # ldap_region edit
-      # when editing/adding ldap domain in settings tree
-      presenter.update(:settings_list, r[:partial => "ldap_domain_form"])
-      if !@ldap_domain.id
-        @right_cell_text = _("Adding a new LDAP Domain")
-      else
-        model = _('LDAP Domain')
-        @right_cell_text = @edit ?
-          _("Editing %{model} \"%{name}\"") % {:name => @ldap_domain.name, :model => model} :
-          _("%{model} \"%{name}\"") % {:model => model, :name => @ldap_domain.name}
-      end
-    when "lre"          # ldap_region edit
-      # when edi ting/adding ldap region in settings tree
-      presenter.update(:settings_list, r[:partial => "ldap_region_form"])
-      if !@ldap_region.id
-        @right_cell_text = _("Adding a new LDAP Region")
-      else
-        model = _('LDAP Region')
-        @right_cell_text = @edit ?
-          _("Editing %{model} \"%{name}\"") % {:name => @ldap_region.name, :model => model} :
-          _("%{model} \"%{name}\"") % {:model => model, :name => @ldap_region.name}
-      end
     when 'rhn'          # rhn subscription edit
       presenter[:update_partials][:settings_rhn] = r[:partial => "#{@sb[:active_tab]}_tab"]
     else
@@ -699,7 +663,7 @@ class OpsController < ApplicationController
         tab = @sb[:active_tab] == 'settings_tags' ? @sb[:active_subtab] : @sb[:active_tab]
         presenter[:update_partials][tab] = r[:partial => "#{tab}_tab"]
       end
-      active_id = from_cid(x_node.split("-").last)
+      active_id = x_node.split("-").last
       # server node
       if x_node.split("-").first == "svr" && my_server.id == active_id.to_i
         # show all the tabs if on current server node
@@ -746,7 +710,7 @@ class OpsController < ApplicationController
   # set all needed things before calling replace_right_cell with nodetype
   def dialog_replace_right_cell
     model, id = TreeBuilder.extract_node_model_and_id(x_node)
-    @record = model.constantize.find(from_cid(id))
+    @record = model.constantize.find(id)
     rbac_group_get_details(@record.id) if @record.kind_of?(MiqGroup) # set Group's trees
     replace_right_cell(:nodetype => 'dialog_return')
   end
@@ -793,14 +757,14 @@ class OpsController < ApplicationController
     # Handle bottom cell
     if @pages || @in_a_form
       if @pages
-        presenter.hide(:form_buttons_div).show(:pc_div_1)
+        presenter.hide(:form_buttons_div)
       elsif @in_a_form
         if nodetype == "log_depot_edit"
           presenter.update(:form_buttons_div, r[:partial => "layouts/angular/paging_div_buttons"])
         else
           presenter.update(:form_buttons_div, r[:partial => "layouts/x_edit_buttons", :locals => locals])
         end
-        presenter.show(:form_buttons_div).hide(:pc_div_1)
+        presenter.show(:form_buttons_div).remove_paging
       end
       presenter.show(:paging_div)
     else

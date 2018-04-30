@@ -533,18 +533,6 @@ describe ApplicationHelper do
     end
   end
 
-  context "#to_cid" do
-    it "converts record id to compressed id" do
-      expect(helper.to_cid(12_000_000_000_056)).to eq('12r56')
-    end
-  end
-
-  context "#from_cid" do
-    it "converts compressed id to record id" do
-      expect(helper.from_cid("12r56")).to eq(12_000_000_000_056)
-    end
-  end
-
   context "#is_browser_ie7?" do
     it "when browser's explorer version 7.x" do
       allow_any_instance_of(ActionController::TestSession)
@@ -1059,7 +1047,7 @@ describe ApplicationHelper do
     end
   end
 
-  context "#show_adv_search?" do
+  describe "#show_adv_search?" do
     it 'should return false for explorer screen with no trees such as automate/simulation' do
       controller.instance_variable_set(:@explorer, true)
       controller.instance_variable_set(:@sb, {})
@@ -1083,7 +1071,7 @@ describe ApplicationHelper do
     end
   end
 
-  context "#show_advanced_search?" do
+  describe "#show_advanced_search?" do
     it 'should return true for VM explorer trees' do
       controller.instance_variable_set(:@sb,
                                        :active_tree => :vms_instances_filter_tree,
@@ -1125,6 +1113,30 @@ describe ApplicationHelper do
       controller.instance_variable_set(:@show_adv_search, true)
       result = helper.show_advanced_search?
       expect(result).to be_truthy
+    end
+  end
+
+  describe "#display_adv_search?" do
+    before do
+      controller.instance_variable_set(:@layout, layout)
+    end
+
+    subject { helper.display_adv_search? }
+
+    context 'Volume Snapshots page' do
+      let(:layout) { "cloud_volume_snapshot" }
+
+      it 'returns true' do
+        expect(subject).to be(true)
+      end
+    end
+
+    context 'Volume Backups page' do
+      let(:layout) { "cloud_volume_backup" }
+
+      it 'returns true' do
+        expect(subject).to be(true)
+      end
     end
   end
 
@@ -1292,17 +1304,6 @@ describe ApplicationHelper do
         expect(helper.multiple_relationship_link(ems, "container_project")).to eq("<li><a title=\"Show Projects\" href=\"/ems_container/#{ems.id}?display=container_projects\">Projects (1)</a></li>")
       end
     end
-
-    context "When record is a Middleware Provider" do
-      it "Routes to the controller's show action" do
-        stub_user(:features => :all)
-        allow(helper).to receive_messages(:controller_name => "ems_middleware")
-        ems = FactoryGirl.create(:ems_hawkular)
-        FactoryGirl.create(:hawkular_middleware_datasource, :ext_management_system => ems, :name => "Test Middleware")
-        expect(helper.multiple_relationship_link(ems, "middleware_datasource")).to eq("<li><a title=\"Show Middleware \
-Datasources\" href=\"/ems_middleware/#{ems.id}?display=middleware_datasources\">Middleware Datasources (1)</a></li>")
-      end
-    end
   end
 
   describe "#model_to_report_data" do
@@ -1344,6 +1345,39 @@ Datasources\" href=\"/ems_middleware/#{ems.id}?display=middleware_datasources\">
       instance.params = {}
 
       expect(instance.model_to_report_data).to eq("Host")
+    end
+  end
+
+  context "calculate_toolbars for ems_container" do
+    before do
+      allow(helper).to receive(:inner_layout_present?).and_return(false)
+      allow(controller).to receive(:restful?).and_return(true)
+      allow(controller.class).to receive(:toolbar_plural).and_return(nil)
+      allow(controller.class).to receive(:toolbar_singular).and_return(nil)
+      allow(controller).to receive(:custom_toolbar)
+      @layout = 'ems_container'
+    end
+
+    it "displays ems_containers_center toolbar for ems_container show_list action" do
+      @lastaction = "show_list"
+      expect(calculate_toolbars).to include("center_tb" => "ems_containers_center_tb")
+    end
+
+    it "displays ems_container_center toolbar for ems_container show_dashboard action" do
+      @lastaction = "show_dashboard"
+      expect(calculate_toolbars).to include("center_tb" => "ems_container_center_tb")
+    end
+
+    it "displays container routes center toolbar for 'container_routes' nested display lists" do
+      @lastaction = "show"
+      @display = "container_routes"
+      expect(calculate_toolbars).to include("center_tb" => "container_routes_center")
+    end
+
+    it "displays container projects center toolbar for 'container_projects' nested display lists" do
+      @lastaction = "show"
+      @display = "container_projects"
+      expect(calculate_toolbars).to include("center_tb" => "container_projects_center")
     end
   end
 end

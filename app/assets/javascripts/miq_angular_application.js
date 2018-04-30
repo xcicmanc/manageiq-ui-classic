@@ -1,25 +1,27 @@
 ManageIQ.angular.app = angular.module('ManageIQ', [
-  'ui.select',
-  'ui.bootstrap',
-  'ui.codemirror',
-  'patternfly',
-  'patternfly.charts',
-  'frapontillo.bootstrap-switch',
+  'ManageIQ.fonticonPicker',
   'angular.validators',
+  'ngRedux',
+  'frapontillo.bootstrap-switch',
+  'kubernetesUI',
   'miq.api',
   'miq.card',
   'miq.compat',
   'miq.util',
-  'kubernetesUI',
-  'ManageIQ.fonticonPicker',
   'miqStaticAssets.dialogEditor',
   'miqStaticAssets.dialogUser',
   'miqStaticAssets.treeSelector',
   'miqStaticAssets.treeView',
+  'miqStaticAssets.quadicon',
+  'miqStaticAssets.common',
+  'ngSanitize',
+  'patternfly',
+  'patternfly.charts',
+  'ui.bootstrap',
+  'ui.codemirror',
+  'ui.select',
 ]);
 miqHttpInject(ManageIQ.angular.app);
-
-ManageIQ.angular.rxSubject = new Rx.Subject();
 
 ManageIQ.constants = {
   reportData: 'report_data',
@@ -35,6 +37,12 @@ function miqHttpInject(angular_app) {
     $httpProvider.interceptors.push(['$q', function($q) {
       return {
         responseError: function(err) {
+          if (err.status === 401) {
+            // Unauthorized - always redirect to dashboard#login
+            redirectLogin(__('$http session timed out, redirecting to the login page'));
+            return $q.reject(err);
+          }
+
           sendDataWithRx({
             serverError: err,
             source: '$http',
@@ -60,8 +68,4 @@ function miqCallAngular(data) {
   ManageIQ.angular.scope.$apply(function() {
     ManageIQ.angular.scope[data.name].apply(ManageIQ.angular.scope, data.args);
   });
-}
-
-function sendDataWithRx(data) {
-  ManageIQ.angular.rxSubject.onNext(data);
 }

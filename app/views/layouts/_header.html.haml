@@ -12,12 +12,11 @@
   %nav.collapse.navbar-collapse
     %ul.nav.navbar-nav.navbar-right.navbar-iconic
       %li{:class => "dropdown brand-white-label #{::Settings.server.custom_logo ? "whitelabeled" : ""}"}
-      %li
+      %li.drawer-pf-trigger.dropdown{"open" => "!hideDrawer"}
         %a{:class => "nav-item-iconic drawer-pf-trigger-icon", :title => "{{vm.notificationsIndicatorTooltip}}", "ng-click" => "vm.toggleNotificationsList()"}
-          %span.fa{"ng-class" => "{'fa-bell': vm.newNotifications, 'fa-bell-o': !vm.newNotifications}"}
-          %span.badge.info{"ng-show" => "vm.newNotifications"}
-            -# Small circle
-            &#8226;
+          %span.fa.fa-bell
+          %span{"ng-class" => "{'badge badge-pf-bordered': vm.newNotifications}"} 
+            = ' '
       - Menu::Manager.menu(:help) do |menu_section|
         - if menu_section.visible?
           %li.dropdown
@@ -32,12 +31,11 @@
                       = _(menu_item.name)
 
       = render :partial => "layouts/user_options"
-
-  = render :partial => "layouts/spinner"
-  = render :partial => "layouts/lightbox_panel"
   = render :partial => "layouts/notifications_drawer"
   = render :partial => "layouts/toast_list"
 
+= render :partial => "layouts/spinner"
+= render :partial => "layouts/lightbox_panel"
 :javascript
   miq_bootstrap('#notification-app', 'miq.notifications');
 

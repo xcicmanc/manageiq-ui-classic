@@ -1,6 +1,4 @@
 module MiddlewareServerHelper::TextualSummary
-  include TextualMixins::TextualAvailability
-
   #
   # Groups
   #
@@ -13,7 +11,7 @@ module MiddlewareServerHelper::TextualSummary
     # Order of items should be from parent to child
     TextualGroup.new(
       _("Relationships"),
-      %i(ems middleware_server_group middleware_deployments middleware_datasources lives_on middleware_messagings)
+      %i(ems middleware_server_group middleware_deployments lives_on)
     )
   end
 
@@ -47,7 +45,7 @@ module MiddlewareServerHelper::TextualSummary
   def textual_server_state
     {
       :label => _('Server State'),
-      :value => translated_status(@record.properties['Calculated Server State'] || @record.properties['Server State'])
+      :value => (@record.properties['Calculated Server State'] || @record.properties['Server State']).to_s.capitalize
     }
   end
 
@@ -60,7 +58,7 @@ module MiddlewareServerHelper::TextualSummary
   end
 
   def textual_version
-    @record.properties['Version']
+    {:label => _('Version'), :value => @record.properties['Version']}
   end
 
   def textual_lives_on

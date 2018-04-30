@@ -16,6 +16,12 @@ module Mixins
           @force_no_grid_xml   = true
           @view, @pages = get_view(Vm, :view_suffix => "VmReconfigureRequest", :selected_ids => reconfigure_ids) # Get the records (into a view) and the paginator
           get_reconfig_limits(reconfigure_ids)
+
+          if @reconfigitems.size == 1
+            vm = Vm.find(@reconfigitems)
+            @vlan_options = get_vlan_options(vm.host_id)
+          end
+
           unless @explorer
             render :action => "show"
           end
@@ -89,7 +95,7 @@ module Mixins
           @reconfig_limits = VmReconfigureRequest.request_limits(:src_ids => reconfigure_ids)
           mem1, fmt1 = reconfigure_calculations(@reconfig_limits[:min__vm_memory])
           mem2, fmt2 = reconfigure_calculations(@reconfig_limits[:max__vm_memory])
-          @reconfig_memory_note = "Between #{mem1}#{fmt1} and #{mem2}#{fmt2}"
+          @reconfig_memory_note = _("Between %{min} and %{max}") % {:min => "#{mem1}#{fmt1}", :max => "#{mem2}#{fmt2}"}
 
           @socket_options = []
           @reconfig_limits[:max__number_of_sockets].times do |tidx|
@@ -119,6 +125,7 @@ module Mixins
             # check if there is only one VM that supports disk reconfiguration
 
             @reconfig_values[:disk_add] = @req.options[:disk_add]
+            @reconfig_values[:disk_resize] = @req.options[:disk_resize]
             @reconfig_values[:disk_remove] = @req.options[:disk_remove]
             vmdisks = []
             if @req.options[:disk_add]
@@ -180,6 +187,21 @@ module Mixins
           return humansize.to_s, fmt
         end
 
+        def get_vlan_options(host_id)
+          vlan_options = []
+
+          # determine available switches for this host...
+          switch_ids = []
+          Rbac.filtered(HostSwitch.where("host_id = ?", host_id)).each do |host_switch|
+            switch_ids << host_switch.switch_id
+          end
+
+          Rbac.filtered(Lan.where("switch_id IN (?)", switch_ids)).each do |lan|
+            vlan_options << lan.name
+          end
+          vlan_options
+        end
+
         def get_reconfig_info(reconfigure_ids)
           @reconfigureitems = Vm.find(reconfigure_ids).sort_by(&:name)
           # set memory to nil if multiple items were selected with different mem_cpu values
@@ -207,16 +229,36 @@ module Mixins
                         :cb_bootable => disk.bootable}
           end
 
+          # reconfiguring network adapters is only supported when one vm was selected
+          network_adapters = []
+          if @reconfigureitems.size == 1
+            vm = @reconfigureitems.first
+
+            vm.hardware.guest_devices.order(:device_name => 'asc').each do |guest_device|
+              lan = Lan.find_by(:id => guest_device.lan_id)
+              network_adapters << {:name => guest_device.device_name, :vlan => lan.name, :mac => guest_device.address, :add_remove => ''} unless lan.nil?
+            end
+          end
+
           {:objectIds              => reconfigure_ids,
            :memory                 => memory,
            :memory_type            => memory_type,
            :socket_count           => socket_count.to_s,
            :cores_per_socket_count => cores_per_socket.to_s,
-           :disks                  => vmdisks}
+           :disks                  => vmdisks,
+           :network_adapters       => network_adapters}
         end
 
         def supports_reconfigure_disks?
           @reconfigitems && @reconfigitems.size == 1 && @reconfigitems.first.supports_reconfigure_disks?
+        end
+
+        def supports_reconfigure_disksize?
+          @reconfigitems && @reconfigitems.size == 1 && @reconfigitems.first.supports_reconfigure_disksize? && @reconfigitems.first.supports_reconfigure_disks?
+        end
+
+        def supports_reconfigure_network_adapters?
+          @reconfigitems && @reconfigitems.size == 1 && @reconfigitems.first.supports_reconfigure_network_adapters?
         end
 
         private
@@ -263,17 +305,38 @@ module Mixins
 
           # set the disk_add and disk_remove options
           if params[:vmAddDisks]
-            params[:vmAddDisks].values.each do |p|
+            params[:vmAddDisks].each_value do |p|
               p.transform_values! { |v| eval_if_bool_string(v) }
             end
             options[:disk_add] = params[:vmAddDisks].values
           end
 
+          if params[:vmResizeDisks]
+            params[:vmResizeDisks].each_value do |p|
+              p.transform_values! { |v| eval_if_bool_string(v) }
+            end
+            options[:disk_resize] = params[:vmResizeDisks].values
+          end
+
           if params[:vmRemoveDisks]
-            params[:vmRemoveDisks].values.each do |p|
+            params[:vmRemoveDisks].each_value do |p|
               p.transform_values! { |v| eval_if_bool_string(v) }
             end
             options[:disk_remove] = params[:vmRemoveDisks].values
+          end
+
+          if params[:vmAddNetworkAdapters]
+            params[:vmAddNetworkAdapters].each_value do |p|
+              p.transform_values! { |v| eval_if_bool_string(v) }
+            end
+            options[:network_adapter_add] = params[:vmAddNetworkAdapters].values
+          end
+
+          if params[:vmRemoveNetworkAdapters]
+            params[:vmRemoveNetworkAdapters].each_value do |p|
+              p.transform_values! { |v| eval_if_bool_string(v) }
+            end
+            options[:network_adapter_remove] = params[:vmRemoveNetworkAdapters].values
           end
 
           if params[:id] && params[:id] != 'new'
@@ -281,13 +344,14 @@ module Mixins
           end
 
           VmReconfigureRequest.make_request(@request_id, options, current_user)
-          flash = _("VM Reconfigure Request was saved")
+
+          flash_to_session(_("VM Reconfigure Request was saved"))
 
           if role_allows?(:feature => "miq_request_show_list", :any => true)
-            javascript_redirect :controller => 'miq_request', :action => 'show_list', :flash_msg => flash
+            javascript_redirect(:controller => 'miq_request', :action => 'show_list')
           else
             url = previous_breadcrumb_url.split('/')
-            javascript_redirect :controller => url[1], :action => url[2], :flash_msg => flash
+            javascript_redirect(:controller => url[1], :action => url[2])
           end
 
           if @flash_array

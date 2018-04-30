@@ -1,4 +1,4 @@
-ManageIQ.angular.app.controller('networkRouterFormController', ['$http', '$scope', 'networkRouterFormId', 'miqService', function($http, $scope, networkRouterFormId, miqService) {
+ManageIQ.angular.app.controller('networkRouterFormController', ['$http', '$scope', 'networkRouterFormId', 'miqService', 'API', function($http, $scope, networkRouterFormId, miqService, API) {
   var vm = this;
 
   vm.networkRouterModel = {
@@ -7,8 +7,9 @@ ManageIQ.angular.app.controller('networkRouterFormController', ['$http', '$scope
   };
   vm.formId = networkRouterFormId;
   vm.afterGet = false;
-  vm.modelCopy = angular.copy( $scope.networkRouterModel );
+  vm.modelCopy = angular.copy( vm.networkRouterModel );
   vm.model = "networkRouterModel";
+  vm.ems = [];
 
   vm.saveable = miqService.saveable;
 
@@ -20,6 +21,11 @@ ManageIQ.angular.app.controller('networkRouterFormController', ['$http', '$scope
     vm.networkRouterModel.external_gateway = false;
     vm.networkRouterModel.cloud_subnet_id = null;
     vm.newRecord = true;
+
+    miqService.networkProviders()
+      .then(function(providers) {
+        vm.ems = providers;
+      });
   } else {
     miqService.sparkleOn();
 
@@ -61,7 +67,7 @@ ManageIQ.angular.app.controller('networkRouterFormController', ['$http', '$scope
 
   vm.resetClicked = function() {
     vm.networkRouterModel = angular.copy( vm.modelCopy );
-    vm.angularForm.$setPristine(true);
+    $scope.angularForm.$setPristine(true);
     miqService.miqFlash("warn", "All changes have been reset");
   };
 
