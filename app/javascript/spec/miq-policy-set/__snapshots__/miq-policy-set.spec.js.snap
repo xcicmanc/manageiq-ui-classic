@@ -1,0 +1,239 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`MiqPolicySetStructuredList should render policy set info structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_policy_set_info"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="0"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          D
+          e
+          s
+          c
+          r
+          i
+          p
+          t
+          i
+          o
+          n
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              bar
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MiqPolicySetStructuredList should render policy set notes structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_policy_set_notes"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="0"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="cds--form-item"
+          >
+            <div
+              class="cds--text-area__label-wrapper"
+            >
+              <label
+                class="cds--label"
+                dir="auto"
+              />
+            </div>
+            <div
+              class="cds--text-area__wrapper"
+            >
+              <textarea
+                aria-invalid="false"
+                class="cds--text-area"
+                placeholder=""
+                rows="4"
+                style="width: 100%;"
+              >
+                text area description
+              </textarea>
+              <span
+                aria-atomic="true"
+                aria-live="assertive"
+                class="cds--text-area__counter-alert"
+                role="alert"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MiqPolicySetStructuredList should render policy set structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_policy_set"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row clickable"
+        role="row"
+        tabindex="0"
+        title="View this Container Image Policy"
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title="View this Container Image Policy"
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row clickable"
+        role="row"
+        tabindex="1"
+        title="View this Container Image Policy"
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title="View this Container Image Policy"
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row clickable"
+        role="row"
+        tabindex="2"
+        title="View this Container Image Policy"
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title="View this Container Image Policy"
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row clickable"
+        role="row"
+        tabindex="3"
+        title="View this Container Node Policy"
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title="View this Container Node Policy"
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row clickable"
+        role="row"
+        tabindex="4"
+        title="View this VM and Instance Policy"
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title="View this VM and Instance Policy"
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

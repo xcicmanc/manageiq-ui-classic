@@ -1,4 +1,3 @@
-/* eslint no-console:0 */
 // This file is automatically compiled by Webpack, along with any other files
 // present in this directory. You're encouraged to place your actual application logic in
 // a relevant structure within app/javascript and only use these pack files to reference
@@ -6,3 +5,66 @@
 //
 // To reference this file, add <%= javascript_pack_tag 'application' %> to the appropriate
 // layout file, like app/views/layouts/application.html.erb
+
+// TODO: Remove this import once TypeScript migration is complete
+// This enables PropTypes validation for external library components (Carbon, PatternFly, etc.)
+// React 19 removed automatic PropTypes checking, so we manually enable it via monkey-patch
+// Note: This only catches library components. Our own ManageIQ components are validated
+// in app/javascript/miq-component/react-blueprint.jsx before they're wrapped and rendered
+import '../utils/enable-proptypes-globally';
+
+import 'proxy-polyfill';
+import { Spinner } from 'spin.js';
+import 'spin.js/spin.css';
+import { API, http } from '../http_api';
+
+import * as newRegistry from '../miq-component/registry';
+import reactBlueprint from '../miq-component/react-blueprint';
+import * as helpers from '../miq-component/helpers';
+
+import { rxSubject, sendDataWithRx, listenToRx } from '../miq_observable';
+
+import { initializeStore } from '../miq-redux';
+import { formButtonsActionTypes, createFormButtonsActions } from '../forms/form-buttons-reducer';
+import { miqOptimizationInit } from '../components/data-tables/optimization/listen.js';
+
+import '../../stylesheet/application-webpack.scss';// css file which includes all carbon pages.
+import '../../stylesheet/legacy/main.scss'; // css file which includes old pages.
+
+import * as move from '../helpers/move.js';
+
+ManageIQ.component = {
+  ...newRegistry,
+  reactBlueprint,
+  ...helpers,
+};
+
+const store = initializeStore();
+
+ManageIQ.redux = {
+  store,
+  addReducer: store.injectReducers,
+  formButtonsActions: createFormButtonsActions(store),
+  formButtonsActionTypes: { ...formButtonsActionTypes },
+};
+
+ManageIQ.angular.rxSubject = rxSubject;
+window.sendDataWithRx = sendDataWithRx;
+window.listenToRx = listenToRx;
+
+// compatibility: vanillaJsAPI should be considered deprecated
+// the new convention is: API is for vanilla/react, $API is for angular
+window.API = API;
+window.vanillaJsAPI = API;
+window.http = http;
+
+// for Automate > Simulate
+require('xml_display/XMLDisplay.js');
+require('xml_display/XMLDisplay.css');
+
+// miqSpinner, miqSearchSpinner
+window.Spinner = Spinner;
+
+// Overview > Optimization
+miqOptimizationInit();
+ManageIQ.move = move;

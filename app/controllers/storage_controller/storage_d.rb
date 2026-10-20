@@ -3,12 +3,12 @@ module StorageController::StorageD
   extend ActiveSupport::Concern
 
   def storage_list
+    assert_privileges('storage_show_list')
     @lastaction = "storage_list"
     @force_no_grid_xml   = true
-    @gtl_type            = "list"
     if params[:ppsetting]                                             # User selected new per page value
       @items_per_page = params[:ppsetting].to_i                       # Set the new per page value
-      @settings.store_path(:perpage, @gtl_type.to_sym, @items_per_page) # Set the per page setting for this gtl type
+      @settings.store_path(:perpage, :list, @items_per_page) # Set the per page setting for this gtl type
     end
     @sortcol = session[:storage_sortcol].nil? ? 0 : session[:storage_sortcol].to_i
     @sortdir = session[:storage_sortdir].nil? ? "ASC" : session[:storage_sortdir]
@@ -30,11 +30,6 @@ module StorageController::StorageD
 
   private #######################
 
-  # Get information for an event
-  def build_storage_tree
-    TreeBuilderStorage.new("storage_tree", "storage", @sb)
-  end
-
   def storage_get_node_info(treenodeid)
     if treenodeid == "root"
       options = {:model => "Storage"}
@@ -44,11 +39,11 @@ module StorageController::StorageD
       nodes = treenodeid.split("-")
       if nodes[0] == "ds"
         @right_cell_div = "storage_details"
-        @record = Storage.find_by_id(from_cid(nodes.last))
+        @record = Storage.find(nodes.last)
         @right_cell_text = _("Datastore \"%{name}\"") % {:name => @record.name}
       else
         miq_search_node
-       end
+      end
     end
   end
 end

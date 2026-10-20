@@ -10,7 +10,7 @@ class ApplicationHelper::Toolbar::MiqReportCenter < ApplicationHelper::Toolbar::
   button_group('report_vmdb', [
     select(
       :report_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -31,8 +31,7 @@ class ApplicationHelper::Toolbar::MiqReportCenter < ApplicationHelper::Toolbar::
           'fa fa-files-o fa-lg',
           t = N_('Copy this Report'),
           t,
-          :klass => ApplicationHelper::Button::MiqReportCopy
-        ),
+          :klass => ApplicationHelper::Button::MiqReportAction),
         button(
           :saved_report_delete,
           'pficon pficon-delete fa-lg',

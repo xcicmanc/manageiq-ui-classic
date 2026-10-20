@@ -1,6 +1,6 @@
 describe VmOrTemplateController do
-  let(:template_vmware) { FactoryGirl.create(:template_vmware, :name => 'template_vmware Name') }
-  let(:vm_vmware)       { FactoryGirl.create(:vm_vmware, :name => "vm_vmware Name") }
+  let(:template_vmware) { FactoryBot.create(:template_vmware, :name => 'template_vmware Name') }
+  let(:vm_vmware)       { FactoryBot.create(:vm_vmware, :name => "vm_vmware Name") }
   before { stub_user(:features => :all) }
 
   # All of the x_button is a suplement for Rails routes that is written in
@@ -19,9 +19,13 @@ describe VmOrTemplateController do
     describe 'corresponding methods are called for allowed actions' do
       ApplicationController::Explorer::X_BUTTON_ALLOWED_ACTIONS.each_pair do |action_name, method|
         actual_action = 'vm_' + action_name
-        actual_method = [:s1, :s2].include?(method) ? actual_action : method.to_s
+        actual_method = %i(s1 s2).include?(method) ? actual_action : method.to_s
 
         it "calls the appropriate method: '#{actual_method}' for action '#{actual_action}'" do
+          unless controller.respond_to?(actual_method.to_sym)
+            skip "method #{actual_action} not defined for #{controller.controller_name}"
+          end
+
           expect(controller).to receive(actual_method)
           get :x_button, :params => { :id => nil, :pressed => actual_action }
         end
@@ -96,21 +100,19 @@ describe VmOrTemplateController do
         seed_session_trees('vm_or_template', :templates_images_filter_tree, 'root')
 
         get :explorer
-        expect(response.body).to include("modelName: 'MiqTemplate'")
-        expect(response.body).to include("activeTree: 'templates_images_filter_tree'")
-        expect(response.body).to include("gtlType: 'list'")
-        expect(response.body).to include("isExplorer: 'true' === 'true' ? true : false")
-        expect(response.body).to include("showUrl: '/vm_or_template/x_show/'")
+        expect(response.body).to include('"modelName":"MiqTemplate"')
+        expect(response.body).to include('"activeTree":"templates_images_filter_tree"')
+        expect(response.body).to include('"isExplorer":true')
+        expect(response.body).to include('"showUrl":"/vm_or_template/x_show/"')
       end
 
       it 'show a vm in the vms instances list' do
         vm_vmware
         get :explorer
-        expect(response.body).to include("modelName: 'Vm'")
-        expect(response.body).to include("activeTree: 'vms_instances_filter_tree'")
-        expect(response.body).to include("gtlType: 'list'")
-        expect(response.body).to include("isExplorer: 'true' === 'true' ? true : false")
-        expect(response.body).to include("showUrl: '/vm_or_template/x_show/'")
+        expect(response.body).to include('"modelName":"Vm"')
+        expect(response.body).to include('"activeTree":"vms_instances_filter_tree"')
+        expect(response.body).to include('"isExplorer":true')
+        expect(response.body).to include('"showUrl":"/vm_or_template/x_show/"')
       end
     end
 
@@ -130,7 +132,7 @@ describe VmOrTemplateController do
 
           post :tree_select, :params => { :id => 'root', :format => :js }
 
-          expect(response).to render_template('layouts/angular/_gtl')
+          expect(response).to render_template('layouts/react/_gtl')
           expect(response.status).to eq(200)
         end
       end

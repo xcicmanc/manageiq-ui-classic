@@ -1,5 +1,5 @@
 module Menu
-  Item = Struct.new(:id, :name, :feature, :rbac_feature, :href, :type, :defaults) do
+  Item = Struct.new(:id, :name, :feature, :rbac_feature, :href, :type, :parent_id, :defaults, :icon) do
     extend ActiveModel::Naming
 
     def self.base_class
@@ -10,7 +10,7 @@ module Menu
       model_name
     end
 
-    def initialize(an_id, a_name, features, rbac_feature, href, type = :default, defaults = nil)
+    def initialize(an_id, a_name, features, rbac_feature, href, type = :default, parent_id = nil, defaults = nil, icon = nil)
       super
       @parent = nil
       @name = a_name.kind_of?(Proc) ? a_name : -> { a_name }
@@ -33,18 +33,9 @@ module Menu
     end
 
     def visible?
-      ApplicationHelper.role_allows?(rbac_feature)
-    end
+      return false unless Vmdb::PermissionStores.instance.supported_ui_menu?(id)
 
-    def link_params
-      params = case type.try(:to_sym)
-               when :big_iframe then {:href => "/dashboard/iframe?id=#{id}"}
-               when :new_window then {:href => href, :target => '_new'}
-               when :modal      then {'data-toggle' => 'modal', 'data-target' => href}
-               else                  {:href => href}
-               end
-      params[:onclick] = 'return miqCheckForChanges();' unless type.try(:to_sym) == :modal
-      params
+      rbac_feature.nil? || ApplicationHelper.role_allows?(**rbac_feature)
     end
 
     def leaf?
@@ -57,6 +48,22 @@ module Menu
 
     def item(item_id)
       item_id == id ? self : nil
+    end
+
+    def placement
+      @parent&.placement || :default
+    end
+
+    def contains_item_id?(item_id)
+      item_id == id
+    end
+
+    def subsection?
+      false
+    end
+
+    def items
+      []
     end
   end
 end

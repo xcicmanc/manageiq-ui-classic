@@ -1,11 +1,12 @@
 class StorageController < ApplicationController
-  include_concern 'StorageD'
-  include_concern 'StoragePod'
+  include StorageD
+  include StoragePod
   include Mixins::GenericSessionMixin
   include Mixins::GenericShowMixin
   include Mixins::MoreShowActions
   include Mixins::ExplorerPresenterMixin
   include Mixins::FindRecord
+  include Mixins::BreadcrumbsMixin
 
   before_action :check_privileges
   before_action :get_session_data
@@ -13,11 +14,11 @@ class StorageController < ApplicationController
   after_action :set_session_data
 
   def self.display_methods
-    %w(all_vms hosts all_miq_templates registered_vms unregistered_vms)
+    %w[all_vms hosts all_miq_templates registered_vms unregistered_vms custom_button_events]
   end
 
   def self.custom_display_method
-    %w(all_miq_templates)
+    %w[all_miq_templates]
   end
 
   def display_all_miq_templates
@@ -33,23 +34,11 @@ class StorageController < ApplicationController
   end
 
   def show_list
-    redirect_to :action => 'explorer', :flash_msg => @flash_array ? @flash_array[0][:message] : nil
+    flash_to_session
+    redirect_to(:action => 'explorer')
   end
 
-  def show_new(id = nil)
-    @flash_array = [] if params[:display]
-    @sb[:action] = nil
-
-    @display = params[:display] || "main"
-    @lastaction = "show"
-    @showtype = "config"
-    @record = find_record(Storage, id || params[:id])
-    return if record_no_longer_exists?(@record)
-
-    @explorer = true if request.xml_http_request? # Ajax request means in explorer
-
-    @gtl_url = "/show"
-  end
+  alias_method :index, :show_list
 
   def init_show
     return unless super
@@ -59,21 +48,20 @@ class StorageController < ApplicationController
 
       # redirect user back to where they came from if they dont have access to any of vm explorers
       # or redirect them to the one they have access to
-      redirect_controller = role_allows?(:feature => "storage") ? "storage" : nil
+      redirect_controller = role_allows?(:feature => "storage_show") ? "storage" : nil
 
       if redirect_controller
         action = "explorer"
       else
         url = request.env['HTTP_REFERER'].split('/')
-        add_flash(_("User '%{username}' is not authorized to access '%{controller_name}'") %
+        flash_to_session(_("User '%{username}' is not authorized to access '%{controller_name}'") %
                     {:username => current_userid, :controller_name => ui_lookup(:table => controller_name)}, :warning)
-        session[:flash_msgs] = @flash_array.dup
         redirect_controller  = url[3]
         action               = url[4]
       end
 
-      redirect_to :controller => redirect_controller,
-                  :action     => action
+      redirect_to(:controller => redirect_controller,
+                  :action     => action)
       return
     end
 
@@ -84,21 +72,33 @@ class StorageController < ApplicationController
   # handle buttons pressed on the button bar
   def button
     @edit = session[:edit] # Restore @edit for adv search box
-    params[:display] = @display if %w(all_vms vms hosts).include?(@display) # Were we displaying vms or hosts
+    params[:display] = @display if %w[all_vms vms hosts].include?(@display) # Were we displaying vms or hosts
 
     if params[:pressed].starts_with?("vm_", # Handle buttons from sub-items screen
                                      "miq_template_",
                                      "guest_",
                                      "host_")
 
-      scanhosts if params[:pressed] == "host_scan"
-      analyze_check_compliance_hosts if params[:pressed] == "host_analyze_check_compliance"
-      check_compliance_hosts if params[:pressed] == "host_check_compliance"
-      refreshhosts if params[:pressed] == "host_refresh"
-      tag(Host) if params[:pressed] == "host_tag"
-      assign_policies(Host) if params[:pressed] == "host_protect"
-      edit_record if params[:pressed] == "host_edit"
-      deletehosts if params[:pressed] == "host_delete"
+      case params[:pressed]
+      when 'host_analyze_check_compliance'
+        analyze_check_compliance_hosts
+      when 'host_check_compliance'
+        check_compliance_hosts
+      when 'host_compare'
+        comparemiq
+      when 'host_delete'
+        deletehosts
+      when 'host_edit'
+        edit_record
+      when 'host_protect'
+        assign_policies(Host)
+      when 'host_refresh'
+        refreshhosts
+      when 'host_scan'
+        scanhosts
+      when 'host_tag'
+        tag(Host)
+      end
 
       pfx = pfx_for_vm_button_pressed(params[:pressed])
       # Handle Host power buttons
@@ -107,11 +107,11 @@ class StorageController < ApplicationController
       else
         process_vm_buttons(pfx)
         return if ["host_tag", "#{pfx}_policy_sim", "host_scan", "host_refresh", "host_protect",
-                   "#{pfx}_compare", "#{pfx}_tag", "#{pfx}_protect", "#{pfx}_retire",
+                   'host_compare', "#{pfx}_compare", "#{pfx}_tag", "#{pfx}_protect", "#{pfx}_retire",
                    "#{pfx}_ownership", "#{pfx}_right_size", "#{pfx}_reconfigure"].include?(params[:pressed]) &&
                   @flash_array.nil? # Tag screen is showing, so return
 
-        unless ["host_edit", "#{pfx}_edit", "#{pfx}_miq_request_new", "#{pfx}_clone", "#{pfx}_migrate", "#{pfx}_publish"].include?(params[:pressed])
+        unless ["host_edit", "#{pfx}_edit", "#{pfx}_miq_request_new", "#{pfx}_clone", "#{pfx}_migrate", "#{pfx}_publish", 'vm_rename'].include?(params[:pressed])
           @refresh_div = "main_div"
           @refresh_partial = "layouts/gtl"
           show
@@ -120,7 +120,6 @@ class StorageController < ApplicationController
       end
     else
       @refresh_div = "main_div" # Default div for button.rjs to refresh
-      refreshstorage if params[:pressed] == "storage_refresh"
       tag(Storage) if params[:pressed] == "storage_tag"
       scanstorage if params[:pressed] == "storage_scan"
       deletestorages if params[:pressed] == "storage_delete"
@@ -134,58 +133,60 @@ class StorageController < ApplicationController
 
     if single_delete_test
       single_delete_redirect
-    elsif params[:pressed].ends_with?("_edit") || ["#{pfx}_miq_request_new", "#{pfx}_clone",
-                                                   "#{pfx}_migrate", "#{pfx}_publish"].include?(params[:pressed])
+    elsif params[:pressed].ends_with?("_edit") ||
+          ["#{pfx}_miq_request_new", "#{pfx}_clone", "#{pfx}_migrate", "#{pfx}_publish"].include?(params[:pressed]) ||
+          params[:pressed] == 'vm_rename' && @flash_array.nil?
       render_or_redirect_partial(pfx)
     elsif !flash_errors? && @refresh_div == "main_div" && @lastaction == "show_list"
       replace_gtl_main_div
     else
-      javascript_flash
+      javascript_flash unless performed?
     end
   end
 
   def files
-    show_association('files', _('All Files'), 'storage_files', :storage_files, StorageFile, 'files')
+    assert_privileges('storage_show')
+    show_association('files', _('All Files'), :storage_files, StorageFile, 'files')
   end
 
   def disk_files
+    assert_privileges('storage_show')
     show_association('disk_files',
                      _('VM Provisioned Disk Files'),
-                     'storage_disk_files',
                      :storage_files,
                      StorageFile,
                      'disk_files')
   end
 
   def snapshot_files
+    assert_privileges('storage_show')
     show_association('snapshot_files',
                      _('VM Snapshot Files'),
-                     'storage_snapshot_files',
                      :storage_files,
                      StorageFile,
                      'snapshot_files')
   end
 
   def vm_ram_files
+    assert_privileges('storage_show')
     show_association('vm_ram_files',
                      _('VM Memory Files'),
-                     'storage_memory_files',
                      :storage_files, StorageFile,
                      'vm_ram_files')
   end
 
   def vm_misc_files
+    assert_privileges('storage_show')
     show_association('vm_misc_files',
                      _('Other VM Files'),
-                     'storage_other_vm_files',
                      :storage_files, StorageFile,
                      'vm_misc_files')
   end
 
   def debris_files
+    assert_privileges('storage_show')
     show_association('debris_files',
                      _('Non-VM Files'),
-                     'storage_non_vm_files',
                      :storage_files, StorageFile,
                      'debris_files')
   end
@@ -199,6 +200,9 @@ class StorageController < ApplicationController
 
     self.x_active_accord = params[:id].sub(/_accord$/, '')
     self.x_active_tree   = "#{x_active_accord}_tree"
+
+    assert_accordion_and_tree_privileges(x_active_tree)
+
     get_node_info(x_node)
 
     @search_text = @sb[:storage_search_text]["#{x_active_accord}_search_text"]
@@ -212,17 +216,17 @@ class StorageController < ApplicationController
     session[:edit] = @edit
     @explorer = true
 
-    if x_tree[:type] != :storage || x_node == "root"
+    if x_tree[:tree] != :storage_tree || x_node == "root"
       listnav_search_selected(0)
     else
       @nodetype, id = parse_nodetype_and_id(valid_active_node(x_node))
 
-      if x_tree[:type] == :storage && (@nodetype == "root" || @nodetype == "ms")
-        search_id = @nodetype == "root" ? 0 : from_cid(id)
+      if x_tree[:tree] == :storage_tree && (@nodetype == "root" || @nodetype == "ms")
+        search_id = @nodetype == "root" ? 0 : id
         listnav_search_selected(search_id) unless params.key?(:search_text) # Clear or set the adv search filter
         if @edit[:adv_search_applied] &&
            MiqExpression.quick_search?(@edit[:adv_search_applied][:exp]) &&
-           %w(reload tree_select).include?(params[:action])
+           %w[reload tree_select].include?(params[:action])
           self.x_node = params[:id]
           quick_search_show
           return
@@ -241,37 +245,10 @@ class StorageController < ApplicationController
     self.x_active_tree = params[:tree] if params[:tree]
     self.x_node        = params[:id]
 
+    assert_accordion_and_tree_privileges(x_active_tree)
+
     load_or_clear_adv_search
-    apply_node_search_text if x_active_tree == :storage_tree
     replace_right_cell(:nodetype => x_node)
-  end
-
-  def tree_record
-    if x_active_tree == :storage_tree
-      storage_tree_rec
-    elsif x_active_tree == :storage_pod_tree
-      storage_pod_tree_rec
-    end
-  end
-
-  def storage_tree_rec
-    nodes = x_node.split('-')
-    case nodes.first
-    when "root" then find_record(Storage, params[:id])
-    when "ds" then find_record(Storage, params[:id])
-    when "xx" then
-      case nodes.second
-      when "ds" then find_record(Storage, params[:id])
-      end
-    end
-  end
-
-  def storage_pod_tree_rec
-    nodes = x_node.split('-')
-    case nodes.first
-    when "xx"  then @record = find_record(Storage, params[:id])
-    when "dsc" then @storage_record = find_record(EmsFolder, from_cid(params[:id]))
-    end
   end
 
   def show_record(_id = nil)
@@ -287,16 +264,12 @@ class StorageController < ApplicationController
       return
     end
 
-    if @record.class.base_model.to_s == "Storage"
-      rec_cls = @record.class.base_model.to_s.underscore
-    end
     return unless @display == 'main'
     @showtype = "main"
-    @button_group = "storage_pod_#{rec_cls}" if x_active_accord == :storage_pod
-    @button_group = "storage_#{rec_cls}" if x_active_accord == :storage
   end
 
   def explorer
+    @showtype = nil
     @breadcrumbs = []
     @explorer = true
     @lastaction = "explorer"
@@ -315,10 +288,11 @@ class StorageController < ApplicationController
       # treebuilder initializes x_node to root first time in locals_for_render,
       # need to set this here to force & activate node when link is clicked outside of explorer.
       self.x_active_tree = :storage_tree
-      self.x_node = "#{nodetype}-#{to_cid(id)}"
+      self.x_node = "#{nodetype}-#{id}"
     end
 
     build_accordions_and_trees
+    get_tagdata(@record) if @record
     @lastaction = "explorer" # restore the explorer layout, which was changed by process_show_list() to "show_list"
 
     render :layout => "application"
@@ -335,34 +309,30 @@ class StorageController < ApplicationController
   end
 
   def features
-    [{:role     => "storage",
-      :role_any => true,
-      :name     => :storage,
-      :title    => _("Datastores")},
-     {:role     => "storage_pod",
-      :role_any => true,
-      :name     => :storage_pod,
-      :title    => _("Datastore Clusters")},
-    ].map do |hsh|
-      ApplicationController::Feature.new_with_hash(hsh)
-    end
+    [
+      {
+        :role     => "storage",
+        :role_any => true,
+        :name     => :storage,
+        :title    => _("Datastores")
+      },
+      {
+        :role     => "storage_pod",
+        :role_any => true,
+        :name     => :storage_pod,
+        :title    => _("Datastore Clusters")
+      }
+    ].map { |hsh| ApplicationController::Feature.new_with_hash(hsh) }
   end
 
   def get_node_info(node, _show_list = true)
     node = valid_active_node(node)
+    session_reset # Reset session to same values as first time in
     case x_active_tree
     when :storage_tree     then storage_get_node_info(node)
     when :storage_pod_tree then storage_pod_get_node_info(node)
     end
-    @right_cell_text += @edit[:adv_search_applied][:text] if x_tree && x_tree[:type] == :storage && @edit && @edit[:adv_search_applied]
-
-    if @edit && @edit.fetch_path(:adv_search_applied, :qs_exp) # If qs is active, save it in history
-      x_history_add_item(:id     => x_node,
-                         :qs_exp => @edit[:adv_search_applied][:qs_exp],
-                         :text   => @right_cell_text)
-    else
-      x_history_add_item(:id => node, :text => @right_cell_text) # Add to history pulldown array
-    end
+    set_right_cell_text
   end
 
   def leaf_record
@@ -395,11 +365,11 @@ class StorageController < ApplicationController
     return if @in_a_form
     record_showing = leaf_record
 
-    trees = build_replaced_trees(replace_trees, %i(storage storage_pod))
+    trees = build_replaced_trees(replace_trees, %i[storage storage_pod])
 
     presenter = rendering_objects
     update_partials(record_showing, presenter)
-    replace_search_box(presenter)
+    replace_search_box(presenter, :nameonly => x_active_tree == :storage)
     handle_bottom_cell(presenter)
     reload_trees_by_presenter(presenter, trees)
     rebuild_toolbars(record_showing, presenter)
@@ -410,8 +380,9 @@ class StorageController < ApplicationController
       presenter.update(:main_div, r[:partial => "storage_pod_list"])
     end
     presenter[:right_cell_text] = @right_cell_text
-    presenter[:clear_gtl_list_grid] = @gtl_type && @gtl_type != 'list'
     presenter[:osf_node] = x_node # Open, select, and focus on this node
+
+    presenter.update(:breadcrumbs, r[:partial => 'layouts/breadcrumbs'])
 
     render :json => presenter.for_render
   end
@@ -419,23 +390,6 @@ class StorageController < ApplicationController
   def search_text_type(node)
     return "storage" if storage_record?(node)
     node
-  end
-
-  def apply_node_search_text
-    setup_search_text_for_node
-    previous_nodetype = search_text_type(@sb[:storage_search_text][:previous_node])
-    current_nodetype = search_text_type(@sb[:storage_search_text][:current_node])
-
-    @sb[:storage_search_text]["#{previous_nodetype}_search_text"] = @search_text
-    @search_text = @sb[:storage_search_text]["#{current_nodetype}_search_text"]
-    @sb[:storage_search_text]["#{x_active_accord}_search_text"] = @search_text
-  end
-
-  def setup_search_text_for_node
-    @sb[:storage_search_text] ||= {}
-    @sb[:storage_search_text][:current_node] ||= x_node
-    @sb[:storage_search_text][:previous_node] = @sb[:storage_search_text][:current_node]
-    @sb[:storage_search_text][:current_node] = x_node
   end
 
   def update_partials(record_showing, presenter)
@@ -452,22 +406,17 @@ class StorageController < ApplicationController
     end
   end
 
-  def replace_search_box(presenter)
-    # Replace the searchbox
-    presenter.replace(:adv_searchbox_div,
-                      r[:partial => 'layouts/x_adv_searchbox',
-                        :locals  => {:nameonly => x_active_tree == :storage}])
-
-    presenter[:clear_gtl_list_grid] = @gtl_type && @gtl_type != 'list'
+  def replace_search_box(presenter, locals = {})
+    super(presenter, locals)
   end
 
   def handle_bottom_cell(presenter)
     # Handle bottom cell
     if @pages || @in_a_form
       if @pages && !@in_a_form
-        presenter.hide(:form_buttons_div).show(:pc_div_1)
+        presenter.hide(:form_buttons_div)
       elsif @in_a_form
-        presenter.hide(:pc_div_1).show(:form_buttons_div)
+        presenter.remove_paging.show(:form_buttons_div)
       end
       presenter.show(:paging_div)
     else
@@ -476,7 +425,7 @@ class StorageController < ApplicationController
   end
 
   def render_tagging_form
-    return if %w(cancel save).include?(params[:button])
+    return if %w[cancel save].include?(params[:button])
     @in_a_form = true
     @right_cell_text = _("Edit Tags for Datastore")
     clear_flash_msg
@@ -491,11 +440,11 @@ class StorageController < ApplicationController
 
   def rebuild_toolbars(record_showing, presenter)
     c_tb = build_toolbar(center_toolbar_filename) unless @in_a_form
-    h_tb = build_toolbar('x_history_tb')
-    v_tb = build_toolbar('x_gtl_view_tb') unless record_showing || (x_active_tree == :storage_pod_tree && x_node == 'root') || @in_a_form
+    v_tb = build_toolbar('download_view_tb') unless record_showing || (x_active_tree == :storage_pod_tree && x_node == 'root') || @in_a_form
+    cb_tb = build_toolbar(custom_toolbar_explorer)
 
-    presenter.reload_toolbars(:history => h_tb, :center => c_tb, :view => v_tb)
-    presenter.set_visibility(h_tb.present? || c_tb.present? || v_tb.present?, :toolbar)
+    presenter.reload_toolbars(:center => c_tb, :view => v_tb, :custom => cb_tb)
+    presenter.set_visibility(c_tb.present? || v_tb.present?, :toolbar)
     presenter[:record_id] = @record.try(:id)
 
     # Hide/show searchbox depending on if a list is showing
@@ -521,23 +470,66 @@ class StorageController < ApplicationController
   end
 
   def tagging_explorer_controller?
-    @explorer
+    @explorer && @showtype.nil?
   end
 
+  # called by explorer.rb x_button
   def storage_scan
     scanstorage
   end
 
+  def download_data
+    assert_privileges('storage_show_list')
+    super
+  end
+
+  def download_summary_pdf
+    assert_privileges('storage_show')
+    super
+  end
+
   private
+
+  def record_class
+    %w[all_vms vms].include?(params[:display]) ? VmOrTemplate : Storage
+  end
+
+  def session_reset
+    if @record
+      session[:edit] = @edit = nil
+      session[:adv_search]['Storage'] = nil if session[:adv_search]
+    end
+  end
+
+  def set_right_cell_text
+    @right_cell_text += _(" (Names with \"%{search_text}\")") % {:search_text => @search_text} if @search_text.present? && @nodetype != 'ds' && !@in_a_form
+    @right_cell_text += @edit[:adv_search_applied][:text] if x_tree && x_tree[:tree] == :storage_tree && @edit && @edit[:adv_search_applied]
+  end
 
   def textual_group_list
     [
-      %i(properties registered_vms relationships),
-      %i(content smart_management)
+      %i[properties registered_vms relationships],
+      %i[content smart_management]
     ]
   end
   helper_method :textual_group_list
 
+  def custom_toolbar_explorer
+    @record.present? ? Mixins::CustomButtons::Result.new(:single) : Mixins::CustomButtons::Result.new(:list)
+  end
+
+  def breadcrumbs_options
+    {
+      :breadcrumbs    => [
+        {:title => _("Compute")},
+        {:title => _("Infrastructure")},
+        {:title => _("Datastores"), :url => File.join(controller_url, 'explorer')},
+      ],
+    }
+  end
+
   menu_section :inf
+  feature_for_actions "#{controller_name}_show_list", *ADV_SEARCH_ACTIONS
+  feature_for_actions "#{controller_name}_perf", :perf_top_chart
   has_custom_buttons
 end

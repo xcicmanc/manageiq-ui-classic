@@ -29,12 +29,6 @@ describe 'routes for DashboardController' do
     end
   end
 
-  describe "#maintab" do
-    it "routes with GET" do
-      expect(get("/dashboard/maintab")).to route_to("dashboard#maintab")
-    end
-  end
-
   describe "#render_csv" do
     it "routes with GET" do
       expect(get("/dashboard/render_chart")).to route_to("dashboard#render_chart")
@@ -74,12 +68,6 @@ describe 'routes for DashboardController' do
   describe "#show" do
     it "routes with GET" do
       expect(get("/dashboard/show")).to route_to("dashboard#show")
-    end
-  end
-
-  describe "#timeline" do
-    it "routes with GET" do
-      expect(get("/dashboard/timeline")).to route_to("dashboard#timeline")
     end
   end
 
@@ -135,12 +123,6 @@ describe 'routes for DashboardController' do
     end
   end
 
-  describe "#tl_generate" do
-    it "routes with POST" do
-      expect(post("/dashboard/tl_generate")).to route_to("dashboard#tl_generate")
-    end
-  end
-
   describe "#wait_for_task" do
     it "routes with POST" do
       expect(post("/dashboard/wait_for_task")).to route_to("dashboard#wait_for_task")
@@ -162,18 +144,6 @@ describe 'routes for DashboardController' do
   describe "#widget_dd_done" do
     it "routes with POST" do
       expect(post("/dashboard/widget_dd_done")).to route_to("dashboard#widget_dd_done")
-    end
-  end
-
-  describe "#widget_toggle_minmax" do
-    it "routes with POST" do
-      expect(post("/dashboard/widget_toggle_minmax")).to route_to("dashboard#widget_toggle_minmax")
-    end
-  end
-
-  describe "#widget_zoom" do
-    it "routes with POST" do
-      expect(post("/dashboard/widget_zoom")).to route_to("dashboard#widget_zoom")
     end
   end
 end

@@ -1,5 +1,5 @@
 describe "ems_cluster/show.html.haml" do
-  let(:ems_cluster) { FactoryGirl.create(:ems_cluster_openstack) }
+  let(:ems_cluster) { FactoryBot.create(:ems_cluster_openstack) }
   let(:action) { 'index' }
 
   before do
@@ -15,7 +15,7 @@ describe "ems_cluster/show.html.haml" do
     let(:showtype) { 'drift' }
 
     it 'should render the compare partial' do
-      render
+      render :template => "ems_cluster/show"
       expect(response).to render_template(:partial => 'layouts/_compare')
     end
   end

@@ -6,54 +6,19 @@
         = render(:partial => "pxe_form")
       - else
         = render :partial => "layouts/flash_msg"
-        = render(:partial => "shared/summary/textual",
-          :locals  => {:title => _("Basic Information"), :items => textual_group_basicinfo})
+        = react 'GenericGroupWrapper', expand_generic_group(TextualGroup.new(_('Basic Information'), textual_group_basicinfo), @record)
         - if @ps.pxe_menus.count > 0
           %hr
-          = render :partial => "shared/summary/textual",
-            :locals  => {:title => _("PXE Image Menus"), :items => textual_group_pxe_image_menus}
+          = react 'GenericGroupWrapper', expand_generic_group(TextualGroup.new(_('PXE Image Menus'), textual_group_pxe_image_menus), @record)
         - unless @ps.pxe_images.empty?
           %hr
           %h3= _('PXE Images')
-          %table.table.table-bordered.table-hover.table-striped
-            %thead
-              %tr
-                %th= _('Name')
-                %th= _('Description')
-                %th= _('Kernel')
-                %th= _('Windows Boot Env')
-            %tbody
-              - @ps.pxe_images.sort_by { |a| a.name.downcase }.each do |i|
-                %tr{:title => _("View this PXE Image"), :onclick => "miqTreeActivateNode('pxe_servers_tree', 'pi-#{to_cid(i.id)}');"}
-                  %td
-                    = h(i.name)
-                  %td
-                    = h(i.description)
-                  %td
-                    = h(i.kernel)
-                  %td
-                    = h(i.default_for_windows ? "Yes" : "")
+          = react('PxeImagesTable', {:initialData => @ps.pxe_images.sort_by { |a| a.name.downcase }.map { |i| {:id => i.id, :name => i.name, :description => i.description, :kernel => i.kernel, :default_for_windows => i.default_for_windows} }})
         - unless @ps.windows_images.empty?
           %hr
           %h3= _('Windows Images')
-          %table.table.table-bordered.table-hover.table-striped
-            %thead
-              %tr
-                %th= _('Name')
-                %th= _('Description')
-                %th= _('Path')
-                %th= _('Index')
-            %tbody
-              - @ps.windows_images.sort_by { |a| a.name.downcase }.each do |i|
-                %tr{:title => _("View this Windows Image"), :onclick => "miqTreeActivateNode('pxe_servers_tree', 'pi-#{to_cid(i.id)}');"}
-                  %td
-                    = h(i.name)
-                  %td
-                    = h(i.description)
-                  %td
-                    = h(i.path)
-                  %td
-                    = h(i.index)
+          = react('WindowsImagesTable', {:initialData => @ps.windows_images.sort_by { |a| a.name.downcase }.map { |i| {:id => i.id, :name => i.name, :description => i.description, :path => i.path, :index => i.index} }})
+        = react 'TagGroup', expand_generic_group(textual_group_smart_management, @record)
 
   -# PXE Image is selected
   - if @img
@@ -62,8 +27,8 @@
         = render(:partial => "pxe_img_form")
       - else
         = render(:partial => "layouts/flash_msg")
-        = render :partial => "shared/summary/textual",
-          :locals  => {:title => _("Basic Information"), :items => textual_pxe_img_basicinfo}
+        = react 'GenericGroupWrapper', expand_generic_group(TextualGroup.new(_('Basic Information'), textual_pxe_img_basicinfo), @record)
+        = react 'TagGroup', expand_generic_group(textual_group_smart_management, @record)
 
   -# Windows Image is selected
   - if @wimg
@@ -72,5 +37,5 @@
         = render(:partial => "pxe_wimg_form")
       - else
         = render(:partial => "layouts/flash_msg")
-        = render :partial => "shared/summary/textual",
-          :locals  => {:title => _("Basic Information"), :items => textual_win_img_basicinfo}
+        = react 'GenericGroupWrapper', expand_generic_group(TextualGroup.new(_('Basic Information'), textual_win_img_basicinfo), @record)
+        = react 'TagGroup', expand_generic_group(textual_group_smart_management, @record)

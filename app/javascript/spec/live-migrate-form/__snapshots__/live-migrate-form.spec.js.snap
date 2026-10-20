@@ -1,0 +1,363 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Live Migrate form component should render live migrate form when hosts empty 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 live_migrate_form"
+    novalidate=""
+  >
+    <div
+      class=""
+      name="MigrateInstance"
+    >
+      <div>
+        <h3>
+          Migrate Instance
+        </h3>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            checked=""
+            class="cds--checkbox"
+            disabled=""
+            id="auto_select_host"
+            name="auto_select_host"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="auto_select_host"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              Auto-select Host?
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            class="cds--checkbox"
+            id="block_migration"
+            name="block_migration"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="block_migration"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              Block Migration
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            class="cds--checkbox"
+            id="disk_over_commit"
+            name="disk_over_commit"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="disk_over_commit"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              Disk Over Commit
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Submit
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`Live Migrate form component should render live migrate form with host options 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 live_migrate_form"
+    novalidate=""
+  >
+    <div
+      class=""
+      name="MigrateInstance"
+    >
+      <div>
+        <h3>
+          Migrate Instance
+        </h3>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            checked=""
+            class="cds--checkbox"
+            id="auto_select_host"
+            name="auto_select_host"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="auto_select_host"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              Auto-select Host?
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            class="cds--checkbox"
+            id="block_migration"
+            name="block_migration"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="block_migration"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              Block Migration
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            class="cds--checkbox"
+            id="disk_over_commit"
+            name="disk_over_commit"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="disk_over_commit"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              Disk Over Commit
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Submit
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`Live Migrate form component should render live migrate form with multiple instances 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 live_migrate_form"
+    novalidate=""
+  >
+    <div
+      class=""
+      name="MigrateInstance"
+    >
+      <div>
+        <h3>
+          Migrate Instance
+        </h3>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            checked=""
+            class="cds--checkbox"
+            disabled=""
+            id="auto_select_host"
+            name="auto_select_host"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="auto_select_host"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              Auto-select Host?
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            class="cds--checkbox"
+            id="block_migration"
+            name="block_migration"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="block_migration"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              Block Migration
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            class="cds--checkbox"
+            id="disk_over_commit"
+            name="disk_over_commit"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="disk_over_commit"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              Disk Over Commit
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Submit
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;

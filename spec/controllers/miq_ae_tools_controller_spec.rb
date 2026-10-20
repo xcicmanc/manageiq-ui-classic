@@ -1,30 +1,29 @@
 describe MiqAeToolsController do
-  before(:each) do
+  before do
     stub_user(:features => :all)
   end
 
-  context "#form_field_changed" do
-    it "resets target id to nil, when target class is <none>" do
-      new = {
+  describe "#form_field_changed" do
+    let(:new_target) do
+      {
         :target_class => "EmsCluster",
         :target_id    => 1
       }
-      controller.instance_variable_set(:@resolve, :throw_ready => true, :new => new)
+    end
+
+    before { controller.instance_variable_set(:@resolve, :throw_ready => true, :new => new_target) }
+
+    it "resets target id to nil, when target class is <none>" do
       expect(controller).to receive(:render)
-      controller.instance_variable_set(:@_params, :target_class => '', :id => 'new')
+      controller.params = {:target_class => '', :id => 'new'}
       controller.send(:form_field_changed)
-      expect(assigns(:resolve)[:new][:target_class]).to eq('')
+      expect(assigns(:resolve)[:new][:target_class]).to be_nil
       expect(assigns(:resolve)[:new][:target_id]).to eq(nil)
     end
 
     it "resets target id to nil, when target class is Vm" do
-      new = {
-        :target_class => "EmsCluster",
-        :target_id    => 1
-      }
-      controller.instance_variable_set(:@resolve, :throw_ready => true, :new => new)
       expect(controller).to receive(:render)
-      controller.instance_variable_set(:@_params, :target_class => 'Vm', :id => 'new')
+      controller.params = {:target_class => 'Vm', :id => 'new'}
       controller.send(:form_field_changed)
       expect(assigns(:resolve)[:new][:target_class]).to eq('Vm')
       expect(assigns(:resolve)[:new][:target_id]).to eq(nil)
@@ -35,28 +34,11 @@ describe MiqAeToolsController do
   describe "#import_export" do
     include_context "valid session"
 
-    let(:fake_domain) { double("MiqAeDomain", :name => "test_domain") }
-    let(:fake_domain2) { double("MiqAeDomain", :name => "uneditable") }
-    let(:tenant) do
-      double(
-        "Tenant",
-        :editable_domains => [double(:name => "test_domain")]
-      )
-    end
+    before { bypass_rescue }
 
-    before do
-      bypass_rescue
-      allow(controller).to receive(:current_tenant).and_return(tenant)
-      allow(MiqAeDomain).to receive(:all_unlocked).and_return([fake_domain, fake_domain2])
-    end
-
-    it "includes a list of importable domain options" do
+    it "renders successfully" do
       get :import_export
-
-      expect(assigns(:importable_domain_options)).to eq([
-                                                          ["<Same as import from>", nil],
-                                                          %w(test_domain test_domain)
-                                                        ])
+      expect(response).to be_successful
     end
   end
 
@@ -171,14 +153,22 @@ describe MiqAeToolsController do
 
         it "returns the flash message" do
           post :import_automate_datastore, :params => params, :xhr => true
-          expected_message = <<-MESSAGE
-Datastore import was successful.
-Namespaces updated/added: 4
-Classes updated/added: 6
-Instances updated/added: 0
-Methods updated/added: 10
-          MESSAGE
+          expected_message = "Datastore import was successful. Added/Updated 4 Namespaces, 6 Classes, 0 Instances, 10 Methods."
           expect(response.body).to eq([{:message => expected_message.chomp, :level => :success}].to_json)
+        end
+
+        context 'when importing playbook method type' do
+          let(:error_msg) { "Playbook method 'method_name' contains below listed error(s):" }
+
+          it 'returns the flash message' do
+            allow(automate_import_service).to receive(:import_datastore).and_raise(
+              MiqAeException::AttributeNotFound, error_msg
+            )
+            post :import_automate_datastore, :params => params, :xhr => true
+            expect(response.body).to eq(
+              [{:message => "Error: #{error_msg}", :level => :error}].to_json
+            )
+          end
         end
       end
 
@@ -213,58 +203,6 @@ Methods updated/added: 10
           [{:message => "You must select at least one namespace to import", :level => :info}].to_json
         )
       end
-    end
-  end
-
-  describe "#review_import" do
-    include_context "valid session"
-
-    let(:params) { {:import_file_upload_id => "123", :message => "the message"} }
-
-    before do
-      bypass_rescue
-    end
-
-    it "assigns the import file upload id" do
-      get :review_import, :params => params
-      expect(assigns(:import_file_upload_id)).to eq("123")
-    end
-
-    it "assigns the message" do
-      get :review_import, :params => params
-      expect(assigns(:message)).to eq("the message")
-    end
-  end
-
-  describe "#review_git_import" do
-    include_context "valid session"
-
-    let(:params) do
-      {:git_branches => "git_branches", :git_tags => "git_tags", :git_repo_id => "123", :message => "the message"}
-    end
-
-    before do
-      bypass_rescue
-    end
-
-    it "assigns the git repo id" do
-      get :review_git_import, :params => params
-      expect(assigns(:git_repo_id)).to eq("123")
-    end
-
-    it "assigns the git branches" do
-      get :review_git_import, :params => params
-      expect(assigns(:git_branches)).to eq("git_branches")
-    end
-
-    it "assigns the git tags" do
-      get :review_git_import, :params => params
-      expect(assigns(:git_tags)).to eq("git_tags")
-    end
-
-    it "assigns the message" do
-      get :review_git_import, :params => params
-      expect(assigns(:message)).to eq("the message")
     end
   end
 
@@ -338,7 +276,7 @@ Methods updated/added: 10
         end
 
         context "when everything works fine" do
-          let(:git_repo) { double("GitRepository", :id => 123) }
+          let(:git_repo) { FactoryBot.create(:git_repository) }
           let(:git_based_domain_import_service) { double("GitBasedDomainImportService") }
 
           before do
@@ -347,16 +285,16 @@ Methods updated/added: 10
               "gitusername",
               "gitpassword",
               "gitverifyssl"
-            ).and_return({:git_repo_id => git_repo.id, :new_git_repo? => false})
+            ).and_return(:git_repo_id => git_repo.id, :new_git_repo? => false)
             allow(GitBasedDomainImportService).to receive(:new).and_return(git_based_domain_import_service)
-            allow(git_based_domain_import_service).to receive(:queue_refresh).with(123).and_return(321)
+            allow(git_based_domain_import_service).to receive(:queue_refresh).with(git_repo.id).and_return(321)
           end
 
           it "responds with task information" do
             post :retrieve_git_datastore, :params => params, :xhr => true
             expect(response.body).to eq({
               :task_id      => 321,
-              :git_repo_id  => 123,
+              :git_repo_id  => git_repo.id,
               :new_git_repo => false
             }.to_json)
           end
@@ -368,8 +306,9 @@ Methods updated/added: 10
   describe "#check_git_task" do
     include_context "valid session"
 
+    let(:git_repo) { FactoryBot.create(:git_repository) }
     let(:params) do
-      {:task_id => 123, :git_repo_id => 321, :new_git_repo => new_git_repo}
+      {:task_id => 123, :git_repo_id => git_repo.id, :new_git_repo => new_git_repo}
     end
     let(:new_git_repo) { false }
 
@@ -391,13 +330,9 @@ Methods updated/added: 10
 
     context "when the task's state is finished" do
       let(:state) { MiqTask::STATE_FINISHED }
-      let(:git_repo) { double("GitRepository", :id => 321, :git_branches => git_branches, :git_tags => git_tags) }
-      let(:git_branches) { [double("GitBranch", :name => "branches")] }
-      let(:git_tags) { [double("GitTag", :name => "tags")] }
-
-      before do
-        allow(GitRepository).to receive(:find).with("321").and_return(git_repo)
-      end
+      let(:git_repo) { FactoryBot.create(:git_repository, :git_branches => git_branches, :git_tags => git_tags) }
+      let(:git_branches) { [FactoryBot.create(:git_branch, :name => "branches")] }
+      let(:git_tags) { [FactoryBot.create(:git_tag, :name => "tags")] }
 
       context "when the status is 'Ok'" do
         let(:status) { "Ok" }
@@ -407,7 +342,7 @@ Methods updated/added: 10
           expect(response.body).to eq({
             :git_branches => ["branches"],
             :git_tags     => ["tags"],
-            :git_repo_id  => 321,
+            :git_repo_id  => git_repo.id,
             :success      => true,
             :message      => {
               :message => "Successfully found git repository, please choose a branch or tag",
@@ -421,11 +356,8 @@ Methods updated/added: 10
         context "when the repository is new" do
           let(:new_git_repo) { true }
 
-          before do
-            allow(git_repo).to receive(:destroy)
-          end
-
           it "destroys the git repository" do
+            expect(GitRepository).to receive(:find).with(git_repo.id.to_s).and_return(git_repo)
             expect(git_repo).to receive(:destroy)
             get :check_git_task, :params => params, :xhr => true
           end
@@ -471,23 +403,25 @@ Methods updated/added: 10
     end
 
     shared_examples_for "MiqAeToolsController#upload_import_file that does not upload a file" do
-      it "redirects with a warning message" do
+      it "returns JSON with a warning message" do
         post :upload_import_file, :params => params, :xhr => true
-        expect(response).to redirect_to(
-          :action  => :review_import,
-          :message => {:message => "Use the Choose file button to locate an import file", :level => :warning}.to_json
-        )
+        expect(response.status).to eq(200)
+        expect(response.content_type).to include('application/json')
+        json_response = response.parsed_body
+        expect(json_response['message']).to eq("Use the Choose file button to locate an import file")
+        expect(json_response['level']).to eq('warning')
       end
     end
 
     context "when an upload file is given" do
       let(:automate_import_service) { double("AutomateImportService") }
+      let(:import_file_upload) { double("ImportFileUpload", :id => 123) }
       let(:params) { {:upload => {:file => upload_file}} }
       let(:upload_file) { fixture_file_upload("files/dummy_file.yml", "text/yml") }
 
       before do
         allow(AutomateImportService).to receive(:new).and_return(automate_import_service)
-        allow(automate_import_service).to receive(:store_for_import).with("the yaml data\n").and_return(123)
+        allow(automate_import_service).to receive(:store_for_import).with("the yaml data\n").and_return(import_file_upload)
       end
 
       it "stores the file for import" do
@@ -495,13 +429,14 @@ Methods updated/added: 10
         post :upload_import_file, :params => params, :xhr => true
       end
 
-      it "redirects to review_import" do
+      it "returns JSON with success message and import_file_upload_id" do
         post :upload_import_file, :params => params, :xhr => true
-        expect(response).to redirect_to(
-          :action                => :review_import,
-          :import_file_upload_id => 123,
-          :message               => {:message => "Import file was uploaded successfully", :level => :success}.to_json
-        )
+        expect(response.status).to eq(200)
+        expect(response.content_type).to include('application/json')
+        json_response = response.parsed_body
+        expect(json_response['import_file_upload_id']).to eq(123)
+        expect(json_response['message']).to eq("Import file was uploaded successfully")
+        expect(json_response['level']).to eq('success')
       end
     end
 
@@ -519,11 +454,15 @@ Methods updated/added: 10
   end
 
   describe "#import_via_git" do
+    include_context "valid session"
+
     let(:params) { {:git_repo_id => "123", :git_branch_or_tag => "branch_or_tag"} }
     let(:git_based_domain_import_service) { double("GitBasedDomainImportService") }
+    let(:git_repo) { double("GitRepository", :url => "https://example.com/repo.git") }
 
     before do
       allow(GitBasedDomainImportService).to receive(:new).and_return(git_based_domain_import_service)
+      allow(GitRepository).to receive(:find).with("123").and_return(git_repo)
     end
 
     context "when there are no errors while importing" do
@@ -534,7 +473,7 @@ Methods updated/added: 10
 
       it "responds with a success message" do
         post :import_via_git, :params => params, :xhr => true
-        expect(response.body).to eq([{:message => "Imported from git", :level => :info}].to_json)
+        expect(response.body).to eq([{:message => "Imported https://example.com/repo.git@branch_or_tag", :level => :success}].to_json)
       end
     end
 
@@ -552,6 +491,46 @@ Methods updated/added: 10
           [{:message => "Error: import failed: kaboom", :level => :error}].to_json
         )
       end
+    end
+  end
+
+  describe '#get_form_vars' do
+    before { controller.instance_variable_set(:@resolve, :new => {}) }
+
+    ['MiqGroup', 'User', 'Tenant'].each do |klass|
+      context "#{klass} class" do
+        let(:targets) { klass.safe_constantize.all.sort_by { |t| t.name.downcase }.collect { |t| [t.name, t.id.to_s] } }
+
+        before { controller.instance_variable_set(:@_params, :target_class => klass) }
+
+        it "gets appropriate targets" do
+          controller.send(:get_form_vars)
+          expect(controller.instance_variable_get(:@resolve)[:targets]).to eq(targets)
+        end
+      end
+    end
+  end
+
+  describe "breadcrumbs" do
+    it "shows 'simulation' on resolve screen" do
+      get :resolve
+
+      expect(controller.data_for_breadcrumbs.pluck(:title)[2]).to eq("Simulation")
+      expect(controller.data_for_breadcrumbs.pluck(:title)[3]).to eq(nil) # no additional title
+    end
+
+    it "shows 'import / export' on import_export screen" do
+      get :import_export
+
+      expect(controller.data_for_breadcrumbs.pluck(:title)[2]).to eq("Import / Export")
+      expect(controller.data_for_breadcrumbs.pluck(:title)[3]).to eq(nil) # no additional title
+    end
+
+    it "shows 'log' on log screen" do
+      get :log
+
+      expect(controller.data_for_breadcrumbs.pluck(:title)[2]).to eq("Log")
+      expect(controller.data_for_breadcrumbs.pluck(:title)[3]).to eq(nil) # no additional title
     end
   end
 end

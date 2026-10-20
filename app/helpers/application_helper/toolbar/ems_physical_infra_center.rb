@@ -7,7 +7,7 @@ class ApplicationHelper::Toolbar::EmsPhysicalInfraCenter < ApplicationHelper::To
       nil),
     select(
       :ems_physical_infra_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -16,7 +16,8 @@ class ApplicationHelper::Toolbar::EmsPhysicalInfraCenter < ApplicationHelper::To
           'fa fa-refresh fa-lg',
           N_('Refresh relationships and power states for all items related to this Infrastructure Provider'),
           N_('Refresh Relationships and Power States'),
-          :confirm => N_("Refresh relationships and power states for all items related to this Infrastructure Provider?")),
+          :confirm => N_("Refresh relationships and power states for all items related to this Infrastructure Provider?"),
+          :klass   => ApplicationHelper::Button::EmsRefresh),
         separator,
         button(
           :ems_physical_infra_edit,
@@ -36,7 +37,7 @@ class ApplicationHelper::Toolbar::EmsPhysicalInfraCenter < ApplicationHelper::To
   button_group('ems_physical_infra_policy', [
     select(
       :ems_physical_infra_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :items => [
@@ -62,7 +63,7 @@ class ApplicationHelper::Toolbar::EmsPhysicalInfraCenter < ApplicationHelper::To
   button_group('ems_physical_infra_monitoring', [
     select(
       :ems_physical_infra_monitoring_choice,
-      'ff ff-monitoring fa-lg',
+      nil,
       t = N_('Monitoring'),
       t,
       :items => [
@@ -79,7 +80,7 @@ class ApplicationHelper::Toolbar::EmsPhysicalInfraCenter < ApplicationHelper::To
   button_group('ems_physical_infra_console_access', [
     select(
       :ems_physical_infra_console_choice,
-      'fa pficon-screen fa-lg',
+      nil,
       N_('Remote Access'),
       N_('Access'),
       :items => [
@@ -88,17 +89,18 @@ class ApplicationHelper::Toolbar::EmsPhysicalInfraCenter < ApplicationHelper::To
           'pficon pficon-screen fa-lg',
           N_('Open a web-based console for this provider'),
           N_('Management Console'),
-          :url     => "launch_console",
-          :confirm => N_("Open management console for this provider"),
-          :klass   => ApplicationHelper::Button::PhysicalInfraConsole,
-          :options => {:feature => :console})
+          :keepSpinner => true,
+          :url         => "launch_console",
+          :confirm     => N_("Open management console for this provider"),
+          :klass       => ApplicationHelper::Button::NativeConsole,
+          :options     => {:feature => :console})
       ]
     ),
   ])
   button_group('ems_physical_infra_authentication', [
     select(
       :ems_physical_infra_authentication_choice,
-      'fa fa-lock fa-lg',
+      nil,
       t = N_('Authentication'),
       t,
       :items => [

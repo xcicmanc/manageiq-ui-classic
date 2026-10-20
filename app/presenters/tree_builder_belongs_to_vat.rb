@@ -1,39 +1,27 @@
 class TreeBuilderBelongsToVat < TreeBuilderBelongsToHac
-  def blue?(object)
-    return false unless object.parent.present?
-    object.parent.name == 'vm' &&
-      object.parent.parent.present? &&
-      object.parent.parent.kind_of?(Datacenter) ||
-      blue?(object.parent)
-  end
+  def override(node, object)
+    node.selectable = false
+    node.checkable = @edit.present? || @assign_to.present?
 
-  def override(node, object, _pid, options)
-    node[:selectable] = false
-    node[:checkable] = options[:checkable_checkboxes] if options.key?(:checkable_checkboxes)
-    if [ExtManagementSystem, EmsCluster, Datacenter].any? { |klass| object.kind_of?(klass) }
-      node[:hideCheckbox] = true
+    if object.kind_of?(EmsFolder) && object.vm_folder?
+      node.icon = "pficon pficon-folder-close-blue"
+    else
+      node.hide_checkbox = true
     end
-    if object.kind_of?(EmsFolder)
-      if blue?(object)
-        node[:icon] = "pficon pficon-folder-close-blue"
-      else
-        node[:hideCheckbox] = true
-      end
-      node[:select] = options.key?(:selected) && options[:selected].include?("EmsFolder_#{object[:id]}")
+
+    node.checked = @selected_nodes&.one? do |s|
+      prefix, id = s.split('_') # The prefix can be any subclass of EmsFolder
+      prefix.safe_constantize < EmsFolder && id.to_i == object[:id].to_i
     end
   end
 
   def x_get_tree_datacenter_kids(parent, count_only)
-    kids = []
-    parent.folders.each do |child|
-      next unless child.kind_of?(EmsFolder)
-      next if child.name == "host"
-      if child.name == "vm"
-        kids.concat(child.folders_only)
-      else
-        kids.push(child)
-      end
+    children = parent.folders.each_with_object([]) do |child, arr|
+      next if !child.kind_of?(EmsFolder) || child.name == 'host'
+
+      child.name == 'vm' ? arr.concat(child.folders_only) : arr.push(child)
     end
-    count_only_or_objects(count_only, kids)
+
+    count_only_or_objects(count_only, children)
   end
 end

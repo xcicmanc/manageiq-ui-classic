@@ -1,0 +1,232 @@
+import { useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
+import {
+  Loading,
+  Modal,
+  ModalBody,
+  Search,
+} from '@carbon/react';
+import MiqDataTable from '../miq-data-table';
+import NoRecordsFound from '../no-records-found';
+import { workflowsEntryPoints } from './helper';
+import { http } from '../../http_api';
+
+const WorkflowEntryPoints = ({
+  field,
+  selected = '',
+  type,
+  setShowModal = undefined,
+  setSelectedValue = undefined,
+}) => {
+  const [data, setData] = useState({
+    isLoading: true, list: {}, selectedItemId: selected, key: 'workflow-entry-points',
+  });
+  const [searchText, setSearchText] = useState('');
+  const [prevSelectedHeader, setPrevSelectedHeader] = useState('');
+  const [sortDirectionRepository, setSortDirectionRepository] = useState('DESC');
+  const [sortDirectionName, setSortDirectionName] = useState('DESC');
+
+  const workflowTypes = {
+    provision: __('Provision'),
+    reconfigure: __('Reconfigure'),
+    retire: __('Retirement'),
+  };
+
+  const sortFunction = (selectedHeader, itemA, itemB) => {
+    if (selectedHeader.key === 'name') {
+      if (itemA.name.text === itemB.name.text) {
+        return itemA.id - itemB.id;
+      }
+      return itemA.name.text.localeCompare(itemB.name.text, undefined, { sensitivity: 'base' });
+    }
+    if (itemA['configuration_script_source.name'] === undefined) {
+      itemA['configuration_script_source.name'] = { text: '' };
+    } else if (itemB['configuration_script_source.name'] === undefined) {
+      itemB['configuration_script_source.name'] = { text: '' };
+    }
+    return itemA['configuration_script_source.name'].text.localeCompare(
+      itemB['configuration_script_source.name'].text, undefined, { sensitivity: 'base' }
+    );
+  };
+
+  const onSort = (itemKey) => {
+    const selectedHeader = data.list.headers.find((item) => item === itemKey);
+    if (selectedHeader) {
+      const sortedList = data.list;
+      // FIXME: Try to only have 1 sort.
+      // Need this sort or else you have to click the column names twice to resort when changing columns
+      sortedList.rows.sort((a, b) => sortFunction(selectedHeader, a, b));
+      if (prevSelectedHeader === selectedHeader.key) {
+        if (selectedHeader.key === 'name') {
+          if (sortDirectionName === 'ASC') {
+            sortedList.rows.sort((a, b) => sortFunction(selectedHeader, a, b));
+          } else {
+            sortedList.rows.sort((a, b) => sortFunction(selectedHeader, b, a));
+          }
+          setSortDirectionName(sortDirectionName === 'ASC' ? 'DESC' : 'ASC');
+        } else {
+          if (sortDirectionRepository === 'ASC') {
+            sortedList.rows.sort((a, b) => sortFunction(selectedHeader, a, b));
+          } else {
+            sortedList.rows.sort((a, b) => sortFunction(selectedHeader, b, a));
+          }
+          setSortDirectionRepository(sortDirectionRepository === 'ASC' ? 'DESC' : 'ASC');
+        }
+      } else {
+        setSortDirectionName('DESC');
+        setSortDirectionRepository('DESC');
+      }
+      const tempKey = `${data.key}-${sortedList.rows[0].id}`;
+      setPrevSelectedHeader(selectedHeader.key);
+      setData({
+        ...data, isLoading: false, list: sortedList, key: tempKey,
+      });
+    }
+  };
+
+  useEffect(() => {
+    http.post(`/catalog/ae_tree_select_toggle?typ=${type}`, {}, { headers: {}, skipJsonParsing: true })
+      .then((_data) => {
+        const url = '/api/configuration_script_payloads/?expand=resources&attributes=configuration_script_source.name&'
+        + 'collection_class=ManageIQ::Providers::Workflows::AutomationManager::Workflow';
+        API.get(url)
+          .then((response) => {
+            setData({
+              ...data,
+              isLoading: false,
+              list: workflowsEntryPoints(response),
+            });
+          });
+      });
+  }, []);
+
+  /** Function to handle a row's click event. */
+  const onSelect = (selectedItemId) => {
+    // Find the row to check if it's disabled
+    const selectedRow = data.list.rows.find((row) => row.id === selectedItemId);
+
+    // Don't allow selection of disabled rows
+    if (selectedRow && selectedRow.disabled) {
+      return;
+    }
+
+    setData({
+      ...data,
+      selectedItemId: (data.selectedItemId === selectedItemId) ? undefined : selectedItemId,
+    });
+    const params = `cfp-${encodeURIComponent(selectedItemId)}&tree=automate_catalog_tree&field=${field}`;
+    window.miqJqueryRequest(`/catalog/ae_tree_select/?id=${params}&typ=${type}`);
+  };
+  const filteredRows = useMemo(() => {
+    if (!data.list.rows) {
+      return [];
+    }
+    if (!searchText.trim()) {
+      return data.list.rows;
+    }
+    const query = searchText.toLowerCase();
+    return data.list.rows.filter((row) => {
+      const repoName = row['configuration_script_source.name']?.text || '';
+      const workflowName = row.name?.text || '';
+      return repoName.toLowerCase().includes(query) || workflowName.toLowerCase().includes(query);
+    });
+  }, [data.list.rows, searchText]);
+
+  if (data.isLoading) {
+    return (<Loading active small withOverlay={false} className="loading" />);
+  }
+  /** Function to handle the modal box close button click event. */
+  const onCloseModal = () => {
+    if (setShowModal) {
+      setShowModal(false);
+    } else {
+      document.getElementById(`${type}-workflows`).innerHTML = '';
+      http.post('/catalog/ae_tree_select_toggle?button=cancel', {}, { headers: {}, skipJsonParsing: true });
+    }
+  };
+  /** Function to check if a valid workflow is selected */
+  const isValidSelection = () => {
+    if (!data.selectedItemId) {
+      return false;
+    }
+    const selectedRow = data.list.rows.find((row) => row.id === data.selectedItemId);
+    return selectedRow && !selectedRow.disabled;
+  };
+
+  /** Function to handle the modal box apply button click event. */
+  const onApply = () => {
+    const seletedItem = data.list.rows.find((item) => item.id === data.selectedItemId);
+    const name = seletedItem.name.text;
+    if (seletedItem) {
+      if (setShowModal && setSelectedValue) {
+        setShowModal(false);
+        setSelectedValue(seletedItem);
+      } else {
+        const nameField = document.getElementById(field);
+        const selectedField = document.getElementById(`${type}_configuration_script_id`);
+
+        if (nameField && selectedField) {
+          nameField.value = name;
+          selectedField.value = data.selectedItemId;
+          http.post('/catalog/ae_tree_select_toggle?button=submit&automation_type=workflow', {}, { headers: {}, skipJsonParsing: true })
+            .then((_data) => {
+              document.getElementById(`${type}-workflows`).innerHTML = '';
+            });
+        }
+      }
+    }
+  };
+
+  return (
+    <Modal
+      open
+      modalHeading={sprintf(__('Select Embedded Workflow - %s Entry Point'), workflowTypes[type])}
+      primaryButtonText={__('Apply')}
+      primaryButtonDisabled={!isValidSelection()}
+      secondaryButtonText={__('Cancel')}
+      onRequestSubmit={onApply}
+      onRequestClose={onCloseModal}
+      className="workflows-entry-point-modal"
+    >
+      <ModalBody className="workflows-entry-point-modal-body">
+        <div className="search-wrapper">
+          <Search
+            id="search-workflow-entry-points"
+            labelText={__('Search')}
+            placeholder={__('Search')}
+            value={searchText}
+            onClear={() => setSearchText('')}
+            onChange={(event) => setSearchText(event.target.value)}
+          />
+        </div>
+        {filteredRows.length > 0 ? (
+          <MiqDataTable
+            headers={data.list.headers}
+            rows={filteredRows}
+            sortable
+            onSort={onSort}
+            key={`${data.key}-${searchText}`}
+            onCellClick={(selectedRow) => onSelect(selectedRow.id)}
+            showPagination={false}
+            truncateText={false}
+            mode="automated-workflow-entry-points"
+            gridChecks={[data.selectedItemId]}
+            size="md"
+          />
+        ) : (
+          <NoRecordsFound />
+        )}
+      </ModalBody>
+    </Modal>
+  );
+};
+
+WorkflowEntryPoints.propTypes = {
+  field: PropTypes.string.isRequired,
+  type: PropTypes.string.isRequired,
+  selected: PropTypes.string,
+  setShowModal: PropTypes.func,
+  setSelectedValue: PropTypes.func,
+};
+
+export default WorkflowEntryPoints;

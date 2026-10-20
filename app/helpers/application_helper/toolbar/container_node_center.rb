@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::ContainerNodeCenter < ApplicationHelper::Toolb
   button_group('container_node_monitoring', [
     select(
       :container_node_monitoring_choice,
-      'ff ff-monitoring fa-lg',
+      nil,
       t = N_('Monitoring'),
       t,
       :items => [
@@ -26,14 +26,6 @@ class ApplicationHelper::Toolbar::ContainerNodeCenter < ApplicationHelper::Toolb
           :klass     => ApplicationHelper::Button::ContainerPerf,
         ),
         button(
-          :ems_container_ad_hoc_metrics,
-          'fa fa-tachometer fa-1xplus',
-          N_('Show Ad hoc Metrics for this Provider'),
-          N_('Ad hoc Metrics'),
-          :url       => "/show",
-          :url_parms => "?display=ad_hoc_metrics"
-        ),
-        button(
           :ems_container_launch_external_logging,
           'ff ff-monitoring fa-lg',
           N_('Open a new browser window with the External Logging Presentation UI. ' \
@@ -48,7 +40,7 @@ class ApplicationHelper::Toolbar::ContainerNodeCenter < ApplicationHelper::Toolb
   button_group('container_node_policy', [
     select(
       :container_node_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :items => [
@@ -69,16 +61,6 @@ class ApplicationHelper::Toolbar::ContainerNodeCenter < ApplicationHelper::Toolb
           N_('Check Compliance of Last Known Configuration'),
           :confirm => N_("Initiate Check Compliance of the last known configuration for this item?")),
       ]
-    ),
-  ])
-  button_group('vm_access', [
-    button(
-      :cockpit_console,
-      'pficon pficon-screen fa-lg',
-      N_('Open a new browser window with Cockpit for this VM.  This requires that Cockpit is pre-configured on the VM.'),
-      N_('Web Console'),
-      :url   => "launch_cockpit",
-      :klass => ApplicationHelper::Button::CockpitConsole
     ),
   ])
 end

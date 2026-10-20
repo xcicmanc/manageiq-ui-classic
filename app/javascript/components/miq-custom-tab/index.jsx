@@ -1,0 +1,174 @@
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { Tabs, TabList, Tab } from '@carbon/react';
+import { useDispatch } from 'react-redux';
+import { miqCustomTabActions } from '../../miq-redux/actions/miq-custom-tab-actions';
+import { labelConfig, tabText } from './helper';
+
+const MiqCustomTab = ({
+  containerId, tabLabels, type, activeTab, subtab, tabLength, disableInactive = false,
+}) => {
+  const dispatch = useDispatch();
+  const [data, setData] = useState({ loading: false });
+  const activeTabClassName = 'cds--tabs__nav-item--selected';
+  const tabListButtonClassName = 'cds--tabs__nav-item';
+
+  /** Labels used for a Tab found from the 'type'. */
+  const selectedLabels = labelConfig(type);
+
+  /** Configuration for tabs using this component.
+   * type: Unique string used to identify the tab component.
+   * js: Returns a function that gets executed on tab onClick event.
+   * url: Redirects to the specified url on tab onClick event.
+   */
+  const tabConfigurations = (name) => [
+    { type: 'AE-RESOLVE-OPTIONS' },
+    { type: 'CATALOG_SUMMARY' },
+    { type: 'CATALOG_EDIT', js: () => name === 'detail' && dispatch(miqCustomTabActions.incrementClickCount()) },
+    { type: 'CATALOG_REQUEST_INFO', url: `/miq_request/prov_field_changed?tab_id=${name}&edit_mode=true` },
+    { type: 'UTILIZATION' },
+    { type: 'DIALOG', url: `/miq_ae_customization/change_tab?tab_id=${name}` },
+    {
+      type: 'SETTINGS',
+      url: name === 'tags'
+        ? `/ops/change_tab?tab_id=settings_my_company_categories&parent_tab_id=settings_${name}`
+        : `/ops/change_tab?tab_id=settings_${name}`,
+    },
+    { type: 'SETTINGS_TAGS', url: `/ops/change_tab?parent_tab_id=settings_tags&tab_id=settings_${name}` },
+    { type: 'SETTINGS_ZONE', url: `/ops/change_tab?tab_id=settings_${name}` },
+    { type: 'SETTINGS_SERVER', url: `/ops/change_tab?tab_id=settings_${name}` },
+    { type: 'DIAGNOSTICS_ZONE', url: `/ops/change_tab?tab_id=diagnostics_${name}` },
+    { type: 'DIAGNOSTICS_SERVER', url: `/ops/change_tab?tab_id=diagnostics_${name}` },
+    { type: 'DIAGNOSTICS_ROOT', url: `/ops/change_tab?tab_id=diagnostics_${name}` },
+    { type: 'SERVICE' },
+    { type: 'REPORT', url: `/report/rep_change_tab?tab_id=${name}` },
+    { type: 'AE_CLASS', url: `/miq_ae_class/change_tab?tab_id=${name}` },
+  ];
+
+  const configuration = (name) => tabConfigurations(name).find((item) => item.type === type);
+
+  const tabIdentifier = (name) => {
+    const config = configuration(name);
+    const cType = config && config.url ? 'dynamic' : 'static';
+    return `${type.toLowerCase()}_${cType}`;
+  };
+
+  /** Function to find the tabs dom elements using the container Id. */
+  const containerTabs = () => {
+    const container = document.getElementById(containerId);
+    if (!container) {
+      return [];
+    }
+    return [...container.getElementsByClassName('tab_content')];
+  };
+
+  /** Function to clear all tabs content so that, the react component will render a fresh instance */
+  const clearTabContents = () => {
+    const tabs = containerTabs();
+    tabs.forEach((child) => {
+      child.innerHTML = '';
+    });
+  };
+
+  /** Function to load the tab contents which are already available within the page. */
+  const staticContents = (name, config) => {
+    const tabs = containerTabs();
+    // Construct the expected tab ID based on the type
+    let expectedId;
+    if (type === 'DIAGNOSTICS_ZONE') {
+      expectedId = `diagnostics_zone_${name}`;
+    } else if (type === 'DIAGNOSTICS_SERVER') {
+      expectedId = `diagnostics_${name}`;
+    } else if (type === 'DIAGNOSTICS_ROOT') {
+      expectedId = `diagnostics_${name}`;
+    } else if (type === 'SETTINGS_ZONE') {
+      expectedId = `settings_${name}`;
+    } else if (type === 'SETTINGS_SERVER') {
+      expectedId = `settings_${name}`;
+    } else if (type === 'SETTINGS') {
+      expectedId = `settings_${name}`;
+    } else {
+      expectedId = name;
+    }
+
+    tabs.forEach((child) => {
+      if (child.parentElement.id === containerId) {
+        child.classList.remove('active');
+        if (child.id === expectedId) {
+          child.classList.add('active');
+          if (config.js) config.js();
+        }
+      }
+    });
+    miqSparkleOff();
+  };
+
+  /** Function to load tab contents after a url is executed.
+   *  After the url is executed, the selected tab contents are displays using the staticContents function.
+  */
+  const dynamicContents = (name, config) => {
+    clearTabContents();
+    window.miqJqueryRequest(config.url).then(() => {
+      staticContents(name, config);
+      setData({ loading: false });
+    });
+  };
+
+  /** Function to handle tab click events. */
+  const onTabSelect = (name) => {
+    setData(true);
+    if (!data.loading) {
+      miqSparkleOn();
+      const config = configuration(name);
+      return config && config.url ? dynamicContents(name, config) : staticContents(name, config);
+    }
+    return data;
+  };
+
+  /** Function to render the tabs from the tabLabels props */
+  const renderTabs = () => tabLabels.map((label, index) => (
+    <Tab
+      key={`tab${label}`}
+      disabled={disableInactive && index !== activeTab}
+      onClick={() => (disableInactive && index === activeTab ? undefined : onTabSelect(label))}
+    >
+      {tabText(selectedLabels, label)}
+    </Tab>
+  ));
+
+  useEffect(() => {
+    if (activeTab) {
+      let elements = [...document.getElementsByClassName(tabListButtonClassName)];
+      elements.forEach((element) => {
+        element.classList.remove(activeTabClassName);
+      });
+      if (subtab !== undefined && subtab !== -1) {
+        elements[tabLength].classList.remove(activeTabClassName);
+        elements[subtab + tabLength].classList.add(activeTabClassName);
+      }
+      elements[activeTab].classList.add(activeTabClassName);
+
+      elements = [...document.getElementsByClassName(tabListButtonClassName)];
+    }
+  }, [data.loading]);
+
+  return (
+    <Tabs selectedIndex={activeTab}>
+      <TabList aria-label="Custom tabs" id={tabIdentifier('')} className="miq_custom_tabs">
+        {renderTabs()}
+      </TabList>
+    </Tabs>
+  );
+};
+
+export default MiqCustomTab;
+
+MiqCustomTab.propTypes = {
+  containerId: PropTypes.string.isRequired,
+  tabLabels: PropTypes.arrayOf(PropTypes.string).isRequired,
+  type: PropTypes.string.isRequired,
+  activeTab: PropTypes.number,
+  subtab: PropTypes.number,
+  tabLength: PropTypes.number,
+  disableInactive: PropTypes.bool,
+};

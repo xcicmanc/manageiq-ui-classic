@@ -1,0 +1,24 @@
+= render :partial => 'layouts/doctype'
+%html{:lang => FastGettext.locale}
+  %head
+    %title= @options[:title]
+    = miq_favicon_link_tag
+    = javascript_dependencies
+    %style
+      @media all { @page { size: #{pdf_page_size_style}; } }
+  %body
+    %h1.center=@options[:title]
+    = yield
+    .center=@options[:run_date]
+
+    -# Opening the browser's printing dialog
+    :javascript
+      document.addEventListener('DOMContentLoaded', function() {
+        window.setTimeout(function() {
+          window.print();
+        });
+      });
+
+      window.onafterprint = function() {
+        window.close();
+      };

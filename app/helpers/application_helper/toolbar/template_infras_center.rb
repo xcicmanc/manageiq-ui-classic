@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::TemplateInfrasCenter < ApplicationHelper::Tool
   button_group('miq_template_vmdb', [
     select(
       :miq_template_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :enabled => false,
@@ -72,7 +72,7 @@ class ApplicationHelper::Toolbar::TemplateInfrasCenter < ApplicationHelper::Tool
   button_group('miq_template_policy', [
     select(
       :miq_template_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :enabled => false,
@@ -87,15 +87,16 @@ class ApplicationHelper::Toolbar::TemplateInfrasCenter < ApplicationHelper::Tool
           :send_checked => true,
           :enabled      => false,
           :onwhen       => "1+"),
-        button(
-          :miq_template_policy_sim,
-          'fa fa-play-circle-o fa-lg',
-          N_('View Policy Simulation for the selected Templates'),
-          N_('Policy Simulation'),
-          :url_parms    => "main_div",
-          :send_checked => true,
-          :enabled      => false,
-          :onwhen       => "1+"),
+        # TODO: Add this button back when the page is fixed
+        # button(
+        #   :miq_template_policy_sim,
+        #   'fa fa-play-circle-o fa-lg',
+        #   N_('View Policy Simulation for the selected Templates'),
+        #   N_('Policy Simulation'),
+        #   :url_parms    => "main_div",
+        #   :send_checked => true,
+        #   :enabled      => false,
+        #   :onwhen       => "1+"),
         button(
           :miq_template_tag,
           'pficon pficon-edit fa-lg',
@@ -121,7 +122,7 @@ class ApplicationHelper::Toolbar::TemplateInfrasCenter < ApplicationHelper::Tool
   button_group('miq_template_lifecycle', [
     select(
       :miq_template_lifecycle_choice,
-      'fa fa-recycle fa-lg',
+      nil,
       t = N_('Lifecycle'),
       t,
       :items => [

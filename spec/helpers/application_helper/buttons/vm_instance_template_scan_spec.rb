@@ -1,46 +1,41 @@
 describe ApplicationHelper::Button::VmInstanceTemplateScan do
   let(:view_context) { setup_view_context_with_sandbox({}) }
-  let(:record) { FactoryGirl.create(:vm_or_template) }
+  let(:record) { FactoryBot.create(:vm_or_template) }
   let(:button) { described_class.new(view_context, {}, {'record' => record}, {}) }
 
   describe '#visible?' do
-    let(:has_proxy?) { true }
     subject { button.visible? }
-    before do
-      allow(record).to receive(:supports?).with(:smartstate_analysis).and_return(supports_feature?)
-      allow(record).to receive(:has_proxy?).and_return(has_proxy?)
-    end
 
     context 'when record supports smartstate analysis' do
-      let(:supports_feature?) { true }
+      before { stub_supports(record, :smartstate_analysis) }
       context 'when record has proxy' do
+        before { allow(record).to receive(:has_proxy?).and_return(true) }
         it { is_expected.to be_truthy }
       end
+
       context 'when record does not have proxy' do
-        let(:has_proxy?) { false }
+        before { allow(record).to receive(:has_proxy?).and_return(false) }
         it { is_expected.to be_falsey }
       end
     end
+
     context 'when record does not support smartstate analysis' do
-      let(:supports_feature?) { false }
+      before { stub_supports_not(record, :smartstate_analysis) }
       it { is_expected.to be_falsey }
     end
   end
 
-  describe '#calculate_properties' do
+  describe '#disabled?' do
     let(:has_active_proxy?) { true }
     before do
-      MiqServer.seed
+      EvmSpecHelper.local_guid_miq_server_zone
       allow(record).to receive(:has_active_proxy?).and_return(has_active_proxy?)
     end
 
-    it_behaves_like 'a smart state scan button'
-
     context 'when smart_roles are enabled' do
       before do
-        roles = %w(smartproxy smartstate).collect { |role| FactoryGirl.create(:server_role, :name => role) }
-        FactoryGirl.create(:miq_server, :zone => MiqServer.my_server.zone, :active_roles => roles)
-        button.calculate_properties
+        roles = %w(smartproxy smartstate).collect { |role| FactoryBot.create(:server_role, :name => role) }
+        FactoryBot.create(:miq_server, :zone => MiqServer.my_server.zone, :active_roles => roles)
       end
 
       context 'when record has active proxy' do

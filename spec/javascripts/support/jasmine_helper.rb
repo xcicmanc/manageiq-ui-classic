@@ -1,15 +1,94 @@
 # Use this file to set/override Jasmine configuration options
 # You can remove it if you don't need it.
 # This file is loaded *after* jasmine.yml is interpreted.
-#
+
+class StaticOrHaml
+  def initialize(dir = 'app/views/static')
+    @dir = dir
+    @rack_file = Rack::File.new(@dir)
+  end
+
+  def call(env)
+    path = Pathname.new(@dir).join(env["PATH_INFO"].sub(/^\/+/, ''))
+    return [404, {}, []] unless File.exist?(path)
+
+    return @rack_file.call(env) unless path.to_s.ends_with?('.haml')
+
+    raw = File.read(path)
+    lookup_context = ActionView::LookupContext.new(File.expand_path("../app/views", __FILE__))
+    controller = ActionController::Base.new
+
+    # Rails 6.1 ActionView::Base now has 3 required arguments
+    scope = ActionView::Base.new(lookup_context, [], controller)
+    scope.extend(ApplicationHelper)
+
+    compiled = hamlit_compile(raw, scope)
+
+    [200, {"Content-Type" => "text/html"}, [compiled]]
+  end
+
+  def hamlit_compile(template, scope)
+    code = Hamlit::Engine.new.call(template)
+    scope.instance_eval(code)
+  end
+end
+
+class WebpackPack
+  def initialize(dir = Rails.root.join('public', 'packs'))
+    @dir = dir
+    @manifest = JSON.parse(File.read(Pathname.new(@dir).join('manifest.json')))
+  end
+
+  def call(env)
+    pack_name = env["PATH_INFO"].sub(/^\/+/, '')
+    return [404, {}, ["Not in manifest.json: #{pack_name}"]] unless @manifest.key?(pack_name)
+
+    pack_path = @manifest[pack_name].sub(/^\/+packs\/+/, '')
+
+    path = Pathname.new(@dir).join(pack_path)
+    return [404, {}, ["Not in public/packs: #{pack_path}"]] unless File.exist?(path)
+
+    contents = File.read(path)
+    [200, {"Content-Type" => "text/html"}, [contents]]
+  end
+end
+
 Jasmine.configure do |config|
-  # The gemified version of Jasmine uses the gemified version of PhantomJS
-  # which auto-installs it if it can't find your installation in ~/.phantomjs
-  # Travis already has a version of PhantomJS installed in a different
-  # location, so the gem will auto-install even if it's pointless.  Also,
-  # gemified PhantomJS hardcodes install URLs from BitBucket which times out
-  # and causes failed builds.
-  #
-  # TLDR: Don't install auto-install PhantomJS on CI. In Travis we trust.
-  config.prevent_phantom_js_auto_install = true if ENV['CI']
+  # never install phantomjs
+  config.prevent_phantom_js_auto_install = true
+
+  # use chrome headless for jasmine:ci
+  config.runner = lambda do |formatter, jasmine_server_url|
+    Jasmine::Runners::ChromeHeadless.new(formatter, jasmine_server_url, config)
+  end
+
+  # use google-chrome-beta if available, otherwise use the default
+  if system('which google-chrome-beta >/dev/null 2>&1')
+    config.chrome_binary = 'google-chrome-beta'
+  end
+
+  # Determine the chrome binary and which version, so we can choose the correct headless mode
+  chrome_binary = Jasmine::Runners::ChromeHeadless.new(nil, nil, config).chrome_binary
+  chrome_version = `"#{chrome_binary}" --version`.strip
+  headless_mode = Gem::Version.new(chrome_version.sub(/ beta$/, "-beta").split(" ").last) >= Gem::Version.new("110.0.5481.30") ? "new" : nil
+
+  config.chrome_cli_options = {
+    'headless' => headless_mode,
+    'disable-gpu' => nil,
+    'remote-debugging-port' => 9222,
+  }
+  config.chrome_startup_timeout = 20
+
+  warn 'Disabling webmock!'
+  require 'webmock'
+  WebMock.allow_net_connect!
+
+  # serve haml templates from app/views/static/ on /static/
+  config.add_rack_path('/static', -> { StaticOrHaml.new })
+
+  # serve weback-compiled packs from public/packs/ on /packs/
+  config.add_rack_path('/packs', -> { WebpackPack.new })
+
+  cli_options = Jasmine::Runners::ChromeHeadless.new(nil, nil, config).cli_options_string
+  puts "Jasmine using #{chrome_version}: \"#{chrome_binary}\" #{cli_options}"
 end

@@ -1,0 +1,56 @@
+.button-form {
+  form > div {
+    margin-bottom: 32px;
+  }
+
+  #name-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .cds--text-input-wrapper {
+      display: flex;
+      flex-grow: 1;
+      margin-right: 10px;
+    }
+
+    div:not([class]) {
+      height: 64px;
+      display: flex;
+      align-items: flex-end;
+    }
+  }
+
+  #color-select {
+    padding: 0 2px;
+    border: 1px solid #d3d3d3;
+  }
+
+  fieldset.cds--fieldset {
+    margin-bottom: 32px;
+
+    .miq-dual-list-common-grid-container.cds--css-grid {
+      [class*='buttonWrapper'] {
+        display: flex;
+        justify-content: center;
+        margin-top: 12px;
+
+        button {
+          width: 100%;
+        }
+      }
+    }
+  }
+
+  .cds--multi-select__wrapper {
+    padding-top: 20px;
+  }
+
+  .custom-button-wrapper {
+    margin-top: 8px;
+
+    .btnRight {
+      margin-right: 8px !important;
+    }
+  }
+}

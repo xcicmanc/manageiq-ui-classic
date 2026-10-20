@@ -33,16 +33,33 @@ describe WidgetImportService do
   end
 
   describe "#import_widget_from_hash" do
+    let(:miq_widget_id) { 500 }
+    let(:expression) { MiqExpression.new("=" => {"field" => "MiqWidget-id", "value" => miq_widget_id}) }
+    let(:schedule_to_import) do
+      {
+        :name          => 'vms1',
+        :description   => 'vms1',
+        :sched_action  => {:method => 'generate_widget'},
+        :filter        => expression,
+        :resource_type => "MiqWidget",
+        :run_at        => { :start_time => "2019-05-30 00:00:00 UTC", :tz => "UTC", :interval => { :unit => "hourly", :value => 1 } }
+      }
+    end
+
     let(:widget_to_import) do
       {
         "description" => "Test2",
-        "title"       => "potato"
+        "title"       => "potato",
+        "MiqSchedule" => schedule_to_import
       }
     end
 
     it "builds a new widget" do
       expect(MiqWidget.first).to be_nil
-      widget_import_service.import_widget_from_hash(widget_to_import)
+      miq_widget = widget_import_service.import_widget_from_hash(widget_to_import)
+
+      expect(miq_widget.miq_schedule.filter.exp["="]["value"]).to eq(miq_widget.id)
+      expect(miq_widget.miq_schedule.filter.exp["="]["value"]).not_to eq(miq_widget_id)
       expect(MiqWidget.first).not_to be_nil
     end
   end
@@ -69,10 +86,10 @@ describe WidgetImportService do
 
     let(:miq_schedule_contents) do
       {
-        "name"        => "schedule name",
-        "description" => "new schedule description",
-        "towhat"      => "MiqWidget",
-        "run_at"      => {
+        "name"          => "schedule name",
+        "description"   => "new schedule description",
+        "resource_type" => "MiqWidget",
+        "run_at"        => {
           :start_time => Time.now,
           :tz         => "UTC",
           :interval   => {
@@ -147,53 +164,9 @@ describe WidgetImportService do
       end
 
       context "when the list of widgets to import from the yaml do not include an existing widget" do
-        context "when the report is an RssFeed" do
-          let(:miq_report_contents) do
-            [{
-              "RssFeed" => {
-                "name"  => "name",
-                "title" => "new title"
-              }
-            }]
-          end
-
-          context "when the RssFeed already exists" do
-            before do
-              RssFeed.create!(:name => "name", :title => "old title")
-              allow(YAML).to receive(:load).with(yaml_data) do
-                allow(YAML).to receive(:load).and_call_original
-                widgets
-              end
-            end
-
-            it_behaves_like "WidgetImportService#import_widgets with a non existing widget"
-
-            it "does not update the rss feed" do
-              widget_import_service.import_widgets(import_file_upload, widgets_to_import)
-              expect(RssFeed.first.title).to eq("old title")
-            end
-          end
-
-          context "when the RssFeed does not already exist" do
-            before do
-              allow(YAML).to receive(:load).with(yaml_data) do
-                allow(YAML).to receive(:load).and_call_original
-                widgets
-              end
-            end
-
-            it_behaves_like "WidgetImportService#import_widgets with a non existing widget"
-
-            it "builds a new RssFeed" do
-              widget_import_service.import_widgets(import_file_upload, widgets_to_import)
-              expect(RssFeed.first.title).to eq("new title")
-            end
-          end
-        end
-
         context "when the report with the same name already exists" do
           before do
-            MiqReport.create!(
+            @report = MiqReport.create!(
               :db        => "Vm",
               :name      => "menu name",
               :rpt_group => "Custom",
@@ -211,9 +184,8 @@ describe WidgetImportService do
 
           it "uses the existing report" do
             widget_import_service.import_widgets(import_file_upload, widgets_to_import)
-            widget = MiqWidget.first
-            expect(widget.resource).to eq(MiqReport.first)
-            expect(MiqReport.first.title).to eq("original report title")
+            widget = MiqWidget.find_by(:title => "not_potato")
+            expect(widget.resource).to eq(@report)
           end
         end
 
@@ -230,8 +202,9 @@ describe WidgetImportService do
 
           it "builds a report associated to the widget" do
             widget_import_service.import_widgets(import_file_upload, widgets_to_import)
-            widget = MiqWidget.first
-            expect(widget.resource).to eq(MiqReport.first)
+            resource = MiqWidget.find_by(:title => "not_potato").resource
+            expect(resource).to be_kind_of(MiqReport)
+            expect(resource.persisted?).to eq(true)
           end
         end
 
@@ -247,7 +220,7 @@ describe WidgetImportService do
 
           it "builds a new miq schedule associated to the widget" do
             widget_import_service.import_widgets(import_file_upload, widgets_to_import)
-            widget = MiqWidget.first
+            widget = MiqWidget.find_by(:title => "not_potato")
             expect(widget.miq_schedule.description).to eq("new schedule description")
           end
         end
@@ -255,10 +228,10 @@ describe WidgetImportService do
         context "when the schedule does exist" do
           before do
             MiqSchedule.create!(
-              :name        => "schedule name",
-              :description => "old schedule description",
-              :towhat      => "MiqWidget",
-              :run_at      => {
+              :name          => "schedule name",
+              :description   => "old schedule description",
+              :resource_type => "MiqWidget",
+              :run_at        => {
                 :start_time => Time.now,
                 :tz         => "UTC",
                 :interval   => {:unit => "daily", :value => "6"}

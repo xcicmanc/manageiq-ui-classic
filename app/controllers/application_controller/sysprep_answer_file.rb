@@ -1,7 +1,7 @@
 class ApplicationController
   module SysprepAnswerFile
     def upload_sysprep_file
-      @_params.delete :commit
+      @_params.delete(:commit)
       @upload_sysprep_file = true
       @edit = session[:edit]
       build_grid
@@ -11,10 +11,9 @@ class ApplicationController
           @edit[:new][:sysprep_upload_text] = SysprepFile.new(params[:upload][:file]).content
           msg = _('Sysprep "%{params}" upload was successful') % {:params => params[:upload][:file].original_filename}
           add_flash(msg)
-        rescue => bang
+        rescue StandardError => bang
           @edit[:new][:sysprep_upload_text] = nil
-          msg = _("Error during Sysprep \"%{params}\" file upload: %{message}") %
-                  {:params => params[:upload][:file].original_filename, :message => bang.message}
+          msg = _("Error during Sysprep \"%{params}\" file upload: %{message}") % {:params => params[:upload][:file].original_filename, :message => bang.message}
           add_flash(msg, :error)
         end
       else

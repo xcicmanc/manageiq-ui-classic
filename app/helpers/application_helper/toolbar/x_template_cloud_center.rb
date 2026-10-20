@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::XTemplateCloudCenter < ApplicationHelper::Tool
   button_group('image_vmdb', [
                  select(
                    :image_vmdb_choice,
-                   'fa fa-cog fa-lg',
+                   nil,
                    t = N_('Configuration'),
                    t,
                    :items => [
@@ -39,24 +39,13 @@ class ApplicationHelper::Toolbar::XTemplateCloudCenter < ApplicationHelper::Tool
                        N_('Remove Image from Inventory'),
                        :url_parms => "&refresh=y",
                        :confirm   => N_("Warning: This Image and ALL of its components will be permanently removed!")),
-                     separator,
-                     button(
-                       :image_right_size,
-                       'ff ff-database-squeezed fa-lg',
-                       N_('CPU/Memory Recommendations of this Image'),
-                       N_('Right-Size Recommendations')),
-                     button(
-                       :image_reconfigure,
-                       'pficon pficon-edit fa-lg',
-                       N_('Reconfigure the Memory/CPU of this Image'),
-                       N_('Reconfigure this Image')),
                    ]
                  ),
                ])
   button_group('image_lifecycle', [
                  select(
                    :image_lifecycle_choice,
-                   'fa fa-recycle fa-lg',
+                   nil,
                    t = N_('Lifecycle'),
                    t,
                    :items => [
@@ -73,7 +62,7 @@ class ApplicationHelper::Toolbar::XTemplateCloudCenter < ApplicationHelper::Tool
   button_group('image_policy', [
                  select(
                    :image_policy_choice,
-                   'fa fa-shield fa-lg',
+                   nil,
                    t = N_('Policy'),
                    t,
                    :items => [
@@ -82,11 +71,12 @@ class ApplicationHelper::Toolbar::XTemplateCloudCenter < ApplicationHelper::Tool
                        'pficon pficon-edit fa-lg',
                        N_('Manage Policies for this Image'),
                        N_('Manage Policies')),
-                     button(
-                       :image_policy_sim,
-                       'fa fa-play-circle-o fa-lg',
-                       N_('View Policy Simulation for this Image'),
-                       N_('Policy Simulation')),
+                    # TODO: Add this button back when the page is fixed
+                    #  button(
+                    #    :image_policy_sim,
+                    #    'fa fa-play-circle-o fa-lg',
+                    #    N_('View Policy Simulation for this Image'),
+                    #    N_('Policy Simulation')),
                      button(
                        :image_tag,
                        'pficon pficon-edit fa-lg',

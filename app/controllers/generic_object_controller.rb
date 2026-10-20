@@ -18,23 +18,25 @@ class GenericObjectController < ApplicationController
   end
 
   def self.display_methods
-    []
+    %w[custom_button_events]
   end
 
   def display_methods(record)
-    record.property_associations.keys()
+    record.property_associations.keys
   end
 
   def display_nested_generic(display)
     return unless @record.property_associations.key?(display)
+
     nested_list(@record.generic_object_definition.properties[:associations][display], :association => display)
   end
 
   private
 
   def textual_group_list
-    [%i(properties attribute_details_list associations methods)]
+    [%i[go_properties attribute_details_list associations methods go_relationships tags]]
   end
 
   helper_method :textual_group_list
+  has_custom_buttons
 end

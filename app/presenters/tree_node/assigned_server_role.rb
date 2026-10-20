@@ -1,8 +1,8 @@
 module TreeNode
   class AssignedServerRole < Node
-    set_attributes(:text, :image, :klass) do
+    set_attributes(:text, :icon, :icon_background, :klass) do
       text = ViewHelper.content_tag(:strong) do
-        if @options[:tree] == :servers_by_role_tree
+        if @tree.instance_of?(TreeBuilderServersByRole)
           "#{_('Server')}: #{@object.name} [#{@object.id}]"
         else
           "Role: #{@object.server_role.description}"
@@ -20,23 +20,27 @@ module TreeNode
                    end
       end
       if @object.active? && @object.miq_server.started?
-        image = 'svg/currentstate-on.svg'
+        state = QuadiconHelper.machine_state('on')
         text += _(" (%{priority}active, PID=%{number})") % {:priority => priority, :number => @object.miq_server.pid}
       else
         if @object.miq_server.started?
-          image = 'svg/currentstate-suspended.svg'
+          state = QuadiconHelper.machine_state('suspended')
           text += _(" (%{priority}available, PID=%{number})") % {:priority => priority, :number => @object.miq_server.pid}
         else
-          image = 'svg/currentstate-off.svg'
+          state = QuadiconHelper.machine_state('off')
           text += _(" (%{priority}unavailable)") % {:priority => priority}
         end
         klass = "red" if @object.priority == 1
       end
-      if @options[:parent_kls] == "Zone" && @object.server_role.regional_role?
+      if @tree.root.kind_of?(::Zone) && @object.server_role.regional_role?
         klass = "opacity"
       end
 
-      [text, image, klass]
+      icon, bg = state.values_at(:fonticon, :background)
+
+      [text, icon, bg, klass]
     end
+
+    set_attribute(:color, '#fff')
   end
 end

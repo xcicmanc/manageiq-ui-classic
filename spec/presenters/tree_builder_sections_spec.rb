@@ -1,15 +1,15 @@
 describe TreeBuilderSections do
   context 'TreeBuilderSections' do
     before do
-      role = MiqUserRole.find_by_name("EvmRole-operator")
-      @group = FactoryGirl.create(:miq_group, :miq_user_role => role, :description => "All sections")
-      login_as FactoryGirl.create(:user, :userid => 'all_sections_wilma', :miq_groups => [@group])
+      role = MiqUserRole.find_by(:name => "EvmRole-operator")
+      @group = FactoryBot.create(:miq_group, :miq_user_role => role, :description => "All sections")
+      login_as FactoryBot.create(:user, :userid => 'all_sections_wilma', :miq_groups => [@group])
       @controller_name = 'controller_name'
       @current_tenant = 'Current tenant name'
-      first_vm = FactoryGirl.create(:vm)
-      second_vm = FactoryGirl.create(:vm)
-      report = FactoryGirl.create(:miq_report_filesystem)
-      @compare = FactoryGirl.build(:miq_compare,
+      first_vm = FactoryBot.create(:vm)
+      second_vm = FactoryBot.create(:vm)
+      report = FactoryBot.create(:miq_report_filesystem)
+      @compare = FactoryBot.build(:miq_compare,
                                    :report  => report,
                                    :options => {:ids     => [first_vm, second_vm],
                                                 :include => {:hardware            => {:fetch   => false,
@@ -45,45 +45,52 @@ describe TreeBuilderSections do
                                                                                       :checked => false,
                                                                                       :key     => :name,
                                                                                       :group   => "Properties"}}})
-      @sections_tree = TreeBuilderSections.new(:all_sections,
-                                               :all_sections_tree,
+      @sections_tree = TreeBuilderSections.new(:all_sections_tree,
                                                {},
                                                true,
-                                               @compare,
-                                               @controller_name,
-                                               @current_tenant)
+                                               :data            => @compare,
+                                               :controller_name => @controller_name,
+                                               :current_tenant  => @current_tenant)
     end
+
     it 'set init options correctly' do
-      tree_options = @sections_tree.send(:tree_init_options, :all_selections)
-      expect(tree_options).to eq(:full_ids => true, :add_root => false, :lazy => false)
+      tree_options = @sections_tree.send(:tree_init_options)
+      expect(tree_options).to eq(
+        :full_ids     => true,
+        :checkboxes   => true,
+        :three_checks => true,
+        :post_check   => true,
+        :oncheck      => "miqOnCheckSections",
+        :check_url    => "/controller_name/sections_field_changed/"
+      )
     end
+
     it 'set locals for render correctly' do
       locals = @sections_tree.send(:set_locals_for_render)
-      expect(locals[:checkboxes]).to eq(true)
       expect(locals[:check_url]).to eq("/#{@controller_name}/sections_field_changed/")
-      expect(locals[:onselect]).to eq("miqOnCheckSections")
-      expect(locals[:three_checks]).to eq(true)
+      expect(locals[:oncheck]).to eq("miqOnCheckSections")
+      expect(locals[:hierarchical_check]).to eq(true)
     end
+
     it 'sets roots correctly' do
-      roots = @sections_tree.send(:x_get_tree_roots, false)
+      roots = @sections_tree.send(:x_get_tree_roots)
       expect(roots).to eq([{:id         => "group_Properties",
                             :text       => "Properties",
                             :tip        => "Properties",
                             :image      => false,
-                            :select     => true,
                             :selectable => false,
-                            :nodes      => [{:name => :_model_, :header => "Filesystem", :group => "Properties"}]}])
+                            :nodes      => [{:name => :_model_, :header => "File", :group => "Properties"}]}])
     end
 
     it 'sets children correctly' do
-      root = @sections_tree.send(:x_get_tree_roots, false).first
+      root = @sections_tree.send(:x_get_tree_roots).first
       kids = @sections_tree.send(:x_get_tree_hash_kids, root, false)
       expect(kids).to eq([{:id         => "group_Properties:_model_",
-                           :text       => "Filesystem",
-                           :tip        => "Filesystem",
+                           :text       => "File",
+                           :tip        => "File",
                            :image      => false,
                            :selectable => false,
-                           :select     => true,
+                           :checked    => true,
                            :nodes      => []}])
     end
   end

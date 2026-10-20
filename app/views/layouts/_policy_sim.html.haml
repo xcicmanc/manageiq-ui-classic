@@ -1,6 +1,9 @@
 - url = url_for_only_path(:action => 'policy_sim_add')
 #main_div
-
+  - unless @explorer
+    %h1#explorer_title
+      %span#explorer_title_text
+        = safe_right_cell_text
   #flash_msg_div
     = render :partial => "layouts/flash_msg"
 
@@ -31,11 +34,12 @@
         - else
           - session[:policies].invert.sort.each do |desc, id|
             %tr{:id => "#{desc}_tr"}
-              %td{:onclick => "#{remote_function(:loading  => "miqSparkle(true);",
-                                                 :complete => "miqSparkle(false);",
-                                                 :url      => {:action  => 'policy_sim_remove', :del_pol => id})}",
-                  :title => t = _("Click to remove this policy")}
-                = image_tag(image_path('toolbars/delete.png'), :alt => t)
+              %td
+                %button.btn.btn-default{:onclick  => "#{remote_function(:loading  => "miqSparkle(true);",
+                                        :complete => "miqSparkle(false);",
+                                        :url      => {:action  => 'policy_sim_remove', :del_pol => id})}",
+                                        :title    => _("Click to remove this policy")}
+                  %i.pficon.pficon-delete
               %td
                 = h(desc)
   %hr
@@ -47,3 +51,15 @@
     - session[:edit][:policy_sim] = @policy_sim
     = render :partial => "layouts/gtl",
              :locals  => {:view => @pol_view}
+
+- if params[:action] == 'policy_sim' && !@explorer
+  %table{:width => "100%"}
+    %tr
+      %td{:align => 'right'}
+        #buttons_on
+          = link_to(_('Cancel'),
+                    {:action => 'policy_sim_cancel'},
+                     :class  => 'btn btn-default',
+                     :alt    => t = _('Cancel Changes'),
+                     :title  => t,
+                     :method => :post)

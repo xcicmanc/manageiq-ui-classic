@@ -4,6 +4,7 @@ class SupportController < ApplicationController
   #    :redirect_to => { :action => :index }
 
   before_action :check_privileges
+  before_action :check_support_rbac
   before_action :get_session_data
   after_action :cleanup_action
   after_action :set_session_data
@@ -25,8 +26,12 @@ class SupportController < ApplicationController
 
   private ############################
 
+  def check_support_rbac
+    handle_generic_rbac(role_allows?(:feature => 'documentation', :any => true))
+  end
+
   def get_layout
-    %w(about diagnostics).include?(session[:layout]) ? session[:layout] : "about"
+    %w[about diagnostics].include?(session[:layout]) ? session[:layout] : "about"
   end
 
   def get_session_data

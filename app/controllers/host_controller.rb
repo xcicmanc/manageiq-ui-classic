@@ -4,13 +4,18 @@ class HostController < ApplicationController
   after_action :cleanup_action
   after_action :set_session_data
 
+  include Mixins::GenericFormMixin
   include Mixins::GenericSessionMixin
   include Mixins::GenericListMixin
   include Mixins::GenericShowMixin
   include Mixins::MoreShowActions
+  include Mixins::BreadcrumbsMixin
 
   def self.display_methods
-    %w(hv_info os_info devices network storage_adapters performance timeline storages resource_pools vms miq_templates compliance_history)
+    %w[
+      hv_info os_info devices network storage_adapters performance timeline storages
+      resource_pools vms miq_templates compliance_history custom_button_events cloud_networks cloud_subnets cloud_tenants
+    ]
   end
 
   def display_config_info
@@ -31,10 +36,10 @@ class HostController < ApplicationController
   def display_tree_resources
     @showtype = "config"
     title, tree = if @display == "network"
-                    @network_tree = TreeBuilderNetwork.new(:network_tree, :network, @sb, true, @record)
+                    @network_tree = TreeBuilderNetwork.new(:network_tree, @sb, true, :root => @record)
                     [_("Network"), :network_tree]
                   else
-                    @sa_tree = TreeBuilderStorageAdapters.new(:sa_tree, :sa, @sb, true, @record)
+                    @sa_tree = TreeBuilderStorageAdapters.new(:sa_tree, @sb, true, :root => @record)
                     [_("Storage Adapters"), :sa_tree]
                   end
     drop_breadcrumb(:name => "#{@record.name} (#{title})",
@@ -46,271 +51,133 @@ class HostController < ApplicationController
   alias display_storage_adapters display_tree_resources
 
   def filesystems_subsets
-    condition = nil
-    label     = _('Files')
+    assert_privileges('host_show')
+    scope = nil
+    label = _('Files')
 
     host_service_group = HostServiceGroup.where(:id => params['host_service_group']).first
     if host_service_group
-      condition = host_service_group.host_service_group_filesystems_condition
-      label     = _("Configuration files of nova service")
+      scope = [[:host_service_group_filesystems, host_service_group.id]]
+      label = _("Configuration files of nova service")
     end
 
-    # HACK: UI get_view can't do arel relations, so I need to expose conditions
-    condition = condition.to_sql if condition
-
-    return label, condition
+    return label, scope
   end
 
   def filesystems
-    label, condition = filesystems_subsets
-    show_association('filesystems', label, 'filesystems', :filesystems, Filesystem, nil, condition)
+    assert_privileges('host_show')
+    label, scope = filesystems_subsets
+    show_association('filesystems', label, :filesystems, Filesystem, nil, scope)
   end
 
   def host_services_subsets
-    condition = nil
-    label     = _('Services')
+    assert_privileges('host_show')
+    scope = nil
+    label = _('Services')
 
     host_service_group = HostServiceGroup.where(:id => params['host_service_group']).first
     if host_service_group
       case params[:status]
       when 'running'
-        condition = host_service_group.running_system_services_condition
-        label     = _("Running system services of %{name}") % {:name => host_service_group.name}
+        scope = [[:host_service_group_running_systemd, host_service_group.id]]
+        label = _("Running system services of %{name}") % {:name => host_service_group.name}
       when 'failed'
-        condition =  host_service_group.failed_system_services_condition
-        label     = _("Failed system services of %{name}") % {:name => host_service_group.name}
+        scope = [[:host_service_group_failed_systemd, host_service_group.id]]
+        label = _("Failed system services of %{name}") % {:name => host_service_group.name}
       when 'all'
-        condition = nil
-        label     = _("All system services of %{name}") % {:name => host_service_group.name}
-      end
-
-      if condition
-        # Amend the condition with the openstack host service foreign key
-        condition = condition.and(host_service_group.host_service_group_system_services_condition)
-      else
-        condition = host_service_group.host_service_group_system_services_condition
+        scope = [[:host_service_group_systemd, host_service_group.id]]
+        label = _("All system services of %{name}") % {:name => host_service_group.name}
       end
     end
 
-    # HACK: UI get_view can't do arel relations, so I need to expose conditions
-    condition = condition.to_sql if condition
-
-    return label, condition
+    return label, scope
   end
 
   def host_services
-    label, condition = host_services_subsets
-    show_association('host_services', label, 'service', :host_services, SystemService, nil, condition)
+    label, scope = host_services_subsets
+    show_association('host_services', label, :host_services, SystemService, nil, scope)
     session[:host_display] = "host_services"
   end
 
   def host_cloud_services
+    assert_privileges('host_show')
     @center_toolbar = 'host_cloud_services'
     @no_checkboxes = false
-    show_association('host_cloud_services', _('Cloud Services'), 'service', :cloud_services, CloudService, nil, nil)
+    show_association('host_cloud_services', _('Cloud Services'), :cloud_services, CloudService, nil, nil)
   end
 
   def advanced_settings
-    show_association('advanced_settings', _('Advanced Settings'), 'advancedsetting', :advanced_settings, AdvancedSetting)
+    show_association('advanced_settings', _('Advanced Settings'), :advanced_settings, AdvancedSetting)
   end
 
   def firewall_rules
+    assert_privileges('host_show')
     @display = "main"
-    show_association('firewall_rules', _('Firewall Rules'), 'firewallrule', :firewall_rules, FirewallRule)
+    show_association('firewall_rules', _('Firewall Rules'), :firewall_rules, FirewallRule)
   end
 
   def guest_applications
-    show_association('guest_applications', _('Packages'), 'guest_application', :guest_applications, GuestApplication)
+    assert_privileges('host_show')
+    show_association('guest_applications', _('Packages'), :guest_applications, GuestApplication)
   end
 
   # Show the main Host list view overriding method from Mixins::GenericListMixin
   def show_list
     session[:host_items] = nil
-    process_show_list
+    options = {:no_checkboxes => ActiveRecord::Type::Boolean.new.cast(params[:no_checkboxes])}
+    process_show_list(options)
   end
 
   def start
-    redirect_to :action => 'show_list'
-  end
-
-  def new
-    assert_privileges("host_new")
-    @host = Host.new
-    @in_a_form = true
-    drop_breadcrumb(:name => _("Add New Host"), :url => "/host/new")
-  end
-
-  def create
-    assert_privileges("host_new")
-    case params[:button]
-    when "cancel"
-      javascript_redirect :action    => 'show_list',
-                          :flash_msg => _("Add of new Host / Node was cancelled by the user")
-    when "add"
-      @host = Host.new
-      old_host_attributes = @host.attributes.clone
-      set_record_vars(@host, :validate)                        # Set the record variables, but don't save
-      @host.vmm_vendor = "unknown"
-      if valid_record? && @host.save
-        set_record_vars(@host)                                 # Save the authentication records for this host
-        AuditEvent.success(build_saved_audit_hash_angular(old_host_attributes, @host, params[:button] == "add"))
-        message = _("Host / Node \"%{name}\" was added") % {:name => @host.name}
-        javascript_redirect :action    => 'show_list',
-                            :flash_msg => message
-      else
-        @in_a_form = true
-        @errors.each { |msg| add_flash(msg, :error) }
-        @host.errors.each do |field, msg|
-          add_flash("#{field.to_s.capitalize} #{msg}", :error)
-        end
-        drop_breadcrumb(:name => _("Add New Host"), :url => "/host/new")
-        javascript_flash
-      end
-    when "validate"
-      verify_host = Host.new
-      set_record_vars(verify_host, :validate)
-      @in_a_form = true
-      begin
-        verify_host.verify_credentials(params[:type])
-      rescue => bang
-        add_flash(bang.to_s, :error)
-      else
-        add_flash(_("Credential validation was successful"))
-      end
-      javascript_flash
-    end
+    redirect_to(:action => 'show_list')
   end
 
   def edit
     assert_privileges("host_edit")
     if session[:host_items].nil?
       @host = find_record_with_rbac(Host, params[:id])
+
+      unless @host.supports?(:update) # if host doesn't support editing
+        add_flash(_("This Host does not support editing"), :error)
+        flash_to_session
+        redirect_to(:action => @lastaction, :id => params[:id])
+      end
+
       @in_a_form = true
       session[:changed] = false
       drop_breadcrumb(:name => _("Edit Host '%{name}'") % {:name => @host.name}, :url => "/host/edit/#{@host.id}")
-      @title = _("Info/Settings")
-    else            # if editing credentials for multi host
+    else # if editing credentials for multi host
+      drop_breadcrumb(:name => _('Edit Hosts'), :url => '/host/edit/')
       @title = _("Credentials/Settings")
-      if params[:selected_host]
-        @host = find_record_with_rbac(Host, params[:selected_host])
-      else
-        @host = Host.new
-      end
+      @host = if params[:selected_host]
+                find_record_with_rbac(Host, params[:selected_host])
+              else
+                Host.new
+              end
       @changed = true
       @showlinks = true
       @in_a_form = true
       # Get the db records that are being tagged
-      hostitems = Host.find(session[:host_items]).sort { |a, b| a.name <=> b.name }
+      hostitems = Host.find(session[:host_items]).sort_by(&:name)
       @selected_hosts = {}
       hostitems.each do |h|
+        unless h.supports?(:update) # if host doesn't support editing
+          add_flash(_("One of the Hosts does not support editing"), :error)
+          flash_to_session
+          redirect_to(:action => @lastaction, :id => params[:id])
+        end
+
         @selected_hosts[h.id] = h.name
       end
       build_targets_hash(hostitems)
-      @view = get_db_view(Host)       # Instantiate the MIQ Report view object
-      @view.table = MiqFilter.records2table(hostitems, @view.cols + ['id'])
-    end
-  end
-
-  def update
-    assert_privileges("host_edit")
-    case params[:button]
-    when "cancel"
-      session[:edit] = nil  # clean out the saved info
-      flash = "Edit for Host \""
-      @breadcrumbs.pop if @breadcrumbs
-      if !session[:host_items].nil?
-        flash = _("Edit of credentials for selected Hosts / Nodes was cancelled by the user")
-        # redirect_to :action => @lastaction, :display=>session[:host_display], :flash_msg=>flash
-        javascript_redirect :action => @lastaction, :display => session[:host_display], :flash_msg => flash
-      else
-        @host = find_record_with_rbac(Host, params[:id])
-        flash = _("Edit of Host / Node \"%{name}\" was cancelled by the user") % {:name => @host.name}
-        javascript_redirect :action => @lastaction, :id => @host.id, :display => session[:host_display], :flash_msg => flash
-      end
-
-    when "save"
-      if session[:host_items].nil?
-        @host = find_record_with_rbac(Host, params[:id])
-        old_host_attributes = @host.attributes.clone
-        valid_host = find_record_with_rbac(Host, params[:id])
-        set_record_vars(valid_host, :validate)                      # Set the record variables, but don't save
-        if valid_record? && set_record_vars(@host) && @host.save
-          add_flash(_("Host / Node \"%{name}\" was saved") % {:name => @host.name})
-          @breadcrumbs.pop if @breadcrumbs
-          AuditEvent.success(build_saved_audit_hash_angular(old_host_attributes, @host, false))
-          session[:flash_msgs] = @flash_array.dup                 # Put msgs in session for next transaction
-          if @lastaction == 'show_list'
-            javascript_redirect :action => "show_list"
-          else
-            javascript_redirect :action => "show", :id => @host.id.to_s
-          end
-          return
-        else
-          @errors.each { |msg| add_flash(msg, :error) }
-          @host.errors.each do |field, msg|
-            add_flash("#{field.to_s.capitalize} #{msg}", :error)
-          end
-          drop_breadcrumb(:name => _("Edit Host '%{name}'") % {:name => @host.name}, :url => "/host/edit/#{@host.id}")
-          @in_a_form = true
-          javascript_flash
-        end
-      else
-        valid_host = find_record_with_rbac(Host, !params[:validate_id].blank? ?
-                                               params[:validate_id] :
-                                               session[:host_items].first.to_i)
-        # Set the record variables, but don't save
-        creds = set_credentials(valid_host, :validate)
-        if valid_record?
-          @error = Host.batch_update_authentication(session[:host_items], creds)
-        end
-        if @error || @error.blank?
-          # redirect_to :action => 'show_list', :flash_msg=>_("Credentials/Settings saved successfully")
-          javascript_redirect :action => 'show_list', :flash_msg => _("Credentials/Settings saved successfully")
-        else
-          drop_breadcrumb(:name => _("Edit Host '%{name}'") % {:name => @host.name}, :url => "/host/edit/#{@host.id}")
-          @in_a_form = true
-          # redirect_to :action => 'edit', :flash_msg=>@error, :flash_error =>true
-          javascript_flash
-        end
-      end
-    when "reset"
-      params[:edittype] = @edit[:edittype]    # remember the edit type
-      add_flash(_("All changes have been reset"), :warning)
-      @in_a_form = true
-      session[:flash_msgs] = @flash_array.dup                 # Put msgs in session for next transaction
-      javascript_redirect :action => 'edit', :id => @host.id.to_s
-    when "validate"
-      verify_host = find_record_with_rbac(Host, params[:validate_id] ? params[:validate_id].to_i : params[:id])
-      if session[:host_items].nil?
-        set_record_vars(verify_host, :validate)
-      else
-        set_credentials(verify_host, :validate)
-      end
-      @in_a_form = true
-      @changed = session[:changed]
-      require "net/ssh"
-      begin
-        verify_host.verify_credentials(params[:type], :remember_host => params.key?(:remember_host))
-      rescue MiqException::MiqSshUtilHostKeyMismatch # Capture the Host key mismatch from the verify
-        render :update do |page|
-          page << javascript_prologue
-          new_url = url_for_only_path(:action => "update", :button => "validate", :type => params[:type], :remember_host => "true", :escape => false)
-          page << "if (confirm('The Host SSH key has changed, do you want to accept the new key?')) miqAjax('#{new_url}');"
-        end
-        return
-      rescue => bang
-        add_flash(bang.to_s, :error)
-      else
-        add_flash(_("Credential validation was successful"))
-      end
-      javascript_flash
+      @view = get_db_view(Host) # Instantiate the MIQ Report view object
     end
   end
 
   # handle buttons pressed on the button bar
   def button
-    @edit = session[:edit]                                  # Restore @edit for adv search box
-    params[:display] = @display if ["vms", "storages"].include?(@display)  # Were we displaying vms/storages
+    @edit = session[:edit] # Restore @edit for adv search box
+    params[:display] = @display if %w[vms storages].include?(@display) # Were we displaying vms/storages
 
     if params[:pressed].starts_with?("vm_", # Handle buttons from sub-items screen
                                      "miq_template_",
@@ -321,7 +188,6 @@ class HostController < ApplicationController
       process_vm_buttons(pfx)
 
       scanstorage if params[:pressed] == "storage_scan"
-      refreshstorage if params[:pressed] == "storage_refresh"
       tag(Storage) if params[:pressed] == "storage_tag"
 
       # Control transferred to another screen, so return
@@ -330,48 +196,48 @@ class HostController < ApplicationController
                  "#{pfx}_reconfigure", "#{pfx}_retire", "#{pfx}_right_size",
                  "storage_tag"].include?(params[:pressed]) && @flash_array.nil?
 
-      unless ["#{pfx}_edit", "#{pfx}_miq_request_new", "#{pfx}_clone", "#{pfx}_migrate", "#{pfx}_publish"].include?(params[:pressed])
+      unless ["#{pfx}_edit", "#{pfx}_miq_request_new", "#{pfx}_clone", "#{pfx}_migrate", "#{pfx}_publish", 'vm_rename'].include?(params[:pressed])
         @refresh_div = "main_div"
         @refresh_partial = "layouts/gtl"
         show
       end
-    else                                                                        # Handle Host buttons
-      params[:page] = @current_page unless @current_page.nil?                     # Save current page for list refresh
+    else # Handle Host buttons
+      params[:page] = @current_page unless @current_page.nil? # Save current page for list refresh
       @refresh_div = "main_div" # Default div for button.rjs to refresh
-      drift_analysis if params[:pressed] == "common_drift"
-      redirect_to :action => "new" if params[:pressed] == "new"
-      deletehosts if params[:pressed] == "host_delete"
-      comparemiq if params[:pressed] == "host_compare"
-      refreshhosts if params[:pressed] == "host_refresh"
-      maintenancehosts if params[:pressed] == "host_toggle_maintenance"
-      scanhosts if params[:pressed] == "host_scan"
-      check_compliance_hosts if params[:pressed] == "host_check_compliance"
-      analyze_check_compliance_hosts if params[:pressed] == "host_analyze_check_compliance"
-      tag(Host) if params[:pressed] == "host_tag"
-      assign_policies(Host) if params[:pressed] == "host_protect"
-      edit_record if params[:pressed] == "host_edit"
-      custom_buttons if params[:pressed] == "custom_button"
-      prov_redirect if params[:pressed] == "host_miq_request_new"
-      toggleservicescheduling if params[:pressed] == "host_cloud_service_scheduling_toggle"
-      sethoststomanageable if params[:pressed] == "host_manageable"
-      introspecthosts if params[:pressed] == "host_introspect"
-      providehosts if params[:pressed] == "host_provide"
-
+      case params[:pressed]
+      when 'common_drift' then drift_analysis
+      when 'custom_button' then custom_buttons
+      when 'cloud_tenant_edit' then edit_record
+      when 'cloud_tenant_delete' then delete_cloud_tenant
+      when 'host_analyze_check_compliance' then analyze_check_compliance_hosts
+      when 'host_check_compliance' then check_compliance_hosts
+      when 'host_cloud_service_scheduling_toggle' then toggleservicescheduling
+      when 'host_compare' then comparemiq
+      when 'host_delete' then deletehosts
+      when 'host_edit' then edit_record
+      when 'host_introspect' then introspecthosts
+      when 'host_manageable' then sethoststomanageable
+      when 'host_protect' then assign_policies(Host)
+      when 'host_provide' then providehosts
+      when 'host_refresh' then refreshhosts
+      when 'host_scan' then scanhosts
+      when 'host_tag' then tag(Host)
+      when 'host_toggle_maintenance' then maintenancehosts
+      end
       # Handle Host power buttons
-      if ["host_shutdown", "host_reboot", "host_standby", "host_enter_maint_mode", "host_exit_maint_mode",
-          "host_start", "host_stop", "host_reset"].include?(params[:pressed])
+      if %w[host_shutdown host_reboot host_standby host_enter_maint_mode host_exit_maint_mode host_start
+            host_stop host_reset].include?(params[:pressed])
         powerbutton_hosts(params[:pressed].split("_")[1..-1].join("_")) # Handle specific power button
       end
 
       perf_chart_chooser if params[:pressed] == "perf_reload"
       perf_refresh_data if params[:pressed] == "perf_refresh"
 
-      return if ["custom_button"].include?(params[:pressed])    # custom button screen, so return, let custom_buttons method handle everything
-      return if ["host_tag", "host_compare", "common_drift",
-                 "host_protect", "perf_reload"].include?(params[:pressed]) &&
+      return if ["custom_button"].include?(params[:pressed]) # custom button screen, so return, let custom_buttons method handle everything
+      return if %w[host_tag host_compare common_drift host_protect perf_reload].include?(params[:pressed]) &&
                 @flash_array.nil? # Another screen showing, so return
 
-      if @flash_array.nil? && !@refresh_partial && !["host_miq_request_new"].include?(params[:pressed]) # if no button handler ran, show not implemented msg
+      if @flash_array.nil? && !@refresh_partial # if no button handler ran, show not implemented msg
         add_flash(_("Button not yet implemented"), :error)
         @refresh_partial = "layouts/flash_msg"
         @refresh_div = "flash_msg_div"
@@ -382,62 +248,59 @@ class HostController < ApplicationController
       end
     end
 
-    if @lastaction == "show" && ["custom_button", "host_miq_request_new"].include?(params[:pressed])
+    if @lastaction == "show" && ["custom_button"].include?(params[:pressed])
       @host = @record = identify_record(params[:id])
     end
 
     if single_delete_test
       single_delete_redirect
-    elsif params[:pressed].ends_with?("_edit") || ["host_miq_request_new", "#{pfx}_miq_request_new",
-                                                   "#{pfx}_clone", "#{pfx}_migrate",
-                                                   "#{pfx}_publish"].include?(params[:pressed])
+    elsif params[:pressed].ends_with?("_edit") ||
+          ["#{pfx}_miq_request_new", "#{pfx}_migrate", "#{pfx}_publish"].include?(params[:pressed]) ||
+          ["#{pfx}_clone", 'vm_rename'].include?(params[:pressed]) && @flash_array.nil?
       if @flash_array
         show_list
         replace_gtl_main_div
-      else
-        if @redirect_controller
-          if ["host_miq_request_new", "#{pfx}_clone", "#{pfx}_migrate", "#{pfx}_publish"].include?(params[:pressed])
-            if flash_errors?
-              javascript_flash
-            else
-              javascript_redirect :controller     => @redirect_controller,
-                                  :action         => @refresh_partial,
-                                  :id             => @redirect_id,
-                                  :prov_type      => @prov_type,
-                                  :prov_id        => @prov_id,
-                                  :org_controller => @org_controller,
-                                  :escape         => false
-            end
+      elsif @redirect_controller
+        if ["#{pfx}_clone", "#{pfx}_migrate", "#{pfx}_publish"].include?(params[:pressed])
+          if flash_errors?
+            javascript_flash
           else
-            javascript_redirect :controller => @redirect_controller, :action => @refresh_partial, :id => @redirect_id, :org_controller => @org_controller
+            javascript_redirect(:controller     => @redirect_controller,
+                                :action         => @refresh_partial,
+                                :id             => @redirect_id,
+                                :prov_type      => @prov_type,
+                                :prov_id        => @prov_id,
+                                :org_controller => @org_controller,
+                                :escape         => false)
           end
         else
-          javascript_redirect :action => @refresh_partial, :id => @redirect_id
+          render_or_redirect_partial(pfx)
         end
-      end
-    else
-      if @refresh_div == "main_div" && @lastaction == "show_list"
-        replace_gtl_main_div
       else
-        render_flash
+        javascript_redirect(:action => @refresh_partial, :id => @redirect_id)
       end
+    elsif @refresh_div == "main_div" && @lastaction == "show_list"
+      replace_gtl_main_div
+    else
+      render_flash unless performed?
     end
   end
 
   def host_form_fields
     assert_privileges("host_edit")
     host = find_record_with_rbac(Host, params[:id])
-    validate_against = session.fetch_path(:edit, :validate_against) &&
-                       params[:button] != "reset" ? session.fetch_path(:edit, :validate_against) : nil
+    validate_against = if session.fetch_path(:edit, :validate_against) && params[:button] != "reset"
+                         session.fetch_path(:edit, :validate_against)
+                       end
 
     host_hash = {
       :name             => host.name,
       :hostname         => host.hostname,
-      :ipmi_address     => host.ipmi_address ? host.ipmi_address : "",
-      :custom_1         => host.custom_1 ? host.custom_1 : "",
+      :ipmi_address     => host.ipmi_address || "",
+      :custom_1         => host.custom_1 || "",
       :user_assigned_os => host.user_assigned_os,
       :operating_system => !(host.operating_system.nil? || host.operating_system.product_name.nil?),
-      :mac_address      => host.mac_address ? host.mac_address : "",
+      :mac_address      => host.mac_address || "",
       :default_userid   => host.authentication_userid.to_s,
       :remote_userid    => host.has_authentication_type?(:remote) ? host.authentication_userid(:remote).to_s : "",
       :ws_userid        => host.has_authentication_type?(:ws) ? host.authentication_userid(:ws).to_s : "",
@@ -448,32 +311,54 @@ class HostController < ApplicationController
     render :json => host_hash
   end
 
+  def features
+    [
+      {
+        :role     => "infra_networking",
+        :role_any => true,
+        :name     => :infra_networking,
+        :title    => _("Switches")
+      }
+    ].map { |hsh| ApplicationController::Feature.new_with_hash(hsh) }
+  end
+
   private
+
+  def record_class
+    case params[:display] || @display
+    when 'storages'
+      Storage
+    when 'vms', 'miq_templates'
+      VmOrTemplate
+    else
+      Host
+    end
+  end
 
   def textual_group_list
     [
-      %i(properties relationships),
-      %i(
+      %i[properties relationships],
+      %i[
         compliance security configuration diagnostics smart_management miq_custom_attributes
         ems_custom_attributes authentications cloud_services openstack_hardware_status openstack_service_status
-      )
+      ]
     ]
   end
   helper_method :textual_group_list
 
   def breadcrumb_name(_model)
-    title_for_hosts
+    _("Hosts")
   end
 
   # Validate the host record fields
   def valid_record?
     valid = true
     @errors = []
-    if params[:ws_port] && !(params[:ws_port] =~ /^\d+$/)
+    if params[:ws_port] && (params[:ws_port] !~ /^\d+$/)
       @errors.push(_("Web Services Listen Port must be numeric"))
       valid = false
     end
-    if params[:log_wrapsize] && (!(params[:log_wrapsize] =~ /^\d+$/) || params[:log_wrapsize].to_i == 0)
+    if params[:log_wrapsize] && ((params[:log_wrapsize] !~ /^\d+$/) || params[:log_wrapsize].to_i.zero?)
       @errors.push(_("Log Wrap Size must be numeric and greater than zero"))
       valid = false
     end
@@ -495,32 +380,23 @@ class HostController < ApplicationController
   def set_credentials(host, mode)
     creds = {}
     if params[:default_userid]
-      default_password = params[:default_password] ? params[:default_password] : host.authentication_password
+      default_password = params[:default_password] || host.authentication_password
       creds[:default] = {:userid => params[:default_userid], :password => default_password}
     end
     if params[:remote_userid]
-      remote_password = params[:remote_password] ? params[:remote_password] : host.authentication_password(:remote)
+      remote_password = params[:remote_password] || host.authentication_password(:remote)
       creds[:remote] = {:userid => params[:remote_userid], :password => remote_password}
     end
     if params[:ws_userid]
-      ws_password = params[:ws_password] ? params[:ws_password] : host.authentication_password(:ws)
+      ws_password = params[:ws_password] || host.authentication_password(:ws)
       creds[:ws] = {:userid => params[:ws_userid], :password => ws_password}
     end
     if params[:ipmi_userid]
-      ipmi_password = params[:ipmi_password] ? params[:ipmi_password] : host.authentication_password(:ipmi)
+      ipmi_password = params[:ipmi_password] || host.authentication_password(:ipmi)
       creds[:ipmi] = {:userid => params[:ipmi_userid], :password => ipmi_password}
     end
     host.update_authentication(creds, :save => (mode != :validate))
     creds
-  end
-
-  # gather up the host records from the DB
-  def get_hosts
-    page = params[:page].nil? ? 1 : params[:page].to_i
-    @current_page = page
-
-    @items_per_page = settings(:perpage, @gtl_type.to_sym) # Get the per page setting for this gtl type
-    @host_pages, @hosts = paginate(:hosts, :per_page => @items_per_page, :order => @col_names[get_sort_col] + " " + @sortdir)
   end
 
   def title
@@ -529,7 +405,7 @@ class HostController < ApplicationController
 
   def get_session_data
     super
-    @drift_db   = "Host"
+    @drift_db = "Host"
   end
 
   def set_session_data
@@ -538,6 +414,21 @@ class HostController < ApplicationController
     session[:miq_exists_mode] = @exists_mode unless @exists_mode.nil?
   end
 
+  def breadcrumbs_options
+    {
+      :breadcrumbs => [
+        {:title => _("Compute")},
+        {:title => _("Infrastructure")},
+        {:title => _("Hosts"), :url => controller_url},
+      ],
+      :record_info => @host,
+    }.compact
+  end
+
   menu_section :inf
+  feature_for_actions "#{controller_name}_show_list", *ADV_SEARCH_ACTIONS
+  feature_for_actions "#{controller_name}_show", :groups, :users, :patches
+  feature_for_actions "#{controller_name}_timeline", :tl_chooser
+  feature_for_actions "#{controller_name}_perf", :perf_top_chart
   has_custom_buttons
 end

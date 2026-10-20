@@ -1,33 +1,16 @@
+= render :partial => "layouts/flash_msg"
 #ab_form
-  #policy_bar
-    - if @resolve[:uri] && Hash[*@resolve[:target_classes].flatten].invert[@resolve[:new][:target_class]] == @edit[:new][:target_class]
-
-      %li
-        - t = _("Paste object details for use in a Button.")
-        = link_to(image_tag(image_path('toolbars/paste.png'), :border => "0", :class  => "", :alt => t),
-          {:action => "resolve", :button => "paste"},
-          "data-miq_sparkle_on"  => true,
-          "data-miq_sparkle_off" => true,
-          :remote                => true,
-          "data-method"          => :post,
-          :title                 => t)
-    - else
-      = image_tag(image_path('toolbars/paste.png'),
-        :class => "dimmed",
-        :title => _("Paste is not available, no object information has been copied from the Simulation screen"))
-  = render :partial => "layouts/flash_msg"
-
   #custom_button_tabs
-    %ul.nav.nav-tabs
-      = miq_tab_header('ab_options_tab') do
+    %ul.nav.nav-tabs{'role' => 'tablist'}
+      = miq_tab_header('ab_options_tab', @sb[:active_tab]) do
         = _('Options')
-      = miq_tab_header('ab_advanced_tab') do
+      = miq_tab_header('ab_advanced_tab', @sb[:active_tab]) do
         = _('Advanced')
     .tab-content
-      = miq_tab_content('ab_options_tab') do
+      = miq_tab_content('ab_options_tab', @sb[:active_tab]) do
         = render :partial => "shared/buttons/ab_options_form"
-      = miq_tab_content('ab_advanced_tab') do
+      = miq_tab_content('ab_advanced_tab', @sb[:active_tab]) do
         = render :partial => "shared/buttons/ab_advanced_form"
-
+      
   :javascript
     miq_tabs_init('#custom_button_tabs');

@@ -7,6 +7,12 @@ class EmsClusterController < ApplicationController
   include Mixins::GenericListMixin
   include Mixins::MoreShowActions
   include Mixins::GenericShowMixin
+  include Mixins::GenericSessionMixin
+  include Mixins::BreadcrumbsMixin
+
+  def title
+    @title = _("Clusters")
+  end
 
   def drift_history
     @display = "drift_history"
@@ -14,13 +20,13 @@ class EmsClusterController < ApplicationController
   end
 
   def self.display_methods
-    %w(descendant_vms all_vms miq_templates vms hosts resource_pools config_info storage)
+    %w[all_vms miq_templates vms hosts resource_pools config_info storage custom_button_events]
   end
 
   # handle buttons pressed on the button bar
   def button
-    @edit = session[:edit]                                  # Restore @edit for adv search box
-    params[:display] = @display if ["all_vms", "vms", "hosts", "resource_pools"].include?(@display)  # Were we displaying sub-items
+    @edit = session[:edit] # Restore @edit for adv search box
+    params[:display] = @display if %w[all_vms vms hosts resource_pools].include?(@display) # Were we displaying sub-items
 
     if params[:pressed].starts_with?("vm_", # Handle buttons from sub-items screen
                                      "miq_template_",
@@ -34,8 +40,8 @@ class EmsClusterController < ApplicationController
       refreshhosts if params[:pressed] == "host_refresh"
       tag(Host) if params[:pressed] == "host_tag"
       assign_policies(Host) if params[:pressed] == "host_protect"
-      comparemiq  if params[:pressed] == "host_compare"
-      edit_record  if params[:pressed] == "host_edit"
+      comparemiq if params[:pressed] == "host_compare"
+      edit_record if params[:pressed] == "host_edit"
       deletehosts if params[:pressed] == "host_delete"
 
       tag(ResourcePool) if params[:pressed] == "rp_tag"
@@ -50,9 +56,9 @@ class EmsClusterController < ApplicationController
                    "host_compare", "#{pfx}_compare", "#{pfx}_drift", "#{pfx}_tag", "#{pfx}_retire",
                    "#{pfx}_protect", "#{pfx}_ownership", "#{pfx}_right_size",
                    "#{pfx}_reconfigure", "rp_tag"].include?(params[:pressed]) &&
-                  @flash_array.nil?   # Some other screen is showing, so return
+                  @flash_array.nil? # Some other screen is showing, so return
 
-        unless ["host_edit", "#{pfx}_edit", "#{pfx}_miq_request_new", "#{pfx}_clone", "#{pfx}_migrate", "#{pfx}_publish"].include?(params[:pressed])
+        unless ["host_edit", "#{pfx}_edit", "#{pfx}_miq_request_new", "#{pfx}_clone", "#{pfx}_migrate", "#{pfx}_publish", 'vm_rename'].include?(params[:pressed])
           @refresh_div = "main_div"
           @refresh_partial = "layouts/gtl"
           show
@@ -69,97 +75,90 @@ class EmsClusterController < ApplicationController
       custom_buttons if params[:pressed] == "custom_button"
     end
 
-    return if ["custom_button"].include?(params[:pressed])    # custom button screen, so return, let custom_buttons method handle everything
-    return if ["ems_cluster_tag", "ems_cluster_compare", "common_drift", "ems_cluster_protect"].include?(params[:pressed]) && @flash_array.nil?   # Tag screen showing, so return
+    return if ["custom_button"].include?(params[:pressed]) # custom button screen, so return, let custom_buttons method handle everything
+    return if %w[ems_cluster_tag ems_cluster_compare common_drift ems_cluster_protect].include?(params[:pressed]) && @flash_array.nil? # Tag screen showing, so return
 
     check_if_button_is_implemented
 
     if single_delete_test
       single_delete_redirect
-    elsif params[:pressed].ends_with?("_edit") || ["#{pfx}_miq_request_new", "#{pfx}_clone",
-                                                   "#{pfx}_migrate", "#{pfx}_publish"].include?(params[:pressed])
+    elsif params[:pressed].ends_with?("_edit") ||
+          ["#{pfx}_miq_request_new", "#{pfx}_clone", "#{pfx}_migrate", "#{pfx}_publish"].include?(params[:pressed]) ||
+          params[:pressed] == 'vm_rename' && @flash_array.nil?
       render_or_redirect_partial(pfx)
+    elsif @refresh_div == "main_div" && @lastaction == "show_list"
+      replace_gtl_main_div
     else
-      if @refresh_div == "main_div" && @lastaction == "show_list"
-        replace_gtl_main_div
-      else
-        render_flash
-      end
+      render_flash unless performed?
     end
+  end
+
+  def download_data
+    assert_privileges('ems_cluster_show_list')
+    super
+  end
+
+  def download_summary_pdf
+    assert_privileges('ems_cluster_show')
+    super
   end
 
   private
 
+  def record_class
+    %w[all_vms vms].include?(params[:display]) || params[:pressed].starts_with?('miq_template') ? VmOrTemplate : EmsCluster
+  end
+
   def textual_group_list
     [
-      %i(relationships),
-      %i(host_totals vm_totals configuration tags openstack_status)
+      %i[relationships],
+      %i[host_totals vm_totals configuration tags openstack_status]
     ]
   end
   helper_method :textual_group_list
 
-  def hosts_subsets
-    condition         = nil
-    label             = _("%{name} (All %{titles})" % {:name => @record.name, :titles => title_for_hosts})
-    breadcrumb_suffix = ""
-
-    host_service_group_name = params[:host_service_group_name]
-    if host_service_group_name
-      case params[:status]
-      when 'running'
-        hosts_filter =  @record.host_ids_with_running_service_group(host_service_group_name)
-        label        = _("Hosts with running %{name}") % {:name => host_service_group_name}
-      when 'failed'
-        hosts_filter =  @record.host_ids_with_failed_service_group(host_service_group_name)
-        label        = _("Hosts with failed %{name}") % {:name => host_service_group_name}
-      when 'all'
-        hosts_filter = @record.host_ids_with_service_group(host_service_group_name)
-        label        = _("All %{titles} with %{name}") % {:titles => title_for_hosts, :name => host_service_group_name}
-      end
-
-      if hosts_filter
-        condition = ["hosts.id IN (#{hosts_filter.to_sql})"]
-        breadcrumb_suffix = "&host_service_group_name=#{host_service_group_name}&status=#{params[:status]}"
-      end
-    end
-
-    return label, condition, breadcrumb_suffix
-  end
-
   def breadcrumb_name(_model)
-    title_for_clusters
+    _("Clusters")
   end
 
   def set_config(db_record)
     @cluster_config = []
-    @cluster_config.push(:field       => "HA Enabled",
-                         :description => db_record.ha_enabled) unless db_record.ha_enabled.nil?
-    @cluster_config.push(:field       => "HA Admit Control",
-                         :description => db_record.ha_admit_control) unless db_record.ha_admit_control.nil?
-    @cluster_config.push(:field       => "DRS Enabled",
-                         :description => db_record.drs_enabled) unless db_record.drs_enabled.nil?
-    @cluster_config.push(:field       => "DRS Automation Level",
-                         :description => db_record.drs_automation_level) unless db_record.drs_automation_level.nil?
-    @cluster_config.push(:field       => "DRS Migration Threshold",
-                         :description => db_record.drs_migration_threshold) unless db_record.drs_migration_threshold.nil?
+    unless db_record.ha_enabled.nil?
+      @cluster_config.push(:field       => "HA Enabled",
+                           :description => db_record.ha_enabled)
+    end
+    unless db_record.ha_admit_control.nil?
+      @cluster_config.push(:field       => "HA Admit Control",
+                           :description => db_record.ha_admit_control)
+    end
+    unless db_record.drs_enabled.nil?
+      @cluster_config.push(:field       => "DRS Enabled",
+                           :description => db_record.drs_enabled)
+    end
+    unless db_record.drs_automation_level.nil?
+      @cluster_config.push(:field       => "DRS Automation Level",
+                           :description => db_record.drs_automation_level)
+    end
+    unless db_record.drs_migration_threshold.nil?
+      @cluster_config.push(:field       => "DRS Migration Threshold",
+                           :description => db_record.drs_migration_threshold)
+    end
   end
 
-  def get_session_data
-    @title      = _("Clusters")
-    @layout     = "ems_cluster"
-    @lastaction = session[:ems_cluster_lastaction]
-    @display    = session[:ems_cluster_display]
-    @filters    = session[:ems_cluster_filters]
-    @catinfo    = session[:ems_cluster_catinfo]
-  end
-
-  def set_session_data
-    session[:ems_cluster_lastaction] = @lastaction
-    session[:ems_cluster_display]    = @display unless @display.nil?
-    session[:ems_cluster_filters]    = @filters
-    session[:ems_cluster_catinfo]    = @catinfo
+  def breadcrumbs_options
+    {
+      :breadcrumbs => [
+        {:title => _("Compute")},
+        {:title => _("Infrastructure")},
+        {:title => _("Clusters"), :url => controller_url},
+      ],
+      :record_info => @ems,
+    }.compact
   end
 
   menu_section :inf
+  feature_for_actions "#{controller_name}_show_list", *ADV_SEARCH_ACTIONS
+  feature_for_actions "#{controller_name}_timeline", :tl_chooser
+  feature_for_actions "#{controller_name}_perf", :perf_top_chart
   has_custom_buttons
 end

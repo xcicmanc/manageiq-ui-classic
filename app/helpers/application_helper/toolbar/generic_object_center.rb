@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::GenericObjectCenter < ApplicationHelper::Toolb
   button_group('generic_object_policy', [
     select(
       :generic_object_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :items => [
@@ -10,7 +10,11 @@ class ApplicationHelper::Toolbar::GenericObjectCenter < ApplicationHelper::Toolb
           :generic_object_tag,
           'pficon pficon-edit fa-lg',
           N_('Edit Tags for this Generic Object Instance'),
-          N_('Edit Tags')),
+          N_('Edit Tags'),
+          :send_checked => true,
+          :enabled      => false,
+          :onwhen       => "1+"
+        ),
       ]
     ),
   ])

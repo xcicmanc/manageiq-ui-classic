@@ -5,15 +5,20 @@ class VmController < ApplicationController
   after_action :set_session_data
   include VmCommon # common methods for vm controllers
   include VmRemote # methods for VM remote access
+  include Mixins::BreadcrumbsMixin
+  helper VmInfraHelper
+
+  feature_for_actions 'vm_edit', :edit_vm
 
   def index
-    session[:vm_type] = nil             # Reset VM type if coming in from All tab
-    redirect_to :action => 'show_list'
+    session[:vm_type] = nil # Reset VM type if coming in from All tab
+    redirect_to(:action => 'show_list')
   end
 
   def show_list
     options = {:association => session[:vm_type]}
     options[:model] = "ManageIQ::Providers::CloudManager::Vm" if params['sb_controller'] == 'availability_zone'
+    options[:no_checkboxes] = ActiveRecord::Type::Boolean.new.cast(params[:no_checkboxes])
     process_show_list(options)
   end
 
@@ -27,7 +32,7 @@ class VmController < ApplicationController
     @filters        = session[:vm_filters]
     @catinfo        = session[:vm_catinfo]
     @display        = session[:vm_display]
-    @polArr         = session[:polArr] || ""           # current tags in effect
+    @polArr         = session[:polArr] || "" # current tags in effect
     @policy_options = session[:policy_options] || ""
   end
 

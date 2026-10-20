@@ -1,16 +1,8 @@
 class TreeBuilderOpsSettings < TreeBuilderOps
   private
 
-  def tree_init_options(_tree_name)
-    {
-      :open_all => true,
-      :leaf     => "Settings"
-    }
-  end
-
-  def set_locals_for_render
-    locals = super
-    locals.merge!(:autoload => true)
+  def tree_init_options
+    {:open_all => true}
   end
 
   def root_options
@@ -26,23 +18,18 @@ class TreeBuilderOpsSettings < TreeBuilderOps
   end
 
   # Get root nodes count/array for explorer tree
-  def x_get_tree_roots(_count_only, _options)
+  def x_get_tree_roots
     objects = [
       {:id => "sis", :text => _("Analysis Profiles"), :icon => "fa fa-search", :tip => _("Analysis Profiles")},
       {:id => "z", :text => _("Zones"), :icon => "pficon pficon-zone", :tip => _("Zones")}
     ]
-    if Settings.product.new_ldap
-      objects.push(:id => "l", :text => _("LDAP"), :icon => "fa fa-database", :tip => _("LDAP"))
-    end
     objects.push(:id => "msc", :text => _("Schedules"), :icon => "fa fa-clock-o", :tip => _("Schedules"))
     objects
   end
 
   # Handle custom tree nodes (object is a Hash)
-  def x_get_tree_custom_kids(object, count_only, _options)
+  def x_get_tree_custom_kids(object, count_only)
     case object[:id]
-    when "l"
-      count_only_or_objects(count_only, LdapRegion.all, "name")
     when "msc"
       objects = MiqSchedule.where("(prod_default != 'system' or prod_default is null) AND adhoc is null")
       count_only_or_objects(count_only, objects, "name")
@@ -50,7 +37,7 @@ class TreeBuilderOpsSettings < TreeBuilderOps
       count_only_or_objects(count_only, ScanItemSet.all, "name")
     when "z"
       region = MiqRegion.my_region
-      count_only_or_objects(count_only, region.zones, "name")
+      count_only_or_objects(count_only, region.zones.visible, "name")
     end
   end
 end

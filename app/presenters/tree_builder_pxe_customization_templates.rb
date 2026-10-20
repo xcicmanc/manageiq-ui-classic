@@ -1,13 +1,9 @@
 class TreeBuilderPxeCustomizationTemplates < TreeBuilder
+  has_kids_for PxeImageType, %i[x_get_tree_pxe_image_type_kids]
   private
 
-  def tree_init_options(_tree_name)
-    {:leaf => "CustomizationTemplate"}
-  end
-
-  def set_locals_for_render
-    locals = super
-    locals.merge!(:autoload => true)
+  def tree_init_options
+    {:lazy => true}
   end
 
   def root_options
@@ -19,40 +15,30 @@ class TreeBuilderPxeCustomizationTemplates < TreeBuilder
   end
 
   # Get root nodes count/array for explorer tree
-  def x_get_tree_roots(count_only, _options)
-    items = PxeImageType.all
-    if count_only
-      # add +1 for customization spec folder thats used to show system templates
-      items.size + 1
-    else
-      objects = []
-      objects.push(:id    => "xx-system",
-                   :text  => _("Examples (read only)"),
-                   :icon  => "pficon pficon-folder-close",
-                   :tip   => _("Examples (read only)"))
-      PxeImageType.all.sort.each do |item, _idx|
-        objects.push(:id => "xx-#{to_cid(item.id)}", :text => item.name, :icon => "pficon pficon-folder-close", :tip => item.name)
-      end
-      objects
+  def x_get_tree_roots
+    objects = []
+    objects.push(:id   => "xx-system",
+                 :text => _("Examples (read only)"),
+                 :icon => "pficon pficon-folder-close",
+                 :tip  => _("Examples (read only)"))
+    PxeImageType.all.sort.each do |item, _idx|
+      objects.push(item)
     end
+    objects
   end
 
   def get_pxe_image_id(nodes)
     nodes.length >= 3 ? nodes[2] : nodes[1]
   end
 
-  # Handle custom tree nodes (object is a Hash)
-  def x_get_tree_custom_kids(object, count_only, _options)
-    nodes = object[:full_id] ? object[:full_id].split('-') : object[:id].split('-')
-    if nodes[1] == "system" || nodes[2] == "system"
-      # root node was clicked or if folder node was clicked
-      # System templates
-      pxe_img_id = nil
-    else
-      # root node was clicked or if folder node was clicked
-      pxe_img_id = from_cid(get_pxe_image_id(nodes))
-    end
-    objects = CustomizationTemplate.where(:pxe_image_type_id => pxe_img_id)
+  def x_get_tree_pxe_image_type_kids(object, count_only)
+    objects = CustomizationTemplate.where(:pxe_image_type_id => object.id)
+    count_only_or_objects(count_only, objects, "name")
+  end
+
+  # Handle custom tree nodes (object is the Examples folder)
+  def x_get_tree_custom_kids(object, count_only)
+    objects = CustomizationTemplate.where(:pxe_image_type_id => nil)
     count_only_or_objects(count_only, objects, "name")
   end
 end

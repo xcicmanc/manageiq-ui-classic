@@ -1,0 +1,110 @@
+import { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
+import {
+  Tabs, TabList, Tab, Modal,
+} from '@carbon/react';
+import { checkForFormChanges } from './helper';
+import { locationReplace } from '../../helpers/window-location';
+
+const CustomURLTabs = ({
+  tabs,
+  path,
+  currentTab = '0',
+  checkForChanges = false,
+}) => {
+  const [{ selectedTab, showConfirm, url }, setState] = useState({ selectedTab: 0, showConfirm: false });
+  const activeTabClassName = 'cds--tabs__nav-item--selected';
+
+  const onTabClick = (id) => {
+    if (currentTab !== id) {
+      if (checkForChanges && checkForFormChanges()) {
+        setState((state) => ({
+          ...state,
+          showConfirm: true,
+          url: `${path}${id}?uib-tab=${id}`,
+        }));
+        document.getElementById(id).parentElement.classList.add(activeTabClassName);
+      } else {
+        locationReplace(`${path}${id}?uib-tab=${id}`);
+      }
+    }
+  };
+
+  const fixTabStyling = () => {
+    [...document.getElementsByClassName(activeTabClassName)].forEach((element) => {
+      element.classList.remove(activeTabClassName);
+    });
+    document.getElementsByClassName('selected')[0].classList.add(activeTabClassName);
+  };
+
+  useEffect(() => {
+    const currentTabIndex = tabs.findIndex((tab) => tab[0] === currentTab);
+    if (currentTabIndex >= 0) {
+      setState((state) => ({
+        ...state,
+        selectedTab: currentTabIndex,
+      }));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showConfirm) {
+      document.getElementsByClassName('selected')[0].classList.remove(activeTabClassName);
+    } else if (document.getElementsByClassName('selected').length > 0) {
+      fixTabStyling();
+    }
+  }, [showConfirm]);
+
+  return (
+    <div className="custom-url-tabs">
+      {showConfirm && (
+        <Modal
+          open
+          primaryButtonText={__('OK')}
+          secondaryButtonText={__('Cancel')}
+          onRequestClose={() => {
+            setState((state) => ({
+              ...state,
+              showConfirm: false,
+            }));
+          }}
+          onRequestSubmit={() => locationReplace(url)}
+          onSecondarySubmit={() => {
+            setState((state) => ({
+              ...state,
+              showConfirm: false,
+            }));
+            fixTabStyling();
+          }}
+        >
+          {__('Abandon changes?')}
+        </Modal>
+      )}
+      <Tabs selectedIndex={selectedTab}>
+        <TabList aria-label="Custom URL tabs" activation="manual">
+          {tabs.map((tab) => (
+            <Tab
+              key={tab[0]}
+              id={tab[0]}
+              className={
+                `${tab[0]}` === currentTab ? 'selected' : 'not-selected'
+              }
+              onClick={() => onTabClick(tab[0])}
+            >
+              {__(tab[1])}
+            </Tab>
+          ))}
+        </TabList>
+      </Tabs>
+    </div>
+  );
+};
+
+CustomURLTabs.propTypes = {
+  tabs: PropTypes.arrayOf(String).isRequired,
+  path: PropTypes.string.isRequired,
+  currentTab: PropTypes.string,
+  checkForChanges: PropTypes.bool,
+};
+
+export default CustomURLTabs;

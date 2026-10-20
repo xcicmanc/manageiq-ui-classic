@@ -24,7 +24,7 @@ class ExplorerPresenter
   #   init_accords                     -- initialize accordion autoresize
   #   ajax_action                      -- Hash of options for AJAX action to fire
   #   clear_gtl_list_grid              -- Clear ManageIQ.grids.gtl_list_grid
-  #   right_cell_text
+  #   right_cell_text                  -- Page title (content of the title area)
   #
   #   :record_id    sets ManageIQ.record.recordId     -- record being displayed or edited
   #   :parent_id    sets ManageIQ.record.parentId     -- it's parent
@@ -78,28 +78,18 @@ class ExplorerPresenter
       :show_miq_buttons     => false,
       :load_chart           => nil,
       :open_window          => nil,
-      :remove_sand          => nil,
+      :remove_paging        => nil,
       :rx                   => nil,
     }.update(options)
   end
 
-  def remove_sand
-    @options[:remove_sand] = true
-    self
-  end
-
-  def reset_changes
-    @options[:reset_changes] = true
+  def remove_paging
+    @options[:remove_paging] = true
     self
   end
 
   def reset_one_trans
     @options[:reset_one_trans] = true
-    self
-  end
-
-  def one_trans_ie
-    @options[:one_trans_ie] = true
     self
   end
 
@@ -167,10 +157,6 @@ class ExplorerPresenter
     self
   end
 
-  def update_report_data(report_data)
-    @options[:report_data] = report_data
-  end
-
   def rx(data)
     @options[:rx] = data
     self
@@ -205,7 +191,7 @@ class ExplorerPresenter
     data = {:explorer => 'flash'}
     data[:replacePartials] = @options[:replace_partials]
     data[:spinnerOff] = true if @options[:spinner_off]
-    data[:scrollTop] = true if @options[:scroll_top]
+    data[:scrollTop] = true if @options[:scroll_top] || @flash_array.present?
     data[:focus] = @options[:focus] if @options[:focus]
     data[:activateNode] = @options[:activate_node] if @options[:activate_node]
     data
@@ -226,7 +212,9 @@ class ExplorerPresenter
 
   def for_render_main_div
     data = check_spinner(:explorer => 'replace_main_div')
+    data[:rightCellText] = escape_if_unsafe(@options[:right_cell_text]) if @options[:right_cell_text]
     data[:updatePartials] = @options[:update_partials]
+    data[:setVisibility] = @options[:set_visible_elements]
     data
   end
 
@@ -241,6 +229,10 @@ class ExplorerPresenter
     data
   end
 
+  def escape_if_unsafe(string)
+    ActiveSupport::SafeBuffer === string ? string : ERB::Util.html_escape(string)
+  end
+
   def for_render_default
     data = {:explorer => 'replace_right_cell', :scrollTop => true}
 
@@ -253,22 +245,27 @@ class ExplorerPresenter
 
     data[:showMiqButtons] = @options[:show_miq_buttons]
     data[:clearTreeCookies] = @options[:clear_tree_cookies]
+    data[:treeExpandAll] = @options[:tree_expand_all]
 
     # Open an accordion inside an other AJAX call
     data[:accordionSwap] = @options[:open_accord] unless @options[:open_accord].to_s.empty?
 
-    data[:addNodes] = {
-      :activeTree => @options[:active_tree],
-      :key        => @options[:add_nodes][:key],
-      :osf        => @options[:osf_node],
-      :nodes      => @options[:add_nodes][:nodes],
-      :remove     => !!@options[:remove_nodes],
-    } if @options[:add_nodes]
+    if @options[:add_nodes]
+      data[:addNodes] = {
+        :activeTree => @options[:active_tree],
+        :key        => @options[:add_nodes][:key],
+        :osf        => @options[:osf_node],
+        :nodes      => @options[:add_nodes][:nodes],
+        :remove     => !!@options[:remove_nodes],
+      }
+    end
 
-    data[:deleteNode] = {
-      :node       => @options[:delete_node],
-      :activeTree => @options[:active_tree],
-    } if @options[:delete_node]
+    if @options[:delete_node]
+      data[:deleteNode] = {
+        :node       => @options[:delete_node],
+        :activeTree => @options[:active_tree],
+      }
+    end
 
     data[:dashboardUrl] = @options[:miq_widget_dd_url] if @options[:miq_widget_dd_url]
     data[:updatePartials] = @options[:update_partials] # Replace content of given DOM element (element stays).
@@ -276,23 +273,25 @@ class ExplorerPresenter
     data[:replacePartials] = @options[:replace_partials] # Replace given DOM element (and it's children) (element goes away).
     data[:reloadTrees] = @options[:reload_trees] # Replace the data attribute of the given TreeViewComponent
     data[:buildCalendar] = format_calendar_dates(@options[:build_calendar])
-    data[:initDashboard] = !! @options[:init_dashboard]
+    data[:initDashboard] = !!@options[:init_dashboard]
     data[:ajaxUrl] = ajax_action_url(@options[:ajax_action]) if @options[:ajax_action]
     data[:clearGtlListGrid] = !!@options[:clear_gtl_list_grid]
     data[:setVisibility] = @options[:set_visible_elements]
-    data[:rightCellText] = ERB::Util.html_escape(@options[:right_cell_text]) if @options[:right_cell_text]
+    data[:rightCellText] = escape_if_unsafe(@options[:right_cell_text]) if @options[:right_cell_text]
+    data[:providerPaused] = @options[:provider_paused] if @options.key?(:provider_paused)
 
     data[:reloadToolbars] = @options[:reload_toolbars].collect do |_div_name, toolbar|
       toolbar
     end
 
+    # ids are nil or string
     data[:record] = {
-      :parentId    => @options[:parent_id],
+      :parentId    => @options[:parent_id]&.to_s,
       :parentClass => @options[:parent_class],
-      :recordId    => @options[:record_id],
+      :recordId    => @options[:record_id]&.to_s,
     }
 
-    unless @options[:osf_node].blank?
+    if @options[:osf_node].present?
       data[:activateNode] = {
         :activeTree => @options[:active_tree],
         :osf        => @options[:osf_node]
@@ -301,22 +300,19 @@ class ExplorerPresenter
 
     data[:lockSidebar] = !!@options[:lock_sidebar]
     data[:chartData] = @options[:load_chart]
-    data[:resetChanges] = !!@options[:reset_changes]
-    data[:removeSand] = !!@options[:remove_sand]
+    data[:removePaging] = !!@options[:remove_paging]
     data[:resetOneTrans] = !!@options[:reset_one_trans]
-    data[:oneTransIE] = !!@options[:one_trans_ie]
     data[:focus] = @options[:focus]
     data[:clearSearch] = @options[:clear_search_toggle] if @options.key?(:clear_search_toggle)
     data[:hideModal] if @options[:hide_modal]
     data[:initAccords] if @options[:init_accords]
-    data[:reportData] = @options[:report_data] if @options[:report_data]
 
     data
   end
 
   def format_calendar_dates(options)
     return {} unless @options[:build_calendar].kind_of?(Hash)
-    %i(date_from date_to).each_with_object({}) do |key, h|
+    %i[date_from date_to].each_with_object({}) do |key, h|
       h[key] = options[key].iso8601 if options[key].present?
     end
   end

@@ -1,13 +1,14 @@
 describe "vm/show.html.haml" do
   shared_examples_for "miq_before_onload JS is needed" do
     it "renders proper JS" do
-      js_string = "ManageIQ.afterOnload = \"miqAsyncAjax('/vm/#{action}/#{vm.id}');\""
+      js_string = "ManageIQ.afterOnload = {action: () => miqAsyncAjax(\"/vm/#{action}/#{vm.id}\")}"
+      
       render
       expect(rendered).to include(js_string)
     end
   end
 
-  let(:vm) { FactoryGirl.create(:vm, :name => 'vm', :description => 'vm description') }
+  let(:vm) { FactoryBot.create(:vm, :name => 'vm', :description => 'vm description') }
   let(:action) { 'show' }
 
   before do
@@ -23,7 +24,7 @@ describe "vm/show.html.haml" do
     it 'should render policies view' do
       assign(:lastaction, 'policy_sim')
       stub_template "vm_common/_policies.html.haml" => "Stubbed Content"
-      render
+      render :template => "vm/show"
       expect(rendered).to render_template(:partial => 'vm_common/policies', :locals => {:controller => 'vm'})
     end
   end

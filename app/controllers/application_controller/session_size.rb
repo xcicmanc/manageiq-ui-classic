@@ -1,35 +1,25 @@
 module ApplicationController::SessionSize
   extend ActiveSupport::Concern
 
-  # Session data size logging constants
-  case Rails.env
-  when "test", "development"
-    SESSION_LOG_THRESHOLD = 50.kilobytes
-    SESSION_ELEMENT_THRESHOLD = 5.kilobytes
-  else
-    SESSION_LOG_THRESHOLD = 100.kilobytes
-    SESSION_ELEMENT_THRESHOLD = 10.kilobytes
-  end
-
   # Check for session threshold limits and write log messages if exceeded
   def get_data_size(data, indent = 0)
     begin
       # TODO: (FB 9144) Determine how the session store handles singleton object so it does not throw errors.
       data_size = Marshal.dump(data).size
-    rescue => err
+    rescue StandardError => err
       data_size = 0
       $log.warn(format_log_message("get_data_size error: <#{err}>\n#{err.backtrace.join("\n")}"))
     end
 
     if indent.zero?
       puts "Session:\t #{data.class.name} of Size #{data_size}, Elements #{data.size}\n=================================" if Rails.env.development?
-      return if data_size < SESSION_LOG_THRESHOLD
+      return if data_size < ::Settings.session.log_threshold.to_i_with_method
 
-      msg = format_log_message("Session object size of #{number_to_human_size(data_size)} exceeds threshold of #{number_to_human_size(SESSION_LOG_THRESHOLD)}")
+      msg = format_log_message("Session object size of #{number_to_human_size(data_size)} exceeds threshold of #{number_to_human_size(::Settings.session.log_threshold.to_i_with_method)}")
       Rails.env.development? ? puts(msg) : $log.warn(msg)
     end
 
-    return unless data_size > SESSION_ELEMENT_THRESHOLD
+    return unless data_size > ::Settings.session.element_threshold.to_i_with_method
 
     deep_visit_data(data, :get_data_size, indent)
   end

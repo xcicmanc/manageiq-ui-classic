@@ -3,11 +3,11 @@
 -# Parameters:
 -# exp_model    Model in use for this expression
 
-%br
+.spacer
 - opts = ["<#{_('Choose')}>"]
 - if exp_model == "_display_filter_"
   -# Use list in @edit for reporting display filter
-  - opts += @edit[@expkey][:exp_available_fields]
+  - opts += ExpAtomHelper.display_filter_details_for(MiqExpression::Field, @edit[:new][:field_order])
 - else
   - extra_opts = {}
   - extra_opts[:include_id_columns] = true if @edit.fetch(:expression_method, false)
@@ -21,7 +21,6 @@
   'data-miq_sparkle_off' => true)
 
 - if adv_search_show_alias_checkbox? && !@edit[@expkey][:exp_field].blank?
-  %br
   = check_box_tag("use_alias", "1", !@edit[@expkey][:alias].blank?,
     :style                      => "width: 20px",
     "data-miq_sparkle_on"       => true,
@@ -34,7 +33,7 @@
       "data-miq_observe" => {:interval => '.5', :url => url}.to_json)
 
 - if @edit[@expkey][:exp_field]
-  %br
+  .spacer
   - if @edit[@expkey][:exp_key] == "CONTAINS"
     %font{:color => "black"}
       = h(@edit[@expkey][:exp_key])
@@ -46,7 +45,7 @@
       "data-miq_sparkle_on"   => true,
       "data-miq_sparkle_off"  => true)
   - unless @edit[@expkey][:exp_key].include?("NULL") || @edit[@expkey][:exp_key].include?("EMPTY")
-    %br
+    .spacer
     %span#chosen_value_span
       - if @edit[@expkey][:val1][:type] == :boolean
         - if @edit[@expkey][:exp_value] == :user_input
@@ -86,9 +85,9 @@
             "data-miq_sparkle_off" => true)
 
         - if @edit[@expkey][:exp_key] == ApplicationController::Filter::EXP_FROM && @edit[@expkey][:exp_value][0]
-          %br
+          .spacer
           = _('THROUGH')
-          %br
+          .spacer
           - if @edit[@expkey][:val1][:date_format] == 's'
             = datepicker_input_tag("miq_date_1_1",
               @edit[@expkey][:exp_value][1] ? @edit[@expkey][:exp_value][1].split(" ").first : "",
@@ -112,23 +111,23 @@
             - else
               = h(@edit[@expkey][:exp_value][1])
         - if @edit[@expkey][:val1][:date_format] == 's'
-          - t = _('Click to change to a relative Date/Time format')
-          = link_to(image_tag(image_path('toolbars/specific_date.png'), :class => "rollover tiny", :alt => t),
-            {:action => 'exp_changed', :date_format_1 => 'r'},
+          = link_to({:action => 'exp_changed', :date_format_1 => 'r'},
             "data-miq_sparkle_on"  => true,
             "data-miq_sparkle_off" => true,
             :remote                => true,
+            :class                 => 'btn btn-default',
             "data-method"          => :post,
-            :title                 => t)
+            :title                 => _('Click to change to a relative Date/Time format')) do
+            %i.fa.fa-moon-o
         - else
-          - t = _('Click to change to a specific Date/Time format')
-          = link_to(image_tag(image_path('toolbars/relative_date.png'), :class => "rollover tiny", :alt => t),
-            {:action => 'exp_changed', :date_format_1 => 's'},
+          = link_to({:action => 'exp_changed', :date_format_1 => 's'},
             "data-miq_sparkle_on"  => true,
             "data-miq_sparkle_off" => true,
             :remote                => true,
+            :class                 => 'btn btn-default',
             "data-method"          => :post,
-            :title                 => t)
+            :title                 => _('Click to change to a specific Date/Time format')) do
+            %i.fa.fa-calendar
 
       - else
         -# String field

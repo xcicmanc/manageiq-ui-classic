@@ -1,10 +1,10 @@
 class ContainerProjectDashboardService < DashboardService
-  include UiServiceMixin
   include ContainerServiceMixin
+  include Mixins::CheckedIdMixin
 
   def initialize(project_id, controller)
     @project_id = project_id
-    @project = ContainerProject.find(@project_id)
+    @project = find_record_with_rbac(ContainerProject, @project_id)
     @resource = @project
     @controller = controller
   end
@@ -67,6 +67,7 @@ class ContainerProjectDashboardService < DashboardService
   def pods
     @project.container_groups.collect do |pod|
       {
+        :id                         => pod.id,
         :name                       => pod.name,
         :phase                      => pod.phase,
         :running_containers_summary => pod.running_containers_summary,

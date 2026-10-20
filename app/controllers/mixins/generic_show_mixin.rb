@@ -3,12 +3,11 @@ module Mixins
     def show
       return if perfmenu_click?
       return unless init_show
+
       @center_toolbar = self.class.toolbar_singular if self.class.toolbar_singular
 
       case @display
       # these methods are defined right in GenericShowMixin
-      when "summary_only"
-        show_download
       when "main"
         show_main
 
@@ -23,8 +22,6 @@ module Mixins
         show_performance if respond_to?(:show_performance)
       when "compliance_history"
         show_compliance_history if respond_to?(:show_compliance_history)
-      when "topology"
-        show_topology
 
       # nested list methods as enabled by 'display_methods' on the class
       when *self.class.display_methods
@@ -64,11 +61,6 @@ module Mixins
       public_send(custom_display_method_name(display))
     end
 
-    def show_download
-      show_main
-      set_summary_pdf_data
-    end
-
     def show_main
       # remember dashboard mode if dashboard is supported for this controller
       @sb[:summary_mode] = 'textual' if respond_to?(:dashboard_view)
@@ -78,7 +70,7 @@ module Mixins
                        :url  => "/#{controller_name}/show_list?page=#{@current_page}&refresh=y"},
                       true)
 
-      drop_breadcrumb(:name =>  _("%{name} (Summary)") % {:name => @record.name},
+      drop_breadcrumb(:name => _("%{name} (Summary)") % {:name => get_record_display_name(@record)},
                       :url  => show_link(@record))
       @showtype = "main"
     end
@@ -91,7 +83,7 @@ module Mixins
           :controller => controller_name,
           :id         => record.id,
           :action     => :show,
-          :only_path  => true,
+          :only_path  => true
         )
         url_for_only_path(opts)
       end
@@ -114,6 +106,7 @@ module Mixins
     def init_show(model_class = self.class.model)
       @record = identify_record(params[:id], model_class)
       return false if record_no_longer_exists?(@record)
+
       @lastaction = 'show'
       @gtl_url = gtl_url
 
@@ -145,20 +138,17 @@ module Mixins
       nested_list(display.camelize.singularize.constantize)
     end
 
-    def display_descendant_vms
-      @showtype = "config"
-      drop_breadcrumb(:name => _("%{name} (All VMs - Tree View)") % {:name => @record.name},
-                      :url  => show_link(@record, :display => "descendant_vms", :treestate => true))
-      self.x_active_tree = :datacenter_tree
-      @datacenter_tree = TreeBuilderDatacenter.new(:datacenter_tree, :datacenter, @sb, true, @record)
-    end
-
     def display_all_vms
       nested_list(Vm, :association => "all_vms")
     end
 
     def display_vms
       nested_list(Vm, :breadcrumb_title => _("Direct VMs"))
+    end
+
+    def display_custom_button_events
+      @no_checkboxes = true # FIXME: move this to a parameter below and handle with ReportDataAdditionalOptions
+      nested_list(CustomButtonEvent, :breadcrumb_title => _('Custom Button Events'), :clickable => false, :parent_method => 'custom_button_events')
     end
 
     def display_resource_pools
@@ -170,7 +160,7 @@ module Mixins
     end
 
     def display_images
-      nested_list(ManageIQ::Providers::CloudManager::Template, :named_scope => :without_volume_templates)
+      nested_list(ManageIQ::Providers::CloudManager::Template)
     end
 
     # options:
@@ -187,7 +177,7 @@ module Mixins
                       :url  => show_link(@record, :display => @display))
 
       view_options = {:parent => @record}
-      view_options.update(options.slice(:association, :parent_method, :where_clause, :named_scope))
+      view_options.update(options.slice(:association, :parent_method, :where_clause, :named_scope, :clickable, :no_checkboxes))
 
       @view, @pages = get_view(model, view_options)
       @showtype = @display

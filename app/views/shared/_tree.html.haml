@@ -1,3 +1,5 @@
-%div{:id => "#{name}_div"}
-  .treeview-pf-hover.treeview-pf-select{:id => "#{name}box", :style => "overflow: hidden"}
-    = render :partial  => "layouts/tree", :locals => tree.locals_for_render
+.treeview{:id => "#{tree.name}box"}
+  = react('TreeViewRedux', tree.locals_for_render)
+
+- if session[:group_changed]
+  - session[:group_changed] = false

@@ -1,17 +1,15 @@
 require_relative 'shared_network_manager_context'
 
 shared_examples :shared_examples_for_network_router_controller do |providers|
-  include CompressedIds
-
   render_views
-  before :each do
-    stub_user(:features => :all)
-    setup_zone
-  end
 
   providers.each do |t|
     context "for #{t}" do
       include_context :shared_network_manager_context, t
+      before do
+        stub_user(:features => :all)
+        setup_zone
+      end
 
       describe "#show_list" do
         it "renders index" do
@@ -41,8 +39,6 @@ shared_examples :shared_examples_for_network_router_controller do |providers|
                                                 :url  => "/network_router/show_list?page=&refresh=y"},
                                                {:name => "Network Router (Summary)",
                                                 :url  => "/network_router/show/#{@network_router.id}"}])
-
-          is_expected.to render_template(:partial => "layouts/listnav/_network_router")
         end
 
         it "show associated instances" do
@@ -56,7 +52,7 @@ shared_examples :shared_examples_for_network_router_controller do |providers|
 
       describe "#test_toolbars" do
         it 'edit network router tags' do
-          post :button, :params => {:miq_grid_checks => to_cid(@network_router.id), :pressed => "network_router_tag"}
+          post :button, :params => {:miq_grid_checks => @network_router.id, :pressed => "network_router_tag"}
           expect(response.status).to eq(200)
         end
       end

@@ -1,30 +1,31 @@
 module EmsClusterHelper::TextualSummary
   include TextualMixins::TextualGroupTags
+  include TextualMixins::TextualCustomButtonEvents
   #
   # Groups
   #
 
   def textual_group_host_totals
     TextualGroup.new(
-      _("Totals for %{hosts}") % {:hosts => title_for_hosts},
-      %i(
+      _("Totals for Hosts"),
+      %i[
         aggregate_cpu_speed aggregate_memory aggregate_physical_cpus aggregate_cpu_total_cores
         aggregate_disk_capacity block_storage_disk_usage object_storage_disk_usage
-      )
+      ]
     )
   end
 
   def textual_group_vm_totals
-    TextualGroup.new(_("Totals for VMs"), %i(aggregate_vm_memory aggregate_vm_cpus))
+    TextualGroup.new(_("Totals for VMs"), %i[aggregate_vm_memory aggregate_vm_cpus])
   end
 
   def textual_group_relationships
     TextualGroup.new(
       _("Relationships"),
-      %i(
+      %i[
         ems parent_datacenter total_hosts total_direct_vms allvms_size total_miq_templates
-        total_vms rps_size states_size
-      )
+        rps_size states_size custom_button_events
+      ]
     )
   end
 
@@ -33,12 +34,12 @@ module EmsClusterHelper::TextualSummary
                   @record.drs_automation_level.nil? && @record.drs_migration_threshold.nil?
     TextualGroup.new(
       _("Configuration"),
-      %i(ha_enabled ha_admit_control drs_enabled drs_automation_level drs_migration_threshold)
+      %i[ha_enabled ha_admit_control drs_enabled drs_automation_level drs_migration_threshold]
     )
   end
 
   def textual_group_openstack_status
-    return nil unless @record.kind_of?(ManageIQ::Providers::Openstack::InfraManager::EmsCluster)
+    return nil unless @record.kind_of?(ManageIQ::Providers::Openstack::InfraManager::Cluster)
     ret = textual_generate_openstack_status
 
     ret.blank? ? nil : TextualMultilink.new(_("OpenStack Status"), :items => ret)
@@ -56,38 +57,38 @@ module EmsClusterHelper::TextualSummary
 
       running = {:title => _("Show list of hosts with running %{name}") % {:name => x.name},
                  :value => _("Running (%{number})") % {:number => running_count},
-                 :icon  => failed_count == 0 && running_count > 0 ? 'pficon pficon-ok' : nil,
-                 :link  => if running_count > 0
+                 :icon  => failed_count.zero? && running_count.positive? ? 'pficon pficon-ok' : nil,
+                 :link  => if running_count.positive?
                              url_for_only_path(:controller              => controller.controller_name,
-                                     :action                  => 'show',
-                                     :id                      => @record,
-                                     :display                 => 'hosts',
-                                     :host_service_group_name => x.name,
-                                     :status                  => :running)
+                                               :action                  => 'show',
+                                               :id                      => @record,
+                                               :display                 => 'hosts',
+                                               :host_service_group_name => x.name,
+                                               :status                  => :running)
                            end}
 
       failed = {:title => _("Show list of hosts with failed %{name}") % {:name => x.name},
                 :value => _("Failed (%{number})") % {:number => failed_count},
-                :icon  => failed_count > 0 ? 'pficon pficon-error-circle-o' : nil,
-                :link  => if failed_count > 0
+                :icon  => failed_count.positive? ? 'pficon pficon-error-circle-o' : nil,
+                :link  => if failed_count.positive?
                             url_for_only_path(:controller              => controller.controller_name,
-                                    :action                  => 'show',
-                                    :id                      => @record,
-                                    :display                 => 'hosts',
-                                    :host_service_group_name => x.name,
-                                    :status                  => :failed)
+                                              :action                  => 'show',
+                                              :id                      => @record,
+                                              :display                 => 'hosts',
+                                              :host_service_group_name => x.name,
+                                              :status                  => :failed)
                           end}
 
       all = {:title => _("Show list of hosts with %{name}") % {:name => x.name},
              :value => _("All (%{number})") % {:number => all_count},
-             :icon  => 'pficon pficon-screen',
-             :link  => if all_count > 0
+             :icon  => 'pficon pficon-container-node',
+             :link  => if all_count.positive?
                          url_for_only_path(:controller              => controller.controller_name,
-                                 :action                  => 'show',
-                                 :display                 => 'hosts',
-                                 :id                      => @record,
-                                 :host_service_group_name => x.name,
-                                 :status                  => :all)
+                                           :action                  => 'show',
+                                           :display                 => 'hosts',
+                                           :id                      => @record,
+                                           :host_service_group_name => x.name,
+                                           :status                  => :all)
                        end}
 
       sub_items = [running, failed, all]
@@ -109,7 +110,7 @@ module EmsClusterHelper::TextualSummary
   end
 
   def textual_aggregate_cpu_total_cores
-    {:label => _("Total %{title} CPU Cores") % {:title => title_for_host},
+    {:label => _("Total Host CPU Cores"),
      :value => number_with_delimiter(@record.aggregate_cpu_total_cores)}
   end
 
@@ -137,9 +138,9 @@ module EmsClusterHelper::TextualSummary
 
   def textual_total_hosts
     num = @record.total_hosts
-    h = {:label => title_for_hosts, :icon => "pficon pficon-screen", :value => num}
-    if num > 0 && role_allows?(:feature => "host_show_list")
-      h[:title] = _("Show all %{title}") % {:title => title_for_hosts}
+    h = {:label => _("Hosts"), :icon => "pficon pficon-container-node", :value => num}
+    if num.positive? && role_allows?(:feature => "host_show_list")
+      h[:title] = _("Show all Hosts")
       h[:link]  = url_for_only_path(:controller => 'ems_cluster', :action => 'show', :id => @record, :display => 'hosts')
     end
     h
@@ -148,8 +149,8 @@ module EmsClusterHelper::TextualSummary
   def textual_total_direct_vms
     num = @record.total_direct_vms
     h = {:label => _("Direct VMs"), :icon => "pficon pficon-virtual-machine", :value => num}
-    if num > 0 && role_allows?(:feature => "vm_show_list")
-      h[:title] = _("Show VMs in this %{title}, but not in Resource Pools below") % {:title => cluster_title}
+    if num.positive? && role_allows?(:feature => "vm_show_list")
+      h[:title] = _("Show VMs in this Cluster, but not in Resource Pools below")
       h[:link]  = url_for_only_path(:controller => 'ems_cluster', :action => 'show', :id => @record, :display => 'vms')
     end
     h
@@ -158,37 +159,27 @@ module EmsClusterHelper::TextualSummary
   def textual_allvms_size
     num = @record.total_vms
     h = {:label => _("All VMs"), :icon => "pficon pficon-virtual-machine", :value => num}
-    if num > 0 && role_allows?(:feature => "vm_show_list")
-      h[:title] = _("Show all VMs in this %{title}") % {:title => cluster_title}
+    if num.positive? && role_allows?(:feature => "vm_show_list")
+      h[:title] = _("Show all VMs in this Cluster")
       h[:link]  = url_for_only_path(:controller => 'ems_cluster', :action => 'show', :id => @record, :display => 'all_vms')
     end
     h
   end
 
   def textual_total_miq_templates
-    return nil if @record.kind_of?(ManageIQ::Providers::Openstack::InfraManager::EmsCluster)
+    return nil if @record.kind_of?(ManageIQ::Providers::Openstack::InfraManager::Cluster)
 
     num = @record.total_miq_templates
     h = {:label => _("All Templates"), :icon => "pficon pficon-virtual-machine", :value => num}
-    if num > 0 && role_allows?(:feature => "miq_template_show_list")
-      h[:title] = _("Show all Templates in this %{title}") % {:title => cluster_title}
+    if num.positive? && role_allows?(:feature => "miq_template_show_list")
+      h[:title] = _("Show all Templates in this Cluster")
       h[:link]  = url_for_only_path(:controller => 'ems_cluster', :action => 'show', :id => @record, :display => 'miq_templates')
     end
     h
   end
 
-  def textual_total_vms
-    num = @record.total_vms
-    h = {:label => _("All VMs (Tree View)"), :icon => "pficon pficon-virtual-machine", :value => num}
-    if num > 0 && role_allows?(:feature => "vm_show_list")
-      h[:title] = _("Show tree of all VMs by Resource Pool in this %{title}") % {:title => cluster_title}
-      h[:link]  = url_for_only_path(:controller => 'ems_cluster', :action => 'show', :id => @record, :display => 'descendant_vms')
-    end
-    h
-  end
-
   def textual_rps_size
-    return nil if @record.kind_of?(ManageIQ::Providers::Openstack::InfraManager::EmsCluster)
+    return nil if @record.kind_of?(ManageIQ::Providers::Openstack::InfraManager::Cluster)
 
     textual_link(@record.resource_pools,
                  :as   => ResourcePool,
@@ -198,9 +189,9 @@ module EmsClusterHelper::TextualSummary
   def textual_states_size
     return nil unless role_allows?(:feature => "ems_cluster_drift")
     num = @record.number_of(:drift_states)
-    h = {:label => _("Drift History"), :icon => "ff ff-drift", :value => (num == 0 ? _("None") : num)}
-    if num > 0
-      h[:title] = _("Show %{title} drift history") % {:title => cluster_title}
+    h = {:label => _("Drift History"), :icon => "ff ff-drift", :value => (num.zero? ? _("None") : num)}
+    if num.positive?
+      h[:title] = _("Show Cluster drift history")
       h[:link]  = url_for_only_path(:controller => 'ems_cluster', :action => 'drift_history', :id => @record)
     end
     h
@@ -237,7 +228,7 @@ module EmsClusterHelper::TextualSummary
   end
 
   def textual_aggregate_disk_capacity
-    {:value => number_to_human_size(@record.aggregate_disk_capacity.gigabytes, :precision => 2)}
+    {:value => number_to_human_size(@record.aggregate_disk_capacity.gigabytes, :precision => 2), :label => _('Aggregate disk capacity')}
   end
 
   def textual_block_storage_disk_usage
@@ -248,9 +239,5 @@ module EmsClusterHelper::TextualSummary
   def textual_object_storage_disk_usage
     return nil unless @record.respond_to?(:object_storage?) && @record.object_storage? && !@record.cloud.nil?
     {:value => number_to_human_size(@record.cloud_object_storage_disk_usage.bytes, :precision => 2)}
-  end
-
-  def cluster_title
-    title_for_cluster_record(@record)
   end
 end

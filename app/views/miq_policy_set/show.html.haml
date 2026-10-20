@@ -1,0 +1,12 @@
+- profile_policies = @record.miq_policies.sort_by { |p| [p.towhat, p.mode, p.description.downcase] } if @record
+#profile_info_div
+  = render :partial => "layouts/flash_msg"
+  -# Don't show basic info box with description only unless in edit mode
+  = miq_summary_policy_set_info(@record)
+
+  -# Policies field
+  = miq_summary_policy_set(profile_policies)
+
+  -# Notes field
+  = miq_summary_policy_set_notes(@record)
+

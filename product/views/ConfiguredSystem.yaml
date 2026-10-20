@@ -21,33 +21,46 @@ db: ConfiguredSystem
 cols:
 - hostname
 - type
+- inventory_root_group_name
 - last_checkin
 - build_state
 - my_zone
 - configuration_environment_name
+- vendor
 
 # Included tables (joined, has_one, has_many) and columns
 include:
+  manager:
+    columns:
+    - name
 
 # Order of columns (from all tables)
 col_order:
 - hostname
+- manager.name
 - type
+- vendor
+- inventory_root_group_name
 - last_checkin
 - build_state
 - my_zone
 - configuration_environment_name
+- configuration_profile_name
 
 # Column titles, in order
 headers:
 - Hostname
+- Provider
 - Type
+- Vendor
+- Folder
 - Last Checkin
 - Build State
 - Zone
 - Environment
 
 col_formats:
+-
 -
 - :model_name
 -

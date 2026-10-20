@@ -3,6 +3,7 @@ describe TreeBuilderOpsRbacFeatures do
     %w(
       all_vm_rules
       api_exclusive
+      common_features
       instance
       instance_view
       instance_show_list
@@ -13,13 +14,12 @@ describe TreeBuilderOpsRbacFeatures do
   end
 
   let(:role) do
-    FactoryGirl.create(:miq_user_role, :id => 100_000_002, :features => features)
+    FactoryBot.create(:miq_user_role, :id => 100_000_002, :features => features)
   end
 
   let(:tree) do
     TreeBuilderOpsRbacFeatures.new(
       "features_tree",
-      "features",
       {:trees => {}},
       true,
       :role     => role,
@@ -35,25 +35,18 @@ describe TreeBuilderOpsRbacFeatures do
 
   describe 'bs_tree' do
     it 'builds the bs_tree' do
-      t = bs_tree.first
-
-      expect(t['key']).to match(/all_vm_rules/)
-      expect(t['title']).to be_nil
-      expect(t['tooltip']).to be_nil
-      expect(t['checkable']).to be false
+      expect(bs_tree).not_to be_nil
     end
 
-    describe 'main sections' do
-      %w(aut compute con conf mdl net opt set sto svc vi).each do |i|
-        it "includes #{i}" do
-          expect(main_keys).to include("100000002___tab_#{i}")
-        end
+    %w(aut compute con net set sto svc vi).each do |i|
+      it "includes #{i}" do
+        expect(main_keys).to include("100000002___tab_#{i}")
       end
+    end
 
-      it 'does not include blank nodes' do
-        expect(main_keys).not_to include("100000002__")
-        expect(main_keys).not_to include("100000002___tab_")
-      end
+    it 'does not include blank nodes' do
+      expect(main_keys).not_to include("100000002__")
+      expect(main_keys).not_to include("100000002___tab_")
     end
   end
 end

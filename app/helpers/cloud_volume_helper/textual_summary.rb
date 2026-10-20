@@ -2,18 +2,32 @@ module CloudVolumeHelper::TextualSummary
   include TextualMixins::TextualDescription
   include TextualMixins::TextualGroupTags
   include TextualMixins::TextualName
+  include TextualMixins::TextualCustomButtonEvents
 
   def textual_group_properties
-    TextualGroup.new(_("Properties"), %i(name size bootable description))
+    TextualGroup.new(_("Properties"), %i[name size bootable description status health_state])
+  end
+
+  def textual_group_mappings
+    mappings = @record.volume_mappings.map do |m|
+      type = m.host_initiator ? "Host Initiator" : "Host Initiator Group"
+      [type, textual_link(m)]
+    end
+
+    TextualMultilabel.new(
+      _("Mapping"),
+      :labels => [_("Type"), _("Details")],
+      :values => mappings
+    )
   end
 
   def textual_group_relationships
     TextualGroup.new(
       _("Relationships"),
-      %i(
-        parent_ems_cloud ems availability_zone cloud_tenant base_snapshot cloud_volume_backups
-        cloud_volume_snapshots attachments
-      )
+      %i[
+        parent_ems_cloud ems storage_resource storage_service availability_zone cloud_tenant base_snapshot cloud_volume_backups
+        cloud_volume_snapshots attachments custom_button_events host_initiators
+      ]
     )
   end
 
@@ -22,7 +36,15 @@ module CloudVolumeHelper::TextualSummary
   end
 
   def textual_bootable
-    @record.bootable.to_s
+    {:label => _('Bootable'), :value => _(@record.bootable.to_s)}
+  end
+
+  def textual_status
+    {:label => _('Status'), :value => _(@record.status.to_s)}
+  end
+
+  def textual_health_state
+    {:label => _('Health State'), :value => @record.health_state.to_s}
   end
 
   def textual_parent_ems_cloud
@@ -31,6 +53,18 @@ module CloudVolumeHelper::TextualSummary
 
   def textual_ems
     textual_link(@record.ext_management_system)
+  end
+
+  def textual_storage_resource
+    textual_link(@record.storage_resource)
+  rescue
+    nil
+  end
+
+  def textual_storage_service
+    textual_link(@record.storage_service)
+  rescue
+    nil
   end
 
   def textual_availability_zone
@@ -97,6 +131,16 @@ module CloudVolumeHelper::TextualSummary
     if num > 0 && role_allows?(:feature => "vm_show_list")
       h[:title] = _("Show all attached Instances")
       h[:link]  = url_for_only_path(:action => 'show', :id => @record, :display => 'instances')
+    end
+    h
+  end
+
+  def textual_host_initiators
+    num   = @record.number_of(:host_initiators)
+    h     = {:label => _('Host Initiators'), :value => num, :icon => "pficon pficon-volume"}
+    if num > 0 && role_allows?(:feature => "host_initiator_show_list")
+      h[:title] = _("Show host initiators mapped to this volume")
+      h[:link]  = url_for_only_path(:action => 'show', :id => @record, :display => 'host_initiators')
     end
     h
   end

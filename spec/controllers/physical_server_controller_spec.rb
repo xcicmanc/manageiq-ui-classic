@@ -1,28 +1,32 @@
 describe PhysicalServerController do
-  include CompressedIds
-
   render_views
 
-  let!(:server) { EvmSpecHelper.local_miq_server(:zone => zone) }
-  let(:zone) { FactoryGirl.build(:zone) }
+  let!(:server) { EvmSpecHelper.local_miq_server }
 
-  before(:each) do
+  before do
     stub_user(:features => :all)
     EvmSpecHelper.create_guid_miq_server_zone
-    login_as FactoryGirl.create(:user)
-    ems = FactoryGirl.create(:ems_physical_infra)
-    asset_details = FactoryGirl.create(:asset_details)
-    computer_system = FactoryGirl.create(:computer_system, :hardware => FactoryGirl.create(:hardware))
-    @physical_server = FactoryGirl.create(:physical_server,
-                                          :asset_details   => asset_details,
+    login_as FactoryBot.create(:user, :features => %w[everything])
+    ems = FactoryBot.create(:ems_redfish_physical_infra)
+    asset_detail = FactoryBot.create(:asset_detail)
+    computer_system = FactoryBot.create(:computer_system, :hardware => FactoryBot.create(:hardware))
+    @physical_server = FactoryBot.create(:physical_server,
+                                          :asset_detail    => asset_detail,
                                           :computer_system => computer_system,
-                                          :ems_id          => ems.id,
-                                          :id              => 1)
+                                          :ems_id          => ems.id)
+  end
+
+  describe "#provision" do
+    it 'sets id and redirect to prov_edit' do
+      allow(controller).to receive(:find_checked_items).and_return([@physical_server.id])
+      expect(controller).to receive(:javascript_redirect).with(:controller => "miq_request", :action => "prov_edit", :prov_id => [@physical_server.id], :org_controller => "physical_server", :escape => false)
+      controller.send(:provision)
+    end
   end
 
   describe "#show_list" do
-    before(:each) do
-      FactoryGirl.create(:physical_server)
+    before do
+      FactoryBot.create(:physical_server)
     end
 
     subject { get :show_list }
@@ -63,6 +67,24 @@ describe PhysicalServerController do
         expect(controller.send(:flash_errors?)).to be_falsey
       end
     end
+
+    context "display=network_devices" do
+      it do
+        post :show, :params => {:id => @physical_server.id, :display => "network_devices"}
+        expect(response.status).to eq 200
+        is_expected.to render_template(:partial => "layouts/_gtl")
+        expect(controller.send(:flash_errors?)).to be_falsey
+      end
+    end
+
+    context "display=storage_devices" do
+      it do
+        post :show, :params => {:id => @physical_server.id, :display => "storage_devices"}
+        expect(response.status).to eq 200
+        is_expected.to render_template(:partial => "layouts/_gtl")
+        expect(controller.send(:flash_errors?)).to be_falsey
+      end
+    end
   end
 
   describe "#button" do
@@ -76,14 +98,14 @@ describe PhysicalServerController do
 
   context "#button" do
     it "when Physical Server Manage Policies is pressed" do
-      controller.instance_variable_set(:@_params, :pressed => "physical_server_protect")
+      controller.params = {:pressed => "physical_server_protect"}
       expect(controller).to receive(:assign_policies).with(PhysicalServer)
       controller.button
       expect(controller.send(:flash_errors?)).not_to be_truthy
     end
 
     it "when Physical Server Tag is pressed" do
-      controller.instance_variable_set(:@_params, :pressed => "physical_server_tag")
+      controller.params = {:pressed => "physical_server_tag"}
       expect(controller).to receive(:tag).with(PhysicalServer)
       controller.button
       expect(controller.send(:flash_errors?)).not_to be_truthy

@@ -1,28 +1,34 @@
 class PxeController < ApplicationController
   # Methods for accordions
-  include_concern 'PxeServers'
-  include_concern 'PxeImageTypes'
-  include_concern 'PxeCustomizationTemplates'
-  include_concern 'IsoDatastores'
+  include PxeServers
+  include PxeImageTypes
+  include PxeCustomizationTemplates
+  include IsoDatastores
 
   before_action :check_privileges
   before_action :get_session_data
   after_action :cleanup_action
   after_action :set_session_data
 
+  include Mixins::GenericSessionMixin
+  include Mixins::BreadcrumbsMixin
+
   PXE_X_BUTTON_ALLOWED_ACTIONS = {
     'pxe_image_edit'                => :pxe_image_edit,
     'pxe_image_type_new'            => :pxe_image_type_new,
     'pxe_image_type_edit'           => :pxe_image_type_edit,
     'pxe_image_type_delete'         => :pxe_image_type_delete,
+    'pxe_image_tag'                 => :pxe_image_tags_edit,
     'pxe_server_new'                => :pxe_server_new,
     'pxe_server_edit'               => :pxe_server_edit,
     'pxe_server_delete'             => :pxe_server_delete,
     'pxe_server_refresh'            => :pxe_server_refresh,
+    'pxe_server_tag'                => :pxe_server_tags_edit,
     'pxe_wimg_edit'                 => :pxe_wimg_edit,
     'iso_datastore_new'             => :iso_datastore_new,
     'iso_datastore_refresh'         => :iso_datastore_refresh,
     'iso_datastore_delete'          => :iso_datastore_delete,
+    'windows_image_tag'             => :windows_image_tags_edit,
     'iso_image_edit'                => :iso_image_edit,
     'customization_template_new'    => :customization_template_new,
     'customization_template_delete' => :customization_template_delete,
@@ -32,6 +38,27 @@ class PxeController < ApplicationController
 
   def x_button
     generic_x_button(PXE_X_BUTTON_ALLOWED_ACTIONS)
+  end
+
+  def pxe_server_tags_edit
+    tag("PxeServer")
+  end
+
+  def windows_image_tags_edit
+    tag("WindowsImage")
+  end
+
+  def pxe_image_tags_edit
+    tag("PxeImage")
+  end
+
+  def previous_breadcrumb_url
+    action = @lastaction == "pxe_server_list" ? "explorer" : @lastaction
+    url_for_only_path(:action => action)
+  end
+
+  def tagging_edit_tags_reset
+    super
   end
 
   def accordion_select
@@ -55,31 +82,48 @@ class PxeController < ApplicationController
     render :layout => "application"
   end
 
+  def title
+    @title = "PXE"
+  end
+
+  def self.table_name
+    @table_name = "pxe"
+  end
+
   private
 
+  def feature_by_action
+    features_in_action = %w[pxe_server_new pxe_server_edit]
+    @sb[:action] if features_in_action.include?(@sb[:action])
+  end
+
   def features
-    [{:role     => "pxe_server_accord",
-      :role_any => true,
-      :name     => :pxe_servers,
-      :title    => _("PXE Servers")},
-
-     {:role     => "customization_template_accord",
-      :role_any => true,
-      :name     => :customization_templates,
-      :title    => _("Customization Templates")},
-
-     {:role     => "pxe_image_type_accord",
-      :role_any => true,
-      :name     => :pxe_image_types,
-      :title    => _("System Image Types")},
-
-     {:role     => "iso_datastore_accord",
-      :role_any => true,
-      :name     => :iso_datastores,
-      :title    => _("ISO Datastores")},
-    ].map do |hsh|
-      ApplicationController::Feature.new_with_hash(hsh)
-    end
+    [
+      {
+        :role     => "pxe_server_accord",
+        :role_any => true,
+        :name     => :pxe_servers,
+        :title    => _("PXE Servers")
+      },
+      {
+        :role     => "customization_template_accord",
+        :role_any => true,
+        :name     => :customization_templates,
+        :title    => _("Customization Templates")
+      },
+      {
+        :role     => "pxe_image_type_accord",
+        :role_any => true,
+        :name     => :pxe_image_types,
+        :title    => _("System Image Types")
+      },
+      {
+        :role     => "iso_datastore_accord",
+        :role_any => true,
+        :name     => :iso_datastores,
+        :title    => _("ISO Datastores")
+      }
+    ].map { |hsh| ApplicationController::Feature.new_with_hash(hsh) }
   end
 
   def get_node_info(node, show_list = true)
@@ -91,35 +135,32 @@ class PxeController < ApplicationController
     when :pxe_image_types_tree         then pxe_image_type_get_node_info(node)
     when :iso_datastores_tree          then iso_datastore_get_node_info(node)
     end
-    x_history_add_item(:id => node, :text => @right_cell_text)
     {:view => @view, :pages => @pages}
   end
 
   def replace_right_cell(options = {})
     nodetype, replace_trees = options.values_at(:nodetype, :replace_trees)
-    replace_trees = @replace_trees if @replace_trees  # get_node_info might set this
+    replace_trees = @replace_trees if @replace_trees # get_node_info might set this
     # FIXME
 
     @explorer = true
 
-    trees = build_replaced_trees(replace_trees, %i(pxe_servers pxe_image_types customization_templates iso_datastores))
+    trees = build_replaced_trees(replace_trees, %i[pxe_servers pxe_image_types customization_templates iso_datastores])
 
     presenter = ExplorerPresenter.new(:active_tree => x_active_tree)
 
     c_tb = build_toolbar(center_toolbar_filename) unless @in_a_form
-    h_tb = build_toolbar('x_history_tb')
 
     reload_trees_by_presenter(presenter, trees)
 
     # Rebuild the toolbars
-    presenter.reload_toolbars(:history => h_tb)
     case x_active_tree
     when :pxe_servers_tree
       presenter.update(:main_div, r[:partial => "pxe_server_list"])
-      if nodetype == "root"
-        right_cell_text = _("All PXE Servers")
-      else
-        right_cell_text = case nodetype
+      right_cell_text = if nodetype == "root"
+                          _("All PXE Servers")
+                        else
+                          case nodetype
                           when 'ps'
                             if @ps.id.blank?
                               _("Adding a new PXE Server")
@@ -133,7 +174,7 @@ class PxeController < ApplicationController
                           when 'wi'
                             _("Windows Image \"%{name}\"") % {:name => @wimg.name}
                           end
-      end
+                        end
     when :pxe_image_types_tree
       presenter.update(:main_div, r[:partial => "pxe_image_type_list"])
       right_cell_text = case nodetype
@@ -162,7 +203,6 @@ class PxeController < ApplicationController
           end
         # resetting ManageIQ.oneTransition.oneTrans when tab loads
         presenter.reset_one_trans
-        presenter.one_trans_ie if %w(save reset).include?(params[:button]) && is_browser_ie?
       end
     when :iso_datastores_tree
       presenter.update(:main_div, r[:partial => "iso_datastore_list"])
@@ -181,80 +221,40 @@ class PxeController < ApplicationController
     # FIXME: check where @right_cell_text is set and replace that with loca variable
     presenter[:right_cell_text] = right_cell_text || @right_cell_text
 
-    if !@view || @in_a_form ||
-       (@pages && (@items_per_page == ONE_MILLION || @pages[:items] == 0))
-      if @in_a_form
-        presenter.hide(:toolbar)
-        # in case it was hidden for summary screen, and incase there were no records on show_list
-        presenter.show(:paging_div, :form_buttons_div)
-
-        action_url, multi_record = case x_active_tree
-                                   when :pxe_servers_tree
-                                     if x_node == 'root'
-                                       "pxe_server_create_update"
-                                     else
-                                       case x_node.split('-').first
-                                       when 'pi' then ["pxe_image_edit", true]
-                                       when 'wi' then ["pxe_wimg_edit",  true]
-                                       else "pxe_server_create_update"
-                                       end
-                                     end
-                                   when :iso_datastores_tree
-                                     if x_node == "root"
-                                       "iso_datastore_create"
-                                     else
-                                       if x_node.split('-').first == "isi"
-                                         ["iso_image_edit", true]
-                                       else
-                                         "iso_datastore_create"
-                                       end
-                                     end
-                                   when :pxe_image_types_tree
-                                     "pxe_image_type_edit"
-                                   else
-                                     "template_create_update"
-                                   end
-
-        presenter.update(:form_buttons_div, r[
-          :partial => "layouts/x_edit_buttons",
-          :locals  => {
-            :record_id    => @edit[:rec_id],
-            :action_url   => action_url,
-            :multi_record => multi_record,
-            :serialize    => true
-          }
-        ])
-      else
-        presenter.hide(:form_buttons_div)
-      end
-      presenter.hide(:pc_div_1)
-    else
-      presenter.hide(:form_buttons_div).show(:pc_div_1)
-    end
-
     presenter[:record_id] = determine_record_id_for_presenter
-
-    presenter[:clear_gtl_list_grid] = @gtl_type && @gtl_type != 'list'
 
     # Save open nodes, if any were added
     presenter[:osf_node] = x_node
     presenter[:lock_sidebar] = @in_a_form && @edit
 
+    presenter.update(:breadcrumbs, r[
+      :partial => "layouts/breadcrumbs",
+      :locals  => {
+        :right_cell_text => right_cell_text || @right_cell_text,
+      }
+    ])
+
     render :json => presenter.for_render
   end
 
   def get_session_data
-    @title        = "PXE"
-    @layout       = "pxe"
-    @lastaction   = session[:pxe_lastaction]
-    @display      = session[:pxe_display]
+    super
     @current_page = session[:pxe_current_page]
   end
 
   def set_session_data
-    session[:pxe_lastaction]   = @lastaction
+    super
     session[:pxe_current_page] = @current_page
-    session[:pxe_display]      = @display unless @display.nil?
+  end
+
+  def breadcrumbs_options
+    {
+      :breadcrumbs => [
+        {:title => _("Compute")},
+        {:title => _("Infrastructure")},
+        {:title => _("PXE")},
+      ],
+    }
   end
 
   menu_section :inf

@@ -1,19 +1,10 @@
 describe MiqAeCustomizationController do
-  before(:each) do
+  before do
     stub_user(:features => :all)
   end
 
-  context "#get_node_info" do
-    it "Don't need to validate active node when editing Dialogs" do
-      controller.instance_variable_set(:@sb, :trees => {:dialog_edit_tree => {:active_node => "root"}}, :active_tree => :dialog_edit_tree)
-      expect(controller).not_to receive(:valid_active_node)
-      expect(controller).to receive(:dialog_edit_set_form_vars)
-      controller.send(:get_node_info)
-    end
-  end
-
   describe "group_reorder_field_changed" do
-    before(:each) do
+    before do
       allow(controller).to receive(:load_edit).and_return(true)
       controller.instance_variable_set(:@edit, :new => {:fields => [['test', 100], ['test1', 101], ['test2', 102], ['test3', 103]]})
     end
@@ -55,71 +46,8 @@ describe MiqAeCustomizationController do
     end
   end
 
-  describe "#group_form_field_changed" do
-    before(:each) do
-      allow(controller).to receive(:load_edit).and_return(true)
-      controller.instance_variable_set(:@edit, :new => {:fields => [['value', 100], ['value1', 101], ['value2', 102], ['value3', 103]]})
-    end
-
-    context "assign buttons" do
-      it "moves button up" do
-        post :group_form_field_changed, :params => { 'selected_fields' => ['101'], :button => 'up' }
-        expect(controller.instance_variable_get(:@edit)).to eql(:new => {:fields => [['value1', 101], ['value', 100], ['value2', 102], ['value3', 103]]})
-      end
-
-      it "moves button down" do
-        post :group_form_field_changed, :params => { 'selected_fields' => ['101'], :button => 'down' }
-        expect(controller.instance_variable_get(:@edit)).to eql(:new => {:fields => [['value', 100], ['value2', 102], ['value1', 101], ['value3', 103]]})
-      end
-
-      it "moves button to the top" do
-        post :group_form_field_changed, :params => { 'selected_fields' => ['101'], :button => 'top' }
-        expect(controller.instance_variable_get(:@edit)).to eql(:new => {:fields => [['value1', 101], ['value', 100], ['value2', 102], ['value3', 103]]})
-      end
-
-      it "moves button to the bottom" do
-        post :group_form_field_changed, :params => { 'selected_fields' => ['101'], :button => 'bottom' }
-        expect(controller.instance_variable_get(:@edit)).to eql(:new => {:fields => [['value', 100], ['value2', 102], ['value3', 103], ['value1', 101]]})
-      end
-
-      context "no selected button" do
-        it "moves up and display error message" do
-          post :group_form_field_changed, :params => { :button => 'up' }
-          expect(response.body).to include("flash")
-        end
-
-        it "moves down and display error message" do
-          post :group_form_field_changed, :params => { :button => 'down' }
-          expect(response.body).to include("flash")
-        end
-
-        it "moves up and display error message" do
-          post :group_form_field_changed, :params => { :button => 'top' }
-          expect(response.body).to include("flash")
-        end
-
-        it "moves down and display error message" do
-          post :group_form_field_changed, :params => { :button => 'bottom' }
-          expect(response.body).to include("flash")
-        end
-      end
-
-      context "all buttons selected" do
-        it "moves to the top and nothing happen" do
-          post :group_form_field_changed, :params => { :button => 'top', 'selected_fields' => ['100', '101', '102', '103'] }
-          expect(controller.instance_variable_get(:@edit)).to eql(:new => {:fields => [['value', 100], ['value1', 101], ['value2', 102], ['value3', 103]]})
-        end
-
-        it "moves to the bottom and nothing happen" do
-          post :group_form_field_changed, :params => { :button => 'bottom', 'selected_fields' => ['100', '101', '102', '103'] }
-          expect(controller.instance_variable_get(:@edit)).to eql(:new => {:fields => [['value', 100], ['value1', 101], ['value2', 102], ['value3', 103]]})
-        end
-      end
-    end
-  end
-
   describe 'x_button' do
-    before(:each) do
+    before do
       ApplicationController.handle_exceptions = true
     end
 
@@ -148,65 +76,68 @@ describe MiqAeCustomizationController do
       controller.instance_variable_set(:@settings, :display => {:locale => 'default'})
       controller.instance_variable_set(:@sb, :flash_msg => sandbox_flash_messages)
       bypass_rescue
+      EvmSpecHelper.seed_specific_product_features(
+        %w(dialog_accord old_dialogs_accord ab_buttons_accord miq_ae_class_import_export)
+      )
     end
 
     it "assigns the sandbox active tree" do
-      login_as FactoryGirl.create(:user, :features => "old_dialogs_accord")
+      login_as FactoryBot.create(:user, :features => "old_dialogs_accord")
       get :explorer
       expect(assigns(:sb)[:active_tree]).to eq(:old_dialogs_tree)
     end
 
     it "assigns the sandbox active accord" do
-      login_as FactoryGirl.create(:user, :features => "old_dialogs_accord")
+      login_as FactoryBot.create(:user, :features => "old_dialogs_accord")
       get :explorer
       expect(assigns(:sb)[:active_accord]).to eq(:old_dialogs)
     end
 
     it "assigns the sandbox active node on old dialogs tree to root" do
-      login_as FactoryGirl.create(:user, :features => "old_dialogs_accord")
+      login_as FactoryBot.create(:user, :features => "old_dialogs_accord")
       get :explorer
       expect(controller.x_node).to eq("root")
     end
 
     it "builds the old dialogs tree" do
-      login_as FactoryGirl.create(:user, :features => "old_dialogs_accord")
+      login_as FactoryBot.create(:user, :features => "old_dialogs_accord")
       get :explorer
       expect(assigns(:sb)[:trees]).to include(:old_dialogs_tree)
     end
 
     it "assigns the sandbox active node on dialogs tree to root" do
-      login_as FactoryGirl.create(:user, :features => "dialog_accord")
+      login_as FactoryBot.create(:user, :features => "dialog_accord")
       get :explorer
       expect(controller.x_node).to eq("root")
     end
 
     it "builds the dialog tree" do
-      login_as FactoryGirl.create(:user, :features => "dialog_accord")
+      login_as FactoryBot.create(:user, :features => "dialog_accord")
       get :explorer
       expect(assigns(:sb)[:trees]).to include(:dialogs_tree)
     end
 
     it "assigns the sandbox active node on ab tree to root" do
-      login_as FactoryGirl.create(:user, :features => "dialog_accord")
+      login_as FactoryBot.create(:user, :features => "dialog_accord")
       get :explorer
-      expect(expect(controller.x_node).to eq("root"))
+      expect(expect(controller.x_node).to(eq("root")))
     end
 
     it "builds the ab tree" do
-      login_as FactoryGirl.create(:user, :features => "ab_buttons_accord")
+      login_as FactoryBot.create(:user, :features => "ab_buttons_accord")
       allow(controller).to receive(:get_node_info)
       get :explorer
       expect(assigns(:sb)[:trees]).to include(:ab_tree)
     end
 
     it "assigns the sandbox active node on import/export tree to root" do
-      login_as FactoryGirl.create(:user, :features => "miq_ae_class_import_export")
+      login_as FactoryBot.create(:user, :features => "miq_ae_class_import_export")
       get :explorer
-      expect(expect(controller.x_node).to eq("root"))
+      expect(expect(controller.x_node).to(eq("root")))
     end
 
     it "builds the import/export tree" do
-      login_as FactoryGirl.create(:user, :features => "miq_ae_class_import_export")
+      login_as FactoryBot.create(:user, :features => "miq_ae_class_import_export")
       get :explorer
       expect(assigns(:sb)[:trees]).to include(:dialog_import_export_tree)
     end
@@ -228,42 +159,6 @@ describe MiqAeCustomizationController do
       it "does not include the flash message from the sandbox" do
         get :explorer
         expect(assigns(:flash_array)).not_to include("the flash messages")
-      end
-    end
-
-    context "when in dialog edit state" do
-      render_views
-
-      before do
-        FactoryGirl.create(:miq_server, :guid => MiqServer.my_guid)
-        MiqServer.my_server_clear_cache
-
-        # It looks like edit state causes some of the features to be denied
-        # Why?
-        stub_user(:features => :none)
-      end
-
-      it "still renders the main_div" do
-        session[:sandboxes] = {
-          "miq_ae_customization" => {
-            :trees         => {:dialog_edit_tree => {:active_node => "root"},
-                               :dialogs_tree     => {:active_node => "root"}},
-            :active_tree   => :dialog_edit_tree,
-            :active_accord => :dialogs,
-          },
-        }
-        session[:edit] = {
-          :new     => {},
-          :current => {},
-        }
-
-        get :explorer
-
-        expect(assigns(:sb)[:active_tree]).to eq(:dialogs_tree)
-        expect(response).to render_template('miq_ae_customization/explorer')
-
-        # empty main_div
-        expect(response.body).not_to match(/<div id=['"]main_div['"]>\s*<\/div>/)
       end
     end
   end
@@ -334,13 +229,13 @@ describe MiqAeCustomizationController do
       context "when the dialog importer raises a circular reference error" do
         before do
           allow(dialog_import_service).to receive(:store_for_import)
-            .and_raise(DialogImportValidator::DialogFieldAssociationCircularReferenceError)
+            .and_raise(DialogFieldAssociationValidator::DialogFieldAssociationCircularReferenceError)
         end
 
         it "redirects with an error message" do
           post :upload_import_file, :params => params, :xhr => true
           expect(controller.instance_variable_get(:@flash_array))
-            .to include(:message => "Error during upload: the following dialog fields to be imported contain circular association references: DialogImportValidator::DialogFieldAssociationCircularReferenceError",
+            .to include(:message => "Error during upload: the following dialog fields to be imported contain circular association references: DialogFieldAssociationValidator::DialogFieldAssociationCircularReferenceError",
                         :level   => :error)
         end
       end
@@ -355,6 +250,20 @@ describe MiqAeCustomizationController do
           post :upload_import_file, :params => params, :xhr => true
           expect(controller.instance_variable_get(:@flash_array))
             .to include(:message => "Error during upload: incorrect Dialog format, only service dialogs can be imported",
+                        :level   => :error)
+        end
+      end
+
+      context "when the dialog importer raises a blank error" do
+        before do
+          allow(dialog_import_service).to receive(:store_for_import)
+            .and_raise(DialogImportValidator::BlankFileError)
+        end
+
+        it "redirects with an error message" do
+          post :upload_import_file, :params => params, :xhr => true
+          expect(controller.instance_variable_get(:@flash_array))
+            .to include(:message => "Error: the uploaded file is blank",
                         :level   => :error)
         end
       end
@@ -479,7 +388,7 @@ describe MiqAeCustomizationController do
     end
 
     context "when there are service dialogs" do
-      let(:service_dialogs) { %w(1, 2, 3) }
+      let(:service_dialogs) { %w(1 2 3) }
 
       before do
         allow(DialogYamlSerializer).to receive(:new).and_return(dialog_yaml_serializer)
@@ -529,7 +438,7 @@ describe MiqAeCustomizationController do
   end
 
   context "#x_button" do
-    before :each do
+    before do
       controller.instance_variable_set(:@sb, :applies_to_class => "EmsCluster")
       session[:sandboxes] = {
         "miq_ae_customization" => {
@@ -567,9 +476,40 @@ describe MiqAeCustomizationController do
 
       # FIXME: this tree is an exceptional one, it's going to be removed when we replace the
       # dialog editor.
-      expect(controller).to receive(:build_dialog_edit_tree)
       expect(controller).to receive(:render)
-      controller.send(:replace_right_cell, :replace_trees => %i(ab old_dialogs dialogs dialog_edit))
+      controller.send(:replace_right_cell, :replace_trees => %i(ab old_dialogs dialogs))
+    end
+  end
+
+  describe "#editor" do
+    let(:dialog) { FactoryBot.create(:dialog) }
+
+    it "sets title correctly when adding" do
+      controller.send(:editor)
+
+      expect(controller.instance_variable_get(:@title)).to include("Add a new Dialog")
+    end
+
+    it "sets title correctly when editing" do
+      controller.params = {:id => dialog.id}
+      controller.send(:editor)
+
+      expect(controller.instance_variable_get(:@title)).to include("Editing")
+      expect(controller.instance_variable_get(:@title)).to include(dialog.name)
+    end
+  end
+
+  describe "breadcrumbs" do
+    before { get :editor }
+
+    it "editor returns breadcrumbs with link to explorer" do
+      expect(controller.data_for_breadcrumbs[-2][:to_explorer]).to eq('explorer')
+    end
+
+    it "editor edit returns title as the last item" do
+      controller.instance_variable_set(:@sb, "action" => "dialog_new_create")
+
+      expect(controller.data_for_breadcrumbs[-1][:title]).to eq(controller.instance_variable_get(:@title))
     end
   end
 end

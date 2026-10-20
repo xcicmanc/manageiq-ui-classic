@@ -1,7 +1,8 @@
 require 'bundler/setup'
 require 'bundler/gem_tasks'
+require 'English'
 
-require 'manageiq-ui-classic'
+require 'manageiq/ui/classic'
 ManageIQ::UI::Classic::Engine.load_tasks
 
 begin
@@ -21,7 +22,7 @@ if defined?(RSpec) && defined?(RSpec::Core::RakeTask)
   RSpec::Core::RakeTask.new(:spec => ["app:test:initialize", "app:evm:compile_sti_loader"]) do |t|
     spec_dir = File.expand_path("spec", __dir__)
     EvmTestHelper.init_rspec_task(t, ['--require', File.join(spec_dir, 'spec_helper')])
-    t.pattern = FileList[spec_dir + '/**/*_spec.rb'].exclude(spec_dir + '/manageiq/**/*_spec.rb')
+    t.pattern = FileList[spec_dir + '/**/*_spec.rb'].exclude(spec_dir + '/manageiq/**/*_spec.rb').exclude(spec_dir + '/routes_spec.rb')
   end
 end
 
@@ -30,80 +31,100 @@ end
 if ENV["BUNDLE_GEMFILE"].nil? || ENV["BUNDLE_GEMFILE"] == File.expand_path("../Gemfile", __FILE__)
   require 'jasmine'
   load 'jasmine/tasks/jasmine.rake'
-end
 
-class StaticOrHaml
-  def initialize(dir = 'app/views/static')
-    @dir = dir
-    @rack_file = Rack::File.new(@dir)
+  # running jasmine outside ci ignores the `random: false` in `jasmine.yml` - needs a message
+  task :jasmine_url do
+    puts
+    puts "Please open http://localhost:#{Jasmine.config.port(:server)}/?random=false"
+    puts
   end
 
-  def call(env)
-    path = Pathname.new(@dir).join(env["PATH_INFO"].sub(/^\/+/, ''))
-    return [404, {}, []] unless File.exist?(path)
-
-    return @rack_file.call(env) unless path.to_s.ends_with?('.haml')
-
-    raw = File.read(path)
-    scope = ActionView::Base.new
-    scope.controller = ActionController::Base.new
-    scope.view_paths << File.expand_path("../app/views", __FILE__)
-
-    compiled = Haml::Engine.new(raw).render(scope)
-
-    [200, {"Content-Type" => "text/html"}, [compiled]]
-  end
-end
-
-module Jasmine
-  class << self
-    alias old_initialize_config initialize_config
-
-    def initialize_config
-      old_initialize_config
-
-      # serve haml templates from app/views/static/ on /static/
-      @config.add_rack_path('/static', -> { StaticOrHaml.new })
-
-      # serve weback-compiled packs from public/packs/ on /packs/
-      @config.add_rack_path('/packs', -> { Rack::File.new(Rails.root.join('public', 'packs')) })
-    end
-
-    alias old_server_is_listening_on server_is_listening_on
-
-    def server_is_listening_on(_hostname, port)
-      # hack around Travis resolving localhost to IPv6 and failing
-      old_server_is_listening_on('127.0.0.1', port)
-    end
-  end
-
-  class Configuration
-    alias old_initialize initialize
-
-    def initialize
-      # hack around Travis resolving localhost to IPv6 and failing
-      @host = 'http://127.0.0.1'
-      old_initialize
-    end
-  end
+  Rake::Task['jasmine'].prerequisites.unshift 'jasmine_url'
 end
 
 namespace :spec do
-  namespace :javascript do
-    desc "Setup environment for javascript specs"
-    task :setup
+  desc "Run all routing specs"
+  RSpec::Core::RakeTask.new(:routes => 'app:test:initialize') do |t|
+    spec_dir = File.expand_path("spec", __dir__)
+    EvmTestHelper.init_rspec_task(t, ['--require', File.join(spec_dir, 'spec_helper')])
+    t.pattern = FileList[File.expand_path('spec/routes_spec.rb', __dir__)]
   end
 
   desc "Run all javascript specs"
   task :javascript => ["app:test:initialize", :environment, "jasmine:ci"]
 
-  namespace :compile do
-    desc "Does nothing, needed by Travis"
-    task :setup
-  end
-
   desc "Try to compile assets"
   task :compile => ["app:assets:precompile"]
+
+  desc "Run Jest tests"
+  task :jest do
+    system('NODE_OPTIONS=--max_old_space_size=4096 yarn test')
+    exit $CHILD_STATUS.exitstatus
+  end
+
+  namespace :jest do
+    desc 'Run Jest tests with node debugger'
+    task :debug do
+      puts
+      puts "open your chrome://inspect/#devices on your chrome based browser (see https://facebook.github.io/jest/docs/en/troubleshooting.html for more details)"
+      puts
+      system('node --inspect-brk node_modules/.bin/jest --runInBand')
+    end
+  end
+
+  desc "Run Debride"
+  task :debride do
+    system('bash bin/ci/dead_method_check.sh')
+    exit 0
+  end
+
+  desc "Run security specs from core"
+  task :security => ["app:test:security"]
+
+  desc "Run cypress specs (starts a Rails server)"
+  task :cypress => "cypress:run_with_rails"
+
+  namespace :cypress do
+    task :run_with_rails do
+      puts "\n== Starting Rails server =="
+      rails_pid = Bundler.with_original_env do
+        spawn("bin/rails s", [:out, :err] => "/dev/null")
+      end
+      puts "== Rails server started with PID #{rails_pid} =="
+
+      puts "\n== Starting simulated queue worker =="
+      simulator_pid = Bundler.with_original_env do
+        spawn("bin/rails app:evm:simulate_queue_worker", [:out, :err] => "/dev/null")
+      end
+      puts "== Simulated queue worker started with PID #{simulator_pid} =="
+
+      Rake::Task["spec:cypress:run"].invoke
+    ensure
+      if simulator_pid
+        puts "\n== Killing simulated queue worker with PID #{simulator_pid} =="
+        Process.kill("INT", simulator_pid)
+      end
+      if rails_pid
+        puts "\n== Killing Rails server with PID #{rails_pid} =="
+        Process.kill("INT", rails_pid)
+      end
+    end
+
+    desc "Run cypress specs (with a running Rails server)"
+    task :run do
+      ENV["CYPRESS_BROWSER"] ||= "chrome"
+
+      puts "\n== Cypress tests started for #{ENV["CYPRESS_BROWSER"]} browser =="
+      system("yarn cypress:run:#{ENV["CYPRESS_BROWSER"]}")
+      exit_status = $?.exitstatus
+      puts "== Cypress tests for #{ENV["CYPRESS_BROWSER"]} browser completed =="
+
+      exit exit_status
+    end
+  end
 end
 
-task :default => :spec
+desc "Rebuild yarn audit pending list"
+task :rebuild_yarn_audit_pending => "app:test:security:rebuild_yarn_audit_pending"
+
+task :default => ENV["TEST_SUITE"] || :spec

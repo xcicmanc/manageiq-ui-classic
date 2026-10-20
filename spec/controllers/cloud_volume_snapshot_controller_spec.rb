@@ -1,15 +1,15 @@
 describe CloudVolumeSnapshotController do
   context "#tags_edit" do
     let!(:user) { stub_user(:features => :all) }
-    before(:each) do
+    before do
       EvmSpecHelper.create_guid_miq_server_zone
-      @snapshot = FactoryGirl.create(:cloud_volume_snapshot, :name => "cloud-volume-snapshot-01")
+      @snapshot = FactoryBot.create(:cloud_volume_snapshot, :name => "cloud-volume-snapshot-01")
       allow(@snapshot).to receive(:tagged_with).with(:cat => user.userid).and_return("my tags")
-      classification = FactoryGirl.create(:classification, :name => "department", :description => "D    epartment")
-      @tag1 = FactoryGirl.create(:classification_tag,
+      classification = FactoryBot.create(:classification, :name => "department", :description => "D    epartment")
+      @tag1 = FactoryBot.create(:classification_tag,
                                  :name   => "tag1",
                                  :parent => classification)
-      @tag2 = FactoryGirl.create(:classification_tag,
+      @tag2 = FactoryBot.create(:classification_tag,
                                  :name   => "tag2",
                                  :parent => classification)
       allow(Classification).to receive(:find_assigned_entries).with(@snapshot).and_return([@tag1, @tag2])
@@ -42,7 +42,7 @@ describe CloudVolumeSnapshotController do
 
     it "save tags" do
       session[:breadcrumbs] = [{:url => "cloud_volume_snapshot/show/#{@snapshot.id}"}, 'placeholder']
-      post :tagging_edit, :params => {:button => "save", :format => :js, :id => @snapshot.id}
+      post :tagging_edit, :params => {:button => "save", :format => :js, :id => @snapshot.id, :data => get_tags_json([@tag1, @tag2])}
       expect(assigns(:flash_array).first[:message]).to include("Tag edits were successfully saved")
       expect(assigns(:edit)).to be_nil
     end
@@ -52,16 +52,17 @@ describe CloudVolumeSnapshotController do
     before do
       stub_user(:features => :all)
       EvmSpecHelper.create_guid_miq_server_zone
-      @ems = FactoryGirl.create(:ems_openstack)
-      @snapshot = FactoryGirl.create(:cloud_volume_snapshot_openstack,
+      @ems = FactoryBot.create(:ems_openstack)
+      @snapshot = FactoryBot.create(:cloud_volume_snapshot_openstack,
                                      :ext_management_system => @ems)
     end
 
     context "#delete" do
       let(:task_options) do
+        userid = controller.current_user.userid
         {
-          :action => "deleting volume snapshot #{@snapshot.inspect} in #{@ems.inspect}",
-          :userid => controller.current_user.userid
+          :action => "deleting volume snapshot for #{userid} in #{@ems.name}",
+          :userid => userid
         }
       end
       let(:queue_options) do
@@ -69,17 +70,33 @@ describe CloudVolumeSnapshotController do
           :class_name  => @snapshot.class.name,
           :instance_id => @snapshot.id,
           :method_name => 'delete_snapshot',
-          :priority    => MiqQueue::HIGH_PRIORITY,
-          :role        => 'ems_operations',
-          :zone        => @ems.my_zone,
           :args        => []
         }
       end
 
       it "queues the delete action" do
-        expect(MiqTask).to receive(:generic_action_with_callback).with(task_options, queue_options)
+        expect(MiqTask).to receive(:generic_action_with_callback).with(task_options, hash_including(queue_options))
         post :button, :params => { :id => @snapshot.id, :pressed => "cloud_volume_snapshot_delete", :format => :js }
       end
+    end
+  end
+
+  describe "#delete_cloud_volume_snapshots" do
+    let(:admin_user) { FactoryBot.create(:user, :role => "super_administrator") }
+    let!(:snapshot) { FactoryBot.create(:cloud_volume_snapshot) }
+    before do
+      EvmSpecHelper.create_guid_miq_server_zone
+
+      login_as admin_user
+      allow(User).to receive(:current_user).and_return(admin_user)
+      allow(controller).to receive(:assert_privileges)
+      allow(controller).to receive(:render_flash)
+      controller.params = {:id => snapshot.id, :pressed => 'host_NECO'}
+    end
+
+    it "call cloud volume snapshots" do
+      expect(controller).to receive(:process_cloud_volume_snapshots).with([CloudVolumeSnapshot], "destroy")
+      controller.send(:delete_cloud_volume_snapshots)
     end
   end
 end

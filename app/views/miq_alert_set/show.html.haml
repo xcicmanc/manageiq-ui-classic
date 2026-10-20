@@ -1,0 +1,14 @@
+#alert-profile-details-div
+
+  = render :partial => "layouts/flash_msg"
+  = miq_summary_alert_set_info(@alert_profile)
+
+  - unless @assign
+    = miq_summary_alert_set_alerts(@alert_profile_alerts)
+
+  -# Notes field
+  = miq_summary_alert_set_notes(@alert_profile)
+
+  -# Show assignments
+  = miq_summary_alert_set_assigned(@alert_profile.get_assigned_tos, @alert_profile_tag)
+  

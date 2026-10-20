@@ -47,7 +47,7 @@ class WidgetPresenter
                    :dataMethod => 'post')
     end
 
-    if @widget.contents_for_user(current_user).present? && %w(report chart).include?(@widget.content_type)
+    if @widget.contents_for_user(current_user).present? && %w[report chart].include?(@widget.content_type)
       title = if @widget.content_type == "chart"
                 _("Open the chart and full report in a new window")
               else
@@ -58,20 +58,21 @@ class WidgetPresenter
                 else
                   _("This will show the entire report (all rows) in your browser. Do you want to proceed?")
                 end
-      buttons.push(:id          => "w_#{@widget.id}_fullscreen",
-                   :title       => title,
-                   :name        => _("Full Screen"),
-                   :confirm     => confirm,
-                   :href        => "/dashboard/report_only?rr_id=#{@widget.contents_for_user(current_user).miq_report_result_id}&type=#{@widget.content_type == "chart" ? 'hybrid' : 'tabular'}",
-                   :fonticon    => 'fa fa-arrows-alt fa-fw',
-                   :target      => "_blank")
-      if PdfGenerator.available?
-        buttons.push(:id       => "w_#{@widget.id}_pdf",
-                     :title    => _("Download the full report (all rows) as a PDF file"),
-                     :name     => _("Download PDF"),
-                     :href     => '/dashboard/widget_to_pdf?rr_id=' + @widget.contents_for_user(current_user).miq_report_result_id.to_s,
-                     :fonticon => 'fa fa-file-pdf-o fa-fw')
-      end
+      buttons.push(:id       => "w_#{@widget.id}_fullscreen",
+                   :title    => title,
+                   :name     => _("Full Screen"),
+                   :confirm  => confirm,
+                   :href     => "/dashboard/report_only?rr_id=#{@widget.contents_for_user(current_user).miq_report_result_id}&type=#{@widget.content_type == "chart" ? 'hybrid' : 'tabular'}",
+                   :fonticon => 'fa fa-arrows-alt fa-fw',
+                   :target   => "_blank",
+                   :rel      => "noopener noreferrer")
+      buttons.push(:id       => "w_#{@widget.id}_pdf",
+                   :title    => _("Print the full report (all rows) or export it as a PDF file"),
+                   :name     => _("Print or export to PDF"),
+                   :href     => '/dashboard/widget_to_pdf?rr_id=' + @widget.contents_for_user(current_user).miq_report_result_id.to_s,
+                   :fonticon => 'pficon pficon-print fa-fw',
+                   :target   => '_blank',
+                   :rel      => "noopener noreferrer")
     end
 
     if @widget.content_type == 'chart'
@@ -79,14 +80,21 @@ class WidgetPresenter
                    :title      => _("Zoom in on this chart"),
                    :name       => _("Zoom in"),
                    :href       => '/dashboard/widget_zoom?widget=' + @widget.id.to_s,
-                   :fonticon   => 'fa  fa-plus fa-fw',
+                   :fonticon   => 'fa fa-plus fa-fw',
                    :dataRemote => true,
                    :sparkleOn  => true,
                    :dataMethod => 'post')
     end
+    if @widget.content_type != 'menu'
+      buttons.push(:id       => "w_#{@widget.id}_refresh",
+                   :title    => _("Refresh this Widget"),
+                   :name     => _("Refresh"),
+                   :fonticon => 'fa fa-refresh fa-fw',
+                   :refresh  => true)
+    end
+
     buttons.to_json
   end
-
 
   def self.chart_data
     @chart_data ||= []

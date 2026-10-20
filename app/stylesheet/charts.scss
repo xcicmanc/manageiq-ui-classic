@@ -1,0 +1,145 @@
+@use '@carbon/react/scss/theme' as *;
+
+.utilization-trend-chart-pf {
+  margin-bottom: 50px;
+
+  .available-text {
+    width: 50px;
+
+    .available-text-total {
+      padding-left: 5px;
+    }
+  }
+}
+
+.sparkline-chart {
+  margin-top: 20px;
+}
+
+.empty-chart-content {
+  height: 231px;
+  padding-top: 20px;
+
+  .pficon {
+    font-size: 24px;
+    margin-top: 48px;
+  }
+}
+
+.chart-holder {
+  .cds--cc--chart-wrapper {
+    .layout-svg-wrapper {
+      width: 90%;
+      left: 5%;
+      position: relative;
+      margin-top: 6px;
+    }
+
+    .cds--cc--title {
+      .title {
+        display: none;
+      }
+    }
+
+    svg {
+      overflow: visible !important;
+    }
+  }
+}
+
+.cds--cc--pie {
+  overflow: visible !important;
+}
+
+.cds--chart-holder .cds--cc--toolbar {
+  .cds--overflow-menu-options {
+    top: 10%;
+  }
+}
+
+.spacer {
+  margin-top: 10px;
+  height: 0;
+}
+
+.cds--cc--legend {
+  .legend-item {
+    height: 30px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+  }
+}
+
+.heatmap_charts_div {
+  display: inline-flex;
+
+  .chart-holder {
+    margin-right: 55px;
+  }
+
+  .heat-chart-pf {
+    margin-bottom: 50px;
+    width: 50%;
+
+    .chart-holder.cds--chart-holder {
+      width: 100% !important;
+    }
+  }
+}
+
+.heatmap_charts_section {
+  display: inline-flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.zoom-bar {
+  margin-bottom: 20px;
+}
+
+.empty-chart-contents {
+  margin-bottom: 10px;
+
+  span {
+    vertical-align: middle;
+    width: 100%;
+    font-size: 12px;
+    font-weight: 400;
+  }
+}
+
+.card-pf-aggregate-status-title {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+}
+
+.card-pf-utilization {
+  .chart-holder.cds--chart-holder {
+    margin-bottom: 40px;
+  }
+
+  .utilization-cpu-chart-pf, .servers_available_pie_chart_section {
+    .trend-footer-pf {
+      border-right: 0.5px solid #d1d1d1;
+    }
+  }
+
+  .utilization-memory-chart-pf, .servers_health_pie_chart_section {
+    .trend-footer-pf {
+      border-left: 0.5px solid #d1d1d1;
+    }
+  }
+
+  .trend-footer-pf {
+    border-top: 1px solid $layer-selected-01;
+    border-bottom: 1px solid #d1d1d1;
+    margin: 0 -20px -20px;
+    padding: 20px;
+    padding-bottom: 21px;
+    font-size: 12px;
+    font-weight: 400;
+    color: #333;
+    background: #fafafa;
+    display: block;
+  }
+}

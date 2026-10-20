@@ -3,6 +3,7 @@ module ApplicationController::Buttons
 
   included do
     include Mixins::PlaybookOptions
+    include CustomButtonHelper
   end
 
   def ab_group_edit
@@ -20,24 +21,25 @@ module ApplicationController::Buttons
     case params[:button]
     when "cancel"
       add_flash(_("Button Group Reorder cancelled"))
-      @edit = session[:edit] = nil  # clean out the saved info
+      @edit = session[:edit] = nil # clean out the saved info
       ab_get_node_info(x_node) if x_active_tree == :ab_tree
       replace_right_cell(:nodetype => x_node)
     when "save"
       return unless load_edit("group_reorder", "replace_cell__explorer")
+
       # save group_index of each custombuttonset in set_data
       if x_active_tree == :sandt_tree
         button_order = []
-        st = ServiceTemplate.find_by_id(@sb[:applies_to_id])
+        st = ServiceTemplate.find(@sb[:applies_to_id])
       end
       @edit[:new][:fields].each_with_index do |field, i|
         field_nodes = field.last.split('-')
-        button_order.push(field.last)   if x_active_tree == :sandt_tree
-        if field_nodes.first == "cbg"
-          cs = CustomButtonSet.find_by_id(field_nodes.last)
-          cs.set_data[:group_index] = i + 1
-          cs.save!
-        end
+        button_order.push(field.last) if x_active_tree == :sandt_tree
+        next if field_nodes.first != "cbg"
+
+        cs = CustomButtonSet.find(field_nodes.last)
+        cs.set_data[:group_index] = i + 1
+        cs.save!
       end
 
       if x_active_tree == :sandt_tree
@@ -45,7 +47,7 @@ module ApplicationController::Buttons
         st.save
       end
       add_flash(_("Button Group Reorder saved"))
-      @edit = session[:edit] = nil  # clean out the saved info
+      @edit = session[:edit] = nil # clean out the saved info
       ab_get_node_info(x_node) if x_active_tree == :ab_tree
       replace_right_cell(:nodetype => x_node, :replace_trees => x_active_tree == :ab_tree ? [:ab] : [:sandt])
     else
@@ -57,13 +59,15 @@ module ApplicationController::Buttons
       @in_a_form = true
       @lastaction = "automate_button"
       @layout = "miq_ae_automate_button"
-      replace_right_cell(:nodetype => "group_reorder")
+      replace_right_cell(:nodetype => "group_reorder", :action => "group_reorder")
     end
   end
 
   def group_reorder_field_changed
+    assert_privileges("ab_group_reorder")
     if params['selected_fields']
       return unless load_edit("group_reorder", "replace_cell__explorer")
+
       move_cols_up if params[:button] == "up"
       move_cols_down if params[:button] == "down"
       @changed = (@edit[:new] != @edit[:current])
@@ -71,6 +75,7 @@ module ApplicationController::Buttons
       render :update do |page|
         page << javascript_prologue
         page.replace("flash_msg_div", :partial => "layouts/flash_msg") unless @refresh_div && @refresh_div != "column_lists"
+        page << "miqScrollTop();" if @flash_array.present?
         page.replace(@refresh_div, :partial => "shared/buttons/#{@refresh_partial}") if @refresh_div
         page << "miqSparkle(false);"
         page << javascript_for_miq_button_visibility_changed(@changed)
@@ -82,21 +87,61 @@ module ApplicationController::Buttons
   end
 
   def group_create
+    assert_privileges("ab_group_new")
     group_create_update("create")
   end
 
   def group_update
+    assert_privileges("ab_group_edit")
     group_create_update("update")
   end
 
+  # Provider, Service, User, Group, Tenant, Cloud Tenant, Generic Object
+  # we need a "Provider" so adding an "ExtManagementSystem" to the list.
+  MODEL_WITH_OPEN_URL = %w[ExtManagementSystem Service User MiqGroup Tenant CloudTenant GenericObject Vm].freeze
+
+  # Types of visibility for the custom buttons
+  VISIBILITY_TYPES = {'role' => 'role', 'all' => 'all'}.freeze
+  ALL_ROLES = ["_ALL_", "all"].freeze
+  FIELDS_EMPTY = [[""], ["", ""]].freeze
+
+  def button_visibility_box_edit
+    typ_changed = params[:visibility_typ].present?
+    @edit[:new][:visibility_typ] = VISIBILITY_TYPES[params[:visibility_typ]] if typ_changed
+    visibility_typ = @edit[:new][:visibility_typ]
+
+    if visibility_typ.to_s == "role"
+      plural = visibility_typ.pluralize
+      key    = plural.to_sym
+      prefix = "#{plural}_"
+
+      @edit[:new][key] = [] if typ_changed
+      params.each do |var, value|
+        next unless var.starts_with?(prefix)
+
+        name = var.split(prefix).last.to_i
+        if value == "1"
+          @edit[:new][key] |= [name] # union
+        elsif value.downcase == "null"
+          @edit[:new][key].delete(name)
+        end
+      end
+    else
+      @edit[:new][:roles] ||= []
+      @edit[:new][:roles] |= ["_ALL_"]
+    end
+  end
+
   def automate_button_field_changed
+    assert_privileges(feature_by_action)
+
     unless params[:target_class]
       @edit = session[:edit]
       @custom_button = @edit[:custom_button]
       if params[:readonly]
         @edit[:new][:readonly] = (params[:readonly] != "1")
       end
-      copy_params_if_set(@edit[:new], params, %i(instance_name other_name object_message object_request))
+      copy_params_if_set(@edit[:new], params, %i[instance_name other_name object_message object_request])
       ApplicationController::AE_MAX_RESOLUTION_FIELDS.times do |i|
         f = ("attribute_" + (i + 1).to_s)
         v = ("value_" + (i + 1).to_s)
@@ -105,8 +150,14 @@ module ApplicationController::Buttons
       end
       @edit[:new][:display] = params[:display] == "1" if params[:display]
       @edit[:new][:open_url] = params[:open_url] == "1" if params[:open_url]
-      copy_params_if_set(@edit[:new], params, %i(name target_attr_name display_for submit_how description button_icon button_color dialog_id disabled_text button_type inventory_type))
-      visibility_box_edit
+
+      copy_params_if_set(@edit[:new], params, %i[name target_attr_name display_for submit_how description button_icon button_color disabled_text button_type inventory_type])
+      @edit[:new][:disabled_open_url] = !(MODEL_WITH_OPEN_URL.include?(@resolve[:target_class]) && @edit[:new][:display_for] == 'single')
+      @edit[:new][:open_url] = false if @edit[:new][:disabled_open_url]
+      @edit[:new][:dialog_id] = nil if params[:display_for].present? && params[:display_for] != 'single'
+
+      @edit[:new][:dialog_id] = params[:dialog_id] == "" ? nil : params[:dialog_id] if params.key?("dialog_id")
+      button_visibility_box_edit
 
       if params[:button_type] == 'default'
         clear_playbook_variables
@@ -120,50 +171,66 @@ module ApplicationController::Buttons
 
     render :update do |page|
       page << javascript_prologue
-      if [:instance_name, :other_name, :target_class, :button_type].any? { |k| params.key?(k) }
+      if %i[display_for instance_name other_name target_class button_type].any? { |k| params.key?(k) }
+        @sb[:active_tab] = params[:instance_name] ? "ab_advanced_tab" : "ab_options_tab"
         page.replace("ab_form", :partial => "shared/buttons/ab_form")
       end
       if params[:visibility_typ]
         page.replace("form_role_visibility", :partial => "layouts/role_visibility", :locals => {:rec_id => (@custom_button.id || "new").to_s, :action => "automate_button_field_changed"})
       end
       unless params[:target_class]
-        @changed = session[:changed] = (@edit[:new] != @edit[:current])
+        @changed = session[:changed] = false
+        # This block checks if any of the fields have changed
+        # Broken into different branches for specific fields
+        # If no fields are changed it will not set @changed or session[:changed] to true
+        @edit[:new].each_key do |key|
+          if @edit[:new][key] != @edit[:current][key]
+            if @edit[:new][key].blank? && @edit[:current][key].blank? # check empty string / nil case
+              next
+            elsif @edit[:new][key] == @edit[:current][key].to_s # check string / integer case
+              next
+            elsif key == :roles # check role values
+              if (ALL_ROLES.include?(@edit[:new][key]) || @edit[:new][key].empty?) && (ALL_ROLES.include?(@edit[:current][key]) || @edit[:current][key].nil?) # if visibility is set to "To All"
+                next
+              elsif @edit[:new][key].collect(&:to_i).sort == @edit[:current][key].collect(&:to_i).sort # check if new roles array and current roles array are equal after sorting the ids
+                next
+              else # if new roles array and current roles array are not equal
+                @changed = session[:changed] = true
+                break
+
+              end
+            elsif key == :attrs # check attribute values
+              @edit[:new][key].each_with_index do |_item, index|
+                if FIELDS_EMPTY.include?(@edit[:new][:attrs][index]) && @edit[:current][:attrs][index].empty? # check if attribute and value field is empty
+                  next
+                elsif @edit[:new][:attrs][index].empty? && @edit[:current][:attrs][index].empty? # check if attribute or value field is empty
+                  next
+                else # if new attribute array and current attribute array are not equal
+                  @changed = session[:changed] = true
+                  break
+
+                end
+              end
+
+            elsif key == :visibility_typ # check visibility type
+              if @edit[:new][key] == "all" && @edit[:current][key].nil? # if visibility is set to "To All"
+                next
+              else # if new visibility type value and current visibility type value are not equal
+                @changed = session[:changed] = true
+                break
+
+              end
+            else # if new value and current value are not equal
+              @changed = session[:changed] = true
+              break
+
+            end
+          end
+        end
+
         page << javascript_for_miq_button_visibility(@changed)
       end
       page << "miqSparkle(false);"
-    end
-  end
-
-  # AJAX driven routine to delete a user
-  def ab_button_delete
-    assert_privileges("ab_button_delete")
-    custom_button = CustomButton.find(from_cid(params[:id]))
-    description = custom_button.description
-    audit = {:event => "custom_button_record_delete", :message => "[#{custom_button.description}] Record deleted", :target_id => custom_button.id, :target_class => "CustomButton", :userid => session[:userid]}
-    if custom_button.parent
-      automation_set = CustomButtonSet.find_by_id(custom_button.parent.id)
-      if automation_set
-        mems = automation_set.members
-        if mems.length > 1
-          mems.each do |m|
-            automation_set.remove_member(custom_button) if m.id == custom_button
-          end
-        else
-          automation_set.remove_member(custom_button)
-        end
-      end
-    end
-    if custom_button.destroy
-      AuditEvent.success(audit)
-      add_flash(_("Button \"%{name}\": Delete successful") % {:name => description})
-      id = x_node.split('_')
-      id.pop
-      self.x_node = id.join("_")
-      ab_get_node_info(x_node) if x_active_tree == :ab_tree
-      replace_right_cell(:nodetype => x_node, :replace_trees => x_active_tree == :ab_tree ? [:ab] : [:sandt])
-    else
-      custom_button.errors.each { |field, msg| add_flash("#{field.to_s.capitalize} #{msg}", :error) }
-      javascript_flash
     end
   end
 
@@ -172,107 +239,62 @@ module ApplicationController::Buttons
     button_new_edit("new")
   end
 
-  def ab_create_update
-    if params[:button] == "add"
-      button_create
-    else
-      button_update
-    end
-  end
-
   def ab_button_edit
     assert_privileges("ab_button_edit")
     button_new_edit("edit")
   end
 
   def button_update
+    assert_privileges("ab_button_edit")
     button_create_update("update")
   end
 
   def button_create
+    assert_privileges("ab_button_new")
     button_create_update("create")
   end
 
-  # AJAX driven routine to check for changes in ANY field on the form
-  def group_form_field_changed
-    return unless load_edit("bg_edit__#{params[:id]}", "replace_cell__explorer")
-    group_get_form_vars
-    @custom_button_set = @edit[:custom_button_set_id] ? CustomButtonSet.find_by_id(@edit[:custom_button_set_id]) : CustomButtonSet.new
-    @changed = (@edit[:new] != @edit[:current])
-    render :update do |page|
-      page << javascript_prologue
-      page.replace(@refresh_div, :partial => "shared/buttons/#{@refresh_partial}") if @refresh_div
-      if @flash_array
-        page.replace("flash_msg_div", :partial => "layouts/flash_msg")
-      else
-        page << javascript_for_miq_button_visibility(@changed)
-      end
+  def group_form_valid
+    required = %i[name description button_icon]
+
+    required.none? do |field|
+      @edit[:new][field].blank?
     end
   end
 
-  # AJAX driven routine to delete a button group
-  def ab_group_delete
-    assert_privileges("ab_group_delete")
-    if x_node.split('_').last == "ub"
-      add_flash(_("'Unassigned Buttons Group' can not be deleted"), :error)
-      get_node_info
-      replace_right_cell(:nodetype => x_node)
-      return
-    end
-    custom_button_set = CustomButtonSet.find(from_cid(params[:id]))
-    description = custom_button_set.description
-    audit = {:event => "custom_button_set_record_delete", :message => "[#{custom_button_set.description}] Record deleted", :target_id => custom_button_set.id, :target_class => "CustomButtonSet", :userid => session[:userid]}
+  def open_url_after_dialog
+    external_url = ExternalUrl.find_by(
+      :resource_id   => params[:targetId],
+      :resource_type => params[:realTargetType],
+      :user          => User.current_user
+    )
+    # FIXME: remove this fallback once the ':remote_console_url=' is removed from automate
+    external_url ||= SystemConsole.find_by(:vm_id => params[:targetId])
 
-    mems = custom_button_set.members
-    mems.each do |mem|
-      uri = CustomButton.find_by_id(mem.id)
-      uri.save!
-      custom_button_set.remove_member(mem)
-    end
+    url = external_url.try(:url)
 
-    if custom_button_set.destroy
-      AuditEvent.success(audit)
-      add_flash(_("Button Group \"%{name}\": Delete successful") % {:name => description})
-      id = x_node.split('_')
-      id.pop
-      self.x_node = id.join("_")
-      ab_get_node_info(x_node) if x_active_tree == :ab_tree
-      replace_right_cell(:nodetype => x_node, :replace_trees => x_active_tree == :ab_tree ? [:ab] : [:sandt])
-    else
-      custom_button_set.errors.each { |field, msg| add_flash("#{field.to_s.capitalize} #{msg}", :error) }
-      javascript_flash
-    end
+    render :json => {:open_url => url}
   end
 
   private
 
-  BASE_MODEL_EXPLORER_CLASSES = [MiqGroup, MiqTemplate, Service, Switch, Tenant, User, Vm].freeze
-  APPLIES_TO_CLASS_BASE_MODELS = %w(AvailabilityZone CloudNetwork CloudObjectStoreContainer CloudSubnet CloudTenant
-                                    CloudVolume ContainerGroup ContainerImage ContainerNode ContainerProject
-                                    ContainerTemplate ContainerVolume EmsCluster ExtManagementSystem
-                                    GenericObject GenericObjectDefinition Host LoadBalancer
-                                    MiqGroup MiqTemp MiqTemplate NetworkRouter OrchestrationStack SecurityGroup Service
-                                    ServiceTemplate Storage Switch Tenant User Vm VmOrTemplate).freeze
-  def applies_to_class_model(applies_to_class)
-    # TODO: Give a better name for this concept, including ServiceTemplate using Service
-    # This should probably live in the model once this concept is defined.
-    unless APPLIES_TO_CLASS_BASE_MODELS.include?(applies_to_class)
-      raise ArgumentError, "Received: #{applies_to_class}, expected one of #{APPLIES_TO_CLASS_BASE_MODELS}"
-    end
-
-    case applies_to_class
-    when "ServiceTemplate"
-      Service
-    when "GenericObjectDefinition"
-      GenericObject
-    else
-      applies_to_class.constantize
-    end
+  def feature_by_action
+    features_in_action = %w[ab_button_new ab_button_edit]
+    @sb[:action] if features_in_action.include?(@sb[:action])
   end
 
-  def custom_button_done
-    url = SystemConsole.find_by(:vm => params[:id]).try(:url)
+  BASE_MODEL_EXPLORER_CLASSES = [MiqGroup, MiqTemplate, Tenant, User, Vm].freeze
 
+  def custom_button_done
+    external_url = ExternalUrl.find_by(
+      :resource_id   => params[:id],
+      :resource_type => params[:base_cls],
+      :user          => User.current_user
+    )
+    # FIXME: remove this fallback once the ':remote_console_url=' is removed from automate
+    external_url ||= SystemConsole.find_by(:vm_id => params[:id])
+
+    url = external_url.try(:url)
     if url.present?
       javascript_open_window(url)
     else
@@ -282,21 +304,19 @@ module ApplicationController::Buttons
 
   def custom_buttons_invoke(button, objs)
     if objs.length > 1 &&
-       (button.options && button.options.key?(:submit_how) && button.options[:submit_how].to_s == 'all')
-      button.invoke(objs)
+       (button.options&.key?(:submit_how) && button.options[:submit_how].to_s == 'all')
+      button.invoke(objs, 'UI')
     else
-      objs.each { |obj| button.invoke(obj) }
+      objs.each { |obj| button.invoke(obj, 'UI') }
     end
   end
 
   def sync_playbook_dialog(button)
     service_template = ServiceTemplate.find_by(:name => button.uri_attributes[:service_template_name])
     dialog_id = nil
-    if service_template
-      service_template.resource_actions.each do |ra|
-        d = Dialog.where(:id => ra.dialog_id).first
-        dialog_id = d.id if d
-      end
+    service_template&.resource_actions&.each do |ra|
+      d = Dialog.where(:id => ra.dialog_id).first
+      dialog_id = d.id if d
     end
     if dialog_id && button.resource_action.dialog_id != dialog_id
       button.resource_action.dialog_id = dialog_id
@@ -304,21 +324,23 @@ module ApplicationController::Buttons
     end
   end
 
-  def custom_buttons(ids = nil)
-    button = CustomButton.find_by_id(params[:button_id])
-    cls = applies_to_class_model(button.applies_to_class)
+  def custom_buttons(ids = nil, display_options = {})
+    button = CustomButton.find(params[:button_id])
+    cls = custom_button_class_model(button.applies_to_class)
     @explorer = true if BASE_MODEL_EXPLORER_CLASSES.include?(cls)
-    ids ||= params[:id]
-    if ids.to_s == 'LIST'
-      objs = Rbac.filtered(cls.where(:id => find_checked_items))
-      obj = objs.first
-    else
-      obj = Rbac.filtered_object(cls.find(ids.to_i))
-      objs = [obj]
+    ids ||= params[:id] unless relationship_table_screen? && @record.nil?
+    ids = find_checked_items if ids == 'LIST' || ids.nil?
+
+    if ids.blank?
+      render_flash(_("Error launching custom button: No item was selected."), :error)
+      return
     end
 
+    objs = Rbac.filtered(cls.where(:id => ids))
+    obj = objs.first
+
     if objs.empty?
-      render_flash(_("Error executing custom button: No item was selected."), :error)
+      render_flash(_("Error launching custom button: No item was selected."), :error)
       return
     end
 
@@ -333,32 +355,34 @@ module ApplicationController::Buttons
         :target_kls => obj.class.name,
       }
 
-      options[:dialog_locals] = DialogLocalService.new.determine_dialog_locals_for_custom_button(
-        obj, button.name, button.resource_action
-      )
-
+      options[:dialog_locals] = DialogLocalService.new.determine_dialog_locals_for_custom_button(obj, button.name, button.resource_action, display_options)
+      options[:dialog_locals][:open_url] = button.options.present? && button.options.fetch_path(:open_url)
+      options.merge!(display_options) unless display_options.empty?
       dialog_initialize(button.resource_action, options)
 
-    elsif button.options && button.options.key?(:open_url) && button.options[:open_url]
+    elsif button.options.present? && button.options.fetch_path(:open_url)
       # not supported for objs: cannot do wait for task for multiple tasks
-      task_id = button.invoke_async(obj)
-      initiate_wait_for_task(:task_id => task_id, :action => :custom_button_done)
+      task_id = button.invoke_async(obj, 'UI')
+      initiate_wait_for_task(
+        :task_id      => task_id,
+        :action       => :custom_button_done,
+        :extra_params => { :base_cls => cls.base_class.to_s }
+      )
 
     else
       begin
         custom_buttons_invoke(button, objs)
-
       rescue StandardError => bang
-        add_flash(_("Error executing: \"%{task_description}\" %{error_message}") %
+        add_flash(_("Error launching: \"%{task_description}\" %{error_message}") %
           {:task_description => params[:desc], :error_message => bang.message}, :error)
       else
-        add_flash(_("\"%{task_description}\" was executed") % {:task_description => params[:desc]})
+        add_flash(_("\"%{task_description}\" was launched") % {:task_description => params[:desc]})
       end
       javascript_flash
     end
   end
 
-  def get_available_dialogs
+  def load_available_dialogs
     @edit[:new][:available_dialogs] = {}
     Dialog.all.each do |d|
       @edit[:new][:available_dialogs][d.id] = d.label
@@ -371,113 +395,50 @@ module ApplicationController::Buttons
     else
       add_flash(_("Add of new Button Group was cancelled by the user"))
     end
-    @edit = session[:edit] = nil  # clean out the saved info
+    @edit = session[:edit] = nil # clean out the saved info
     ab_get_node_info(x_node) if x_active_tree == :ab_tree
     replace_right_cell(:nodetype => x_node)
   end
 
   def group_button_add_save(typ)
     assert_privileges(params[:button] == "add" ? "ab_group_new" : "ab_group_edit")
-    if @edit[:new][:name].blank?
-      render_flash(_("Name is required"), :error)
-      return
-    end
-    if @edit[:new][:description].blank?
-      render_flash(_("Description is required"), :error)
-      return
-    end
-    if @edit[:new][:button_icon].blank?
-      render_flash(_("Button Image must be selected"), :error)
-      return
-    end
-    group_set_record_vars(@custom_button_set)
-
-    member_ids = @edit[:new][:fields].collect { |field| field[1] }
-    mems = CustomButton.where(:id => member_ids)
-
     if typ == "update"
-      org_mems = @custom_button_set.members   # clean up existing members
-      org_mems.each do |m|
-        uri = CustomButton.find(m.id)
-        uri.save
-      end
-
-      if @custom_button_set.save
-        if !mems.blank?       # replace children if members were added/updated
-          @custom_button_set.replace_children(mems)
-        else                  # remove members if nothing was selected
-          @custom_button_set.remove_all_children
-        end
-        add_flash(_("Button Group \"%{name}\" was saved") % {:name => @edit[:new][:description]})
-        @edit = session[:edit] = nil  # clean out the saved info
-        ab_get_node_info(x_node) if x_active_tree == :ab_tree
-        replace_right_cell(:nodetype => x_node, :replace_trees => x_active_tree == :ab_tree ? [:ab] : [:sandt])
-      else
-        @custom_button_set.errors.each do |field, msg|
-          add_flash(_("Error during 'edit': %{field_name} %{error_message}") %
-            {:field_name => field.to_s.capitalize, :error_message => msg}, :error)
-        end
-        @lastaction = "automate_button"
-        @layout     = "miq_ae_automate_button"
-        render_flash
-      end
+      update_page_content("saved")
     else
-      # set group_index of new record being added and exiting ones so they are in order incase some were deleted
-      all_sets = CustomButtonSet.find_all_by_class_name(@edit[:new][:applies_to_class])
+      all_sets = CustomButtonSet.find_all_by_class_name(params[:applies_to_class])
       all_sets.each_with_index do |group, i|
         group.set_data[:group_index] = i + 1
         group.save!
       end
-      @custom_button_set.set_data[:group_index] = all_sets.length + 1
-      if @custom_button_set.save
-        @custom_button_set.replace_children(mems) unless mems.blank?
-        if x_active_tree == :sandt_tree
-          aset = CustomButtonSet.find_by_id(@custom_button_set.id)
-          # push new button at the end of button_order array
-          if aset
-            st = ServiceTemplate.find_by_id(@sb[:applies_to_id])
-            st.custom_button_sets.push(aset)
-            st.options[:button_order] ||= []
-            st.options[:button_order].push("cbg-#{aset.id}")
-            st.save
-          end
+      if x_active_tree == :sandt_tree
+        aset = CustomButtonSet.find_by(:id => params[:id])
+        # push new button at the end of button_order array
+        if aset
+          st = ServiceTemplate.find(@sb[:applies_to_id])
+          st.custom_button_sets.push(aset)
+          st.options[:button_order] ||= []
+          st.options[:button_order].push("cbg-#{aset.id}")
+          st.save
         end
-
-        add_flash(_("Button Group \"%{name}\" was added") % {:name => @edit[:new][:description]})
-        @edit = session[:edit] = nil  # clean out the saved info
-        ab_get_node_info(x_node) if x_active_tree == :ab_tree
-        replace_right_cell(:nodetype => x_node, :replace_trees => x_active_tree == :ab_tree ? [:ab] : [:sandt])
-      else
-        @custom_button_set.errors.each do |field, msg|
-          add_flash(_("Error during 'add': %{field_name} %{error_name}") %
-            {:field_name => field.to_s.capitalize, :error_message => msg}, :error)
-        end
-        @lastaction = "automate_button"
-        @layout     = "miq_ae_automate_button"
-        render_flash
       end
+      update_page_content("added")
     end
   end
 
-  def group_button_reset
-    group_set_form_vars
-    @changed = session[:changed] = false
-    add_flash(_("All changes have been reset"), :warning)
-    @in_a_form  = true
-    @lastaction = "automate_button"
-    @layout     = "miq_ae_automate_button"
-    replace_right_cell(:nodetype => "group_edit")
+  def update_page_content(action)
+    add_flash("Button Group #{params[:name]} was #{action}")
+    @edit = session[:edit] = nil # clean out the saved info
+    ab_get_node_info(x_node) if x_active_tree == :ab_tree
+    replace_right_cell(:nodetype => x_node, :replace_trees => x_active_tree == :ab_tree ? [:ab] : [:sandt])
   end
 
   def group_create_update(typ)
     @edit = session[:edit]
-    @record = @custom_button_set = @edit[:custom_button_set_id] ?
-        CustomButtonSet.find_by_id(@edit[:custom_button_set_id]) : CustomButtonSet.new
+    @record = @custom_button_set = @edit[:custom_button_set_id] ? CustomButtonSet.find(@edit[:custom_button_set_id]) : CustomButtonSet.new
     @changed = (@edit[:new] != @edit[:current])
     case params[:button]
     when 'cancel'      then group_button_cancel(typ)
     when 'add', 'save' then group_button_add_save(typ)
-    when 'reset'       then group_button_reset
     end
   end
 
@@ -501,7 +462,8 @@ module ApplicationController::Buttons
     @edit[:visibility_expression_table] = exp_build_table_or_nil(@edit[:new][:visibility_expression])
     @edit[:enablement_expression_table] = exp_build_table_or_nil(@edit[:new][:enablement_expression])
     @in_a_form = true
-    replace_right_cell(:nodetype => x_node)
+    @sb[:active_tab] = "ab_advanced_tab"
+    replace_right_cell(:action => 'button_edit')
   end
 
   def ab_button_cancel(typ)
@@ -517,33 +479,42 @@ module ApplicationController::Buttons
 
   def ab_button_add
     assert_privileges("ab_button_new")
+    @sb[:active_tab] = "ab_options_tab"
     @resolve = session[:resolve]
-    name = @edit[:new][:instance_name].blank? ? @edit[:new][:other_name] : @edit[:new][:instance_name]
+    name = @edit[:new][:instance_name].presence || @edit[:new][:other_name]
 
     unless button_valid?
       @breadcrumbs = []
       drop_breadcrumb(:name => _("Edit of Button"), :url => "/miq_ae_customization/button_edit")
       @lastaction = "automate_button"
       @layout = "miq_ae_automate_button"
-      javascript_flash
+      if @switch_tab
+        render :update do |page|
+          page << javascript_prologue
+          page.replace("flash_msg_div", :partial => "layouts/flash_msg")
+          page << "miqScrollTop();" if @flash_array.present?
+          page << "document.querySelector(\"#ab_advanced_tab_tab > a\").click();"
+        end
+      else
+        javascript_flash
+      end
       return
     end
 
     attrs = {}
     @edit[:new][:attrs].each do |a|
-      attrs[a[0].to_sym] = a[1] unless a[0].blank?
+      attrs[a[0].to_sym] = a[1] if a[0].present?
     end
     @edit[:uri] = MiqAeEngine.create_automation_object(name, attrs, :fqclass => @edit[:new][:starting_object], :message => @edit[:new][:object_message])
     @edit[:new][:description] = @edit[:new][:description].strip == "" ? nil : @edit[:new][:description] unless @edit[:new][:description].nil?
     button_set_record_vars(@custom_button)
     nodes = x_node.split('_')
-    if nodes[0].split('-')[1] != "ub" && nodes.length >= 3
+    if nodes[0].split('-')[1] != "ub" && nodes.length >= 2
       # if group is not unassigned group, add uri as a last member  of the group
-      if x_active_tree == :ab_tree || nodes.length > 3
+      if x_active_tree == :ab_tree || nodes.length > 2
         # find custombutton set in ab_tree or when adding button under a group
-        group_id = x_active_tree == :ab_tree ? nodes[2].split('-').last : nodes[3].split('-').last
-        @aset = CustomButtonSet.find(from_cid(group_id))
-        mems = @aset.members
+        group_id = nodes[2].split('-').last
+        @aset = CustomButtonSet.find(group_id)
       end
     end
 
@@ -551,10 +522,8 @@ module ApplicationController::Buttons
       add_flash(_("Custom Button \"%{name}\" was added") % {:name => @edit[:new][:description]})
       @edit = session[:edit] = nil
       au = CustomButton.find(@custom_button.id)
-      if @aset && nodes[0].split('-')[1] != "ub" && nodes.length >= 3
+      if @aset && nodes[0].split('-')[1] != "ub" && nodes.length >= 2
         # if group is not unassigned group, add uri as a last member  of the group
-        mems.push(au)
-        @aset.replace_children(mems)
         @aset.set_data[:button_order] ||= []
         @aset.set_data[:button_order].push(au.id)
         @aset.save!
@@ -562,7 +531,7 @@ module ApplicationController::Buttons
       if x_active_tree == :sandt_tree
         # push new button at the end of button_order array
         st = ServiceTemplate.find(@sb[:applies_to_id])
-        st.custom_buttons.push(au) if nodes.length >= 3 && nodes[2].split('-').first != "cbg"
+        st.custom_buttons.push(au) if nodes.length >= 2 && nodes[1].split('-').first != "cbg"
         st.options[:button_order] ||= []
         st.options[:button_order].push("cb-#{au.id}")
         st.save
@@ -571,9 +540,9 @@ module ApplicationController::Buttons
       ab_get_node_info(x_node) if x_active_tree == :ab_tree
       replace_right_cell(:nodetype => x_node, :replace_trees => x_active_tree == :ab_tree ? [:ab] : [:sandt])
     else
-      @custom_button.errors.each do |field, msg|
+      @custom_button.errors.each do |error|
         add_flash(_("Error during 'add': %{error_message}") %
-          {:error_message => @custom_button.errors.full_message(field, msg)}, :error)
+          {:error_message => @custom_button.errors.full_message(error.attribute, error.message)}, :error)
       end
       @lastaction = "automate_button"
       @layout = "miq_ae_automate_button"
@@ -585,21 +554,32 @@ module ApplicationController::Buttons
     assert_privileges("ab_button_edit")
     @resolve = session[:resolve]
     attrs = {}
+    @sb[:active_tab] = "ab_options_tab"
     @edit[:new][:attrs].each do |a|
-      attrs[a[0].to_sym] = a[1] unless a[0].blank?
+      attrs[a[0].to_sym] = a[1] if a[0].present?
     end
     @edit[:uri] = MiqAeEngine.create_automation_object(ab_button_name, attrs, :fqclass => @edit[:new][:starting_object], :message => @edit[:new][:object_message])
     @edit[:new][:description] = @edit[:new][:description].strip == "" ? nil : @edit[:new][:description] unless @edit[:new][:description].nil?
-    button_set_record_vars(@custom_button)
 
     unless button_valid?
       @breadcrumbs = []
       drop_breadcrumb(:name => _("Edit of Button"), :url => "/miq_ae_customization/button_edit")
       @lastaction = "automate_button"
       @layout = "miq_ae_automate_button"
-      javascript_flash
+      if @switch_tab
+        render :update do |page|
+          page << javascript_prologue
+          page.replace("flash_msg_div", :partial => "layouts/flash_msg")
+          page << "miqScrollTop();" if @flash_array.present?
+          page << "document.querySelector(\"#ab_advanced_tab_tab > a\").click();"
+        end
+      else
+        javascript_flash
+      end
       return
     end
+
+    button_set_record_vars(@custom_button)
 
     if @custom_button.save
       add_flash(_("Custom Button \"%{name}\" was saved") % {:name => @edit[:new][:description]})
@@ -608,9 +588,9 @@ module ApplicationController::Buttons
       build_filter_exp_table
       replace_right_cell(:nodetype => x_node, :replace_trees => x_active_tree == :ab_tree ? [:ab] : [:sandt])
     else
-      @custom_button.errors.each do |field, msg|
+      @custom_button.errors.each do |error|
         add_flash(_("Error during 'edit': %{field_name} %{error_message}") %
-          {:field_name => field.to_s.capitalize, :error_message => msg}, :error)
+          {:field_name => error.attribute.to_s.capitalize, :error_message => error.message}, :error)
       end
       @breadcrumbs = []
       drop_breadcrumb(:name => "Edit of Button", :url => "/miq_ae_customization/button_edit")
@@ -623,13 +603,14 @@ module ApplicationController::Buttons
   def ab_button_reset
     button_set_form_vars
     @changed = session[:changed] = false
+    @sb[:active_tab] = "ab_options_tab"
     add_flash(_("All changes have been reset"), :warning)
     @in_a_form = true
     @breadcrumbs = []
     drop_breadcrumb(:name => _("Edit of Button"), :url => "/miq_ae_customization/button_edit")
     @lastaction = "automate_button"
     @layout = "miq_ae_automate_button"
-    replace_right_cell(:nodetype => "button_edit")
+    replace_right_cell(:action => "button_edit")
   end
 
   # Set form variables for button add/edit
@@ -646,7 +627,7 @@ module ApplicationController::Buttons
         @edit[:new][:fields].push([g.name.split('|').first, "#{g.kind_of?(CustomButton) ? 'cb' : 'cbg'}-#{g.id}"])
       end
     else
-      st = ServiceTemplate.find_by_id(@sb[:applies_to_id])
+      st = ServiceTemplate.find(@sb[:applies_to_id])
       groups = st.custom_button_sets + st.custom_buttons
       if st.options && st.options[:button_order]
         st.options[:button_order].each do |item_id|
@@ -660,15 +641,14 @@ module ApplicationController::Buttons
 
     @edit[:current] = copy_hash(@edit[:new])
     @sb[:button_groups] = nil
+    @sb[:buttons] = nil
     session[:edit] = @edit
   end
 
   def group_new_edit(typ)
-    @record = @custom_button_set = typ == "new" ?
-        CustomButtonSet.new :
-        CustomButtonSet.find(from_cid(params[:id]))
+    @record = @custom_button_set = typ == "new" ? CustomButtonSet.new : CustomButtonSet.find(params[:id])
     if typ == "edit" && x_node.split('_').last == "ub"
-      add_flash(_("'Unassigned Buttons Group' can not be edited"), :error)
+      add_flash(_("'Unassigned Button Group' can not be edited"), :error)
       get_node_info
       replace_right_cell(:nodetype => x_node)
       return
@@ -694,9 +674,8 @@ module ApplicationController::Buttons
   end
 
   def button_new_edit(typ)
-    @record = @custom_button = typ == "new" ?
-        CustomButton.new :
-        CustomButton.find(from_cid(params[:id]))
+    @record = @custom_button = typ == "new" ? CustomButton.new : CustomButton.find(params[:id])
+    @sb[:active_tab] = "ab_options_tab"
     button_set_form_vars
     @in_a_form = true
     @changed = session[:changed] = false
@@ -733,18 +712,19 @@ module ApplicationController::Buttons
     @edit[:key] = "bg_edit__#{@custom_button_set.id || "new"}"
     @edit[:custom_button_set_id] = @custom_button_set.id
     @edit[:rec_id] = @custom_button_set.try(:id)
-    @edit[:new][:name] = @custom_button_set[:name].split("|").first unless @custom_button_set[:name].blank?
+    @edit[:new][:name] = @custom_button_set[:name].split("|").first if @custom_button_set[:name].present?
     @edit[:new][:applies_to_class] = @custom_button_set[:set_data] && @custom_button_set[:set_data][:applies_to_class] ? @custom_button_set[:set_data][:applies_to_class] : @sb[:applies_to_class]
     @edit[:new][:description] = @custom_button_set.description
     @edit[:new][:button_icon] = @custom_button_set[:set_data] && @custom_button_set[:set_data][:button_icon] ? @custom_button_set[:set_data][:button_icon] : ""
     @edit[:new][:button_color] = @custom_button_set[:set_data] && @custom_button_set[:set_data][:button_color] ? @custom_button_set[:set_data][:button_color] : ""
     @edit[:new][:display] = @custom_button_set[:set_data] && @custom_button_set[:set_data].key?(:display) ? @custom_button_set[:set_data][:display] : true
     @edit[:new][:fields] = []
-    button_order = @custom_button_set[:set_data] && @custom_button_set[:set_data][:button_order] ? @custom_button_set[:set_data][:button_order] : nil
-    if button_order     # show assigned buttons in order they were saved
+
+    button_order = @custom_button_set[:set_data].try(:[], :button_order)
+    if button_order # show assigned buttons in order they were saved
       button_order.each do |bidx|
         @custom_button_set.members.each do |mem|
-          @edit[:new][:fields].push([mem.name, mem.id]) if bidx == mem.id unless @edit[:new][:fields].include?([mem.name, mem.id])
+          @edit[:new][:fields].push([mem.name, mem.id]) if bidx == mem.id && !@edit[:new][:fields].include?([mem.name, mem.id])
         end
       end
     else
@@ -754,27 +734,15 @@ module ApplicationController::Buttons
     end
     @edit[:new][:available_fields] =
       CustomButton.buttons_for(@sb[:applies_to_class])
-      .select  { |u| u.parent.nil? }
-      .sort_by(&:name)
-      .collect { |u| [u.name, u.id] }
+                  .select { |u| u.custom_button_sets.blank? }
+                  .sort_by(&:name)
+                  .collect { |u| [u.name, u.id] }
     @edit[:current] = copy_hash(@edit[:new])
     session[:edit] = @edit
   end
 
-  def group_get_form_vars
-    case params[:button]
-    when 'right'  then move_cols_left_right('right')
-    when 'left'   then move_cols_left_right('left')
-    when 'up'     then move_cols_up
-    when 'down'   then move_cols_down
-    when 'top'    then move_cols_top
-    when 'bottom' then move_cols_bottom
-    else copy_params_if_set(@edit[:new], params, %i(name description display button_icon button_color))
-    end
-  end
-
   def move_cols_top
-    if !params[:selected_fields] || params[:selected_fields].length == 0 || params[:selected_fields][0] == ""
+    if params[:selected_fields].blank? || params[:selected_fields][0] == ""
       add_flash(_("No fields were selected to move top"), :error)
       return
     end
@@ -782,7 +750,7 @@ module ApplicationController::Buttons
     if !consecutive
       add_flash(_("Select only one or consecutive fields to move to the top"), :error)
     else
-      if first_idx > 0
+      if first_idx.positive?
         @edit[:new][:fields][first_idx..last_idx].reverse_each do |field|
           pulled = @edit[:new][:fields].delete(field)
           @edit[:new][:fields].unshift(pulled)
@@ -795,7 +763,7 @@ module ApplicationController::Buttons
   end
 
   def move_cols_bottom
-    if !params[:selected_fields] || params[:selected_fields].length == 0 || params[:selected_fields][0] == ""
+    if params[:selected_fields].blank? || params[:selected_fields][0] == ""
       add_flash(_("No fields were selected to move bottom"), :error)
       return
     end
@@ -816,21 +784,17 @@ module ApplicationController::Buttons
   end
 
   def ab_button_name(button_hash = @edit[:new])
-    button_hash[:instance_name].blank? ? button_hash[:other_name] : button_hash[:instance_name]
+    button_hash[:instance_name].presence || button_hash[:instance_name]
   end
 
   def button_valid?(button_hash = @edit[:new])
-    add_flash(_("Button Text is required"), :error) if button_hash[:name].blank? || button_hash[:name].strip.blank?
+    add_flash(_("Button Name is required"), :error) if button_hash[:name].blank? || button_hash[:name].strip.blank?
 
     if button_hash[:button_icon].blank?
-      add_flash(_("Button Image must be selected"), :error)
+      add_flash(_("Button Icon must be selected"), :error)
     end
 
-    add_flash(_("Button Hover Text is required"), :error) if button_hash[:description].blank?
-
-    add_flash(_("Starting Process is required"), :error) if ab_button_name(button_hash).blank?
-
-    add_flash(_("Request is required"), :error) if button_hash[:object_request].blank?
+    add_flash(_("Button Description is required"), :error) if button_hash[:description].blank?
 
     if button_hash[:visibility_typ] == "role" && button_hash[:roles].blank?
       add_flash(_("At least one Role must be selected"), :error)
@@ -840,17 +804,29 @@ module ApplicationController::Buttons
       add_flash(_('URL can be opened only by buttons for a single entity'), :error)
     end
 
-    if (!button_hash[:dialog_id].blank? && !button_hash[:dialog_id].to_i.zero?) && button_hash[:display_for] != 'single'
+    if (button_hash[:dialog_id].present? && !button_hash[:dialog_id].to_i.zero?) && button_hash[:display_for] != 'single'
       add_flash(_('Dialog can be opened only by buttons for a single entity'), :error)
     end
 
     validate_playbook_button(button_hash) if button_hash[:button_type] == "ansible_playbook"
 
+    if ab_button_name(button_hash).blank?
+      add_flash(_("Starting Process is required"), :error)
+      @switch_tab = true if @flash_array.length == 1
+    end
+
+    if button_hash[:object_request].blank?
+      add_flash(_("Request is required"), :error)
+      @switch_tab = true if @flash_array.length == 1
+    end
+
     !flash_errors?
   end
 
   def validate_playbook_button(button_hash)
-    add_flash(_("An Ansible Playbook must be selected"), :error) if button_hash[:service_template_id].blank?
+    if button_hash[:service_template_id].blank? || button_hash[:service_template_id].zero?
+      add_flash(_("An Ansible Playbook must be selected"), :error)
+    end
     if button_hash[:inventory_type] == 'manual' && button_hash[:hosts].blank?
       add_flash(_("At least one host must be specified for manual mode"), :error)
     end
@@ -860,34 +836,32 @@ module ApplicationController::Buttons
   def button_set_record_vars(button)
     button.name = @edit[:new][:name]
     button.description = @edit[:new][:description]
-    button.applies_to_class = x_active_tree == :ab_tree ? @sb[:target_classes][@resolve[:target_class]] : "ServiceTemplate"
+    button.applies_to_class = x_active_tree == :ab_tree ? @resolve[:target_class] : "ServiceTemplate"
     button.applies_to_id = x_active_tree == :ab_tree ? nil : @sb[:applies_to_id]
     button.userid = session[:userid]
     button.uri = @edit[:uri]
     button[:options] = {}
     button.disabled_text = @edit[:new][:disabled_text]
-    #   button[:options][:target_attr_name] = @edit[:new][:target_attr_name]
     button.uri_path, button.uri_attributes, button.uri_message = CustomButton.parse_uri(@edit[:uri])
     button.uri_attributes["request"] = @edit[:new][:object_request]
-    button.options[:button_icon] = @edit[:new][:button_icon] unless @edit[:new][:button_icon].blank?
-    button.options[:button_color] = @edit[:new][:button_color] unless @edit[:new][:button_color].blank?
+    button.options[:button_icon] = @edit[:new][:button_icon] if @edit[:new][:button_icon].present?
+    button.options[:button_color] = @edit[:new][:button_color] if @edit[:new][:button_color].present?
 
-    %i(button_type display open_url display_for submit_how).each do |key|
+    %i[button_type display open_url display_for submit_how].each do |key|
       button[:options][key] = @edit[:new][key]
     end
     button.visibility ||= {}
     if @edit[:new][:visibility_typ] == "role"
-      roles = []
-      @edit[:new][:roles].each do |r|
-        role = MiqUserRole.find_by_id(from_cid(r))
-        roles.push(role.name) if role && from_cid(r) == role.id
-      end
-      button.visibility[:roles] =  roles
+      button.visibility[:roles] = @edit[:new][:roles]
     else
       button.visibility[:roles] = ["_ALL_"]
     end
     button_set_resource_action(button)
-    button_set_expressions_record(button)
+    if @edit[:new][:display_for] == "single"
+      button_set_expressions_record(button)
+    else
+      button.visibility_expression = button.enablement_expression = nil
+    end
     button_set_playbook_record(button)
   end
 
@@ -899,7 +873,7 @@ module ApplicationController::Buttons
   end
 
   def field_expression_model
-    @custom_button.applies_to_class ||= (x_active_tree == :ab_tree ? @sb[:target_classes][@resolve[:target_class]] : "ServiceTemplate")
+    @custom_button.applies_to_class ||= (x_active_tree == :ab_tree ? @resolve[:target_class] : "ServiceTemplate")
   end
 
   def button_set_expression_vars(field_expression, field_expression_table)
@@ -922,7 +896,7 @@ module ApplicationController::Buttons
   end
 
   def button_set_resource_action(button)
-    d = @edit[:new][:dialog_id].nil? ? nil : Dialog.find_by_id(@edit[:new][:dialog_id])
+    d = @edit[:new][:dialog_id].nil? ? nil : Dialog.find(@edit[:new][:dialog_id])
     # if resource_Action is there update it else create new one
     ra = button.resource_action
     if ra
@@ -954,11 +928,9 @@ module ApplicationController::Buttons
     service_template = ServiceTemplate.find_by(:name => @custom_button.uri_attributes[:service_template_name])
     @edit[:new][:service_template_id] = service_template.try(:id)
 
-    if service_template
-      service_template.resource_actions.each do |ra|
-        d = Dialog.where(:id => ra.dialog_id).first
-        @edit[:new][:dialog_id] = d.id if d
-      end
+    service_template&.resource_actions&.each do |ra|
+      d = Dialog.where(:id => ra.dialog_id).first
+      @edit[:new][:dialog_id] = d.id if d
     end
 
     @edit[:new][:inventory_type] = if @custom_button.uri_attributes[:hosts].blank?
@@ -985,21 +957,15 @@ module ApplicationController::Buttons
     else
       build_resolve_screen
     end
-    if @sb[:target_classes].nil?
-      @sb[:target_classes] = {}
-      CustomButton.button_classes.each { |db| @sb[:target_classes][ui_lookup(:model => db)] = db }
-    end
-    if x_active_tree == :sandt_tree
-      @resolve[:target_class] = @sb[:target_classes].invert["ServiceTemplate"]
-    elsif x_node.starts_with?("_xx-ab")
-      @resolve[:target_class] = @sb[:target_classes].invert[x_node.split('_')[1]]
-    else
-      @resolve[:target_class] = @sb[:target_classes].invert[x_node.split('-')[1] == "ub" ?
-                                                                x_node.split('-')[2].split('_')[0] :
-                                                                x_node.split('-')[1].split('_')[1]]
-    end
+    @resolve[:target_class] = if x_active_tree == :sandt_tree
+                                "ServiceTemplate"
+                              elsif x_node.starts_with?("-ub-")
+                                x_node.sub(/-ub-([^_]+)(_.*)?/, '\1')
+                              else
+                                x_node.sub(/xx-ab_([^_]+)_.*/, '\1')
+                              end
     @record = @edit[:custom_button] = @custom_button
-    @edit[:instance_names] = @resolve[:instance_names]
+    @edit[:instance_names] = Array(@resolve[:instance_names])
     @edit[:new] = {}
     @edit[:current] = {}
     @edit[:new][:attrs] ||= []
@@ -1014,8 +980,8 @@ module ApplicationController::Buttons
       @edit[:new][:object_request] = @custom_button.uri_attributes["request"]
 
       button_type = @custom_button.options.try(:[], :button_type) ? @custom_button.options[:button_type] : 'default'
-      default_attributes = %w(request)
-      default_attributes = %w(request service_template_name hosts) if button_type == 'ansible_playbook'
+      default_attributes = %w[request]
+      default_attributes = %w[request service_template_name hosts] if button_type == 'ansible_playbook'
 
       @custom_button.uri_attributes.each do |attr|
         if attr[0] != "object_name" && !default_attributes.include?(attr[0].to_s)
@@ -1023,8 +989,6 @@ module ApplicationController::Buttons
         end
       end
     end
-    # ApplicationController::AE_MAX_RESOLUTION_FIELDS.times{@edit[:new][:attrs].push(Array.new)} if @edit[:new][:attrs].empty?
-    # num = ApplicationController::AE_MAX_RESOLUTION_FIELDS - @edit[:new][:attrs].length
     (ApplicationController::AE_MAX_RESOLUTION_FIELDS - @edit[:new][:attrs].length).times { @edit[:new][:attrs].push([]) }
     @edit[:new][:starting_object] ||= "SYSTEM/PROCESS"
     @edit[:new][:instance_name] ||= "Request"
@@ -1041,35 +1005,28 @@ module ApplicationController::Buttons
       :display_for    => @custom_button.options.try(:[], :display_for) ? @custom_button.options[:display_for] : 'single',
       :submit_how     => @custom_button.options.try(:[], :submit_how) ? @custom_button.options[:submit_how] : 'one',
       :button_type    => button_type,
-      :object_message => @custom_button.uri_message || "create",
+      :object_message => @custom_button.uri_message || "create"
     )
     button_set_expression_vars(:enablement_expression, :enablement_expression_table)
     button_set_expression_vars(:visibility_expression, :visibility_expression_table)
 
+    @edit[:new][:disabled_open_url] = !(MODEL_WITH_OPEN_URL.include?(@resolve[:target_class]) && @edit[:new][:display_for] == 'single')
+
     @edit[:current] = copy_hash(@edit[:new])
 
-    @edit[:visibility_types] = [["<To All>", "all"], ["<By Role>", "role"]]
+    @edit[:visibility_types] = [["<#{_('To All')}>", "all"], ["<#{_('By Role')}>", "role"]]
     # Visibility Box
     if @custom_button.visibility && @custom_button.visibility[:roles]
       @edit[:new][:visibility_typ] = @custom_button.visibility[:roles][0] == "_ALL_" ? "all" : "role"
-      if @custom_button.visibility[:roles][0] == "_ALL_"
-        @edit[:new][:roles] = ["_ALL_"]
-      else
-        @edit[:new][:roles] ||= []
-        @custom_button.visibility[:roles].each do |r|
-          role = MiqUserRole.find_by_name(r)
-          @edit[:new][:roles].push(to_cid(role.id)) if role
-        end
-      end
-      @edit[:new][:roles].sort! unless @edit[:new][:roles].blank?
+      @edit[:new][:roles] = @custom_button.visibility[:roles][0] == "_ALL_" ? ["_ALL_"] : @custom_button.visibility[:roles].sort
     end
 
     @edit[:sorted_user_roles] = []
     MiqUserRole.all.sort_by { |ur| ur.name.downcase }.each do |r|
-      @edit[:sorted_user_roles].push(r.name => to_cid(r.id))
+      @edit[:sorted_user_roles].push(r.name => r.id)
     end
-    @edit[:new][:dialog_id] = @custom_button.resource_action.dialog_id.to_i
-    get_available_dialogs
+    @edit[:new][:dialog_id] = @custom_button.resource_action.dialog_id
+    load_available_dialogs
 
     button_set_playbook_form_vars
 
@@ -1078,86 +1035,41 @@ module ApplicationController::Buttons
     @changed = session[:changed] = (@edit[:new] != @edit[:current])
   end
 
-  # Set user record variables to new values
-  def group_set_record_vars(group)
-    group.description = @edit[:new][:description]
-    applies_to_id = @sb[:applies_to_id].to_i if x_active_tree == :sandt_tree
-    group.name = "#{@edit[:new][:name]}|#{@edit[:new][:applies_to_class]}|#{to_cid(applies_to_id)}" unless @edit[:new][:name].blank?
-    group.set_data ||= {}
-    group.set_data[:button_order] = @edit[:new][:fields].collect { |field| field[1] }
-    group.set_data[:button_icon] = @edit[:new][:button_icon] unless @edit[:new][:button_icon].blank?
-    group.set_data[:button_color] = @edit[:new][:button_color] unless @edit[:new][:button_color].blank?
-    group.set_data[:display] = @edit[:new][:display]
-    group.set_data[:applies_to_class] ||= {}
-    group.set_data[:applies_to_class] = @edit[:new][:applies_to_class]
-    group.set_data[:applies_to_id] = applies_to_id.to_i if applies_to_id
-  end
-
   def buttons_get_node_info(node)
     nodetype = node.split("_")
     # initializing variables to hold data for selected node
-    @sb[:obj_list] = nil
     @custom_button = nil
     @sb[:button_groups] = nil
     @sb[:buttons] = nil
     @sb[:buttons_node] = true
     @sb[:applies_to_class] = "ServiceTemplate"
-    @sb[:applies_to_id] = nodetype[2].split('-').last
+    @sb[:applies_to_id] = nodetype[1].split('-').last
 
-    if nodetype.length == 3 && nodetype[2].split('-').first == "xx"   # Buttons node selected
-      record = ServiceTemplate.find_by_id(nodetype[2].split('-').last)
-      # saving id of catalogitem to use it in view to build id for right cell
-      @sb[:rec_id] = record.id
-      @right_cell_text = _("Buttons for \"%{record}\"") % {:record => record.name.split("|").first}
+    if nodetype.length == 3 && nodetype[2].split('-').first == "cbg" # buttons group selected
       @sb[:applies_to_class] = "ServiceTemplate"
-      asets = CustomButtonSet.find_all_by_class_name("ServiceTemplate", record.id)
-      @sb[:button_groups] = []
-      items = record.custom_button_sets + record.custom_buttons
-
-      # sort them using button_order saved in CatalogItems options
-      if record.options && record.options[:button_order]
-        record.options[:button_order].each do |item_id|
-          items.each do |g|
-            rec_id = "#{g.kind_of?(CustomButton) ? 'cb' : 'cbg'}-#{g.id}"
-            if item_id == rec_id
-              group = {}
-              group[:id] = g.id
-              group[:name] = g.name
-              group[:description] = g.description
-              group[:button_icon] = g.kind_of?(CustomButton) ? g.options[:button_icon] : g.set_data[:button_icon]
-              group[:button_color] = g.kind_of?(CustomButton) ? g.options[:button_color] : g.set_data[:button_color]
-              group[:typ] = g.kind_of?(CustomButton) ? "CustomButton" : "CustomButtonSet"
-              @sb[:button_groups].push(group) unless @sb[:button_groups].include?(group)
-            end
-          end
-        end
-      end
-    elsif nodetype.length == 4 && nodetype[3].split('-').first == "cbg"       # buttons group selected
-      @sb[:applies_to_class] = "ServiceTemplate"
-      @record = CustomButtonSet.find(from_cid(nodetype[3].split('-').last))
+      @record = CustomButtonSet.find(nodetype[2].split('-').last)
       # saving id of catalogitem to use it in view to build id for right cell
       @sb[:rec_id] = @record.id
       @right_cell_text = _("Button Group \"%{name}\"") % {:name => @record.name.split("|").first}
       @sb[:buttons] = []
       button_order = @record[:set_data] && @record[:set_data][:button_order] ? @record[:set_data][:button_order] : nil
-      if button_order     # show assigned buttons in order they were saved
-        button_order.each do |bidx|
-          @record.members.each do |b|
-            if bidx == b.id
-              button = {}
-              button[:name] = b.name
-              button[:id] = b.id
-              button[:description] = b.description
-              button[:button_icon] = b.options[:button_icon]
-              button[:button_color] = b.options[:button_color]
-              @sb[:buttons].push(button) unless @sb[:buttons].include?(button)
-            end
-          end
+      button_order&.each do |bidx| # show assigned buttons in order they were saved
+        @record.members.each do |b|
+          next if bidx != b.id
+
+          button = {
+            :name         => b.name,
+            :id           => b.id,
+            :description  => b.description,
+            :button_icon  => b.options[:button_icon],
+            :button_color => b.options[:button_color],
+          }
+          @sb[:buttons].push(button) unless @sb[:buttons].include?(button)
         end
       end
-    elsif nodetype.length >= 4 && (nodetype[3].split('-').first == "cb" || nodetype[4].split('-').first == "cb")        # button selected
-      id = nodetype[3].split('-').first == "cb" ? nodetype[3].split('-').last : nodetype[4].split('-').last
-      @record = @custom_button = CustomButton.find(from_cid(id))
+    elsif nodetype.length >= 3 && (nodetype[2].split('-').first == "cb" || nodetype[3].split('-').first == "cb") # button selected
+      id = nodetype[2].split('-').first == "cb" ? nodetype[2].split('-').last : nodetype[3].split('-').last
+      @record = @custom_button = CustomButton.find(id)
       build_resolve_screen
       @resolve[:new][:attrs] = []
       if @custom_button.uri_attributes
@@ -1170,19 +1082,15 @@ module ApplicationController::Buttons
       end
       @sb[:user_roles] = []
       if @custom_button.visibility && @custom_button.visibility[:roles] && @custom_button.visibility[:roles][0] != "_ALL_"
-        #         User.roles.sort_by(&:name).each do |r|
-        #           @sb[:user_roles].push(r.description) if @custom_button.visibility[:roles].include?(r.name) && !@sb[:user_roles].include?(r.description)
-        MiqUserRole.all.sort_by(&:name).each do |r|
-          @sb[:user_roles].push(r.name) if @custom_button.visibility[:roles].include?(r.name)
-        end
+        role_ids = @custom_button.visibility[:roles]
+        @sb[:user_roles] = MiqUserRole.where(:id => role_ids).order(:name).pluck(:name)
       end
-      #       @sb[:user_roles].sort!
-      @resolve[:new][:target_class] = @sb[:target_classes].invert["ServiceTemplate"]
+      @resolve[:new][:target_class] = "ServiceTemplate"
       dialog_id = @custom_button.resource_action.dialog_id
-      @sb[:dialog_label] = dialog_id ? Dialog.find_by_id(dialog_id).label : _("No Dialog")
+      @sb[:dialog_label] = dialog_id ? Dialog.find(dialog_id).label : _("No Dialog")
       @right_cell_text = _("Button \"%{name}\"") % {:name => @custom_button.name}
     end
-    @right_cell_div  = "ab_list"
+    @right_cell_div = "ab_list"
   end
 
   def build_resolve_screen
@@ -1198,13 +1106,13 @@ module ApplicationController::Buttons
     matching_instances = MiqAeClass.find_distinct_instances_across_domains(current_user, @resolve[:new][:starting_object])
     if matching_instances.any?
       @resolve[:instance_names] = matching_instances.collect(&:name)
-      instance_name = @custom_button && @custom_button.uri_object_name
+      instance_name = @custom_button&.uri_object_name
       @resolve[:new][:instance_name] = instance_name || @resolve[:new][:instance_name] || "Request"
       @resolve[:new][:object_message] = @custom_button.try(:uri_message) || @resolve[:new][:object_message] || "create"
       @resolve[:target_class] = nil
-      @resolve[:target_classes] = {}
-      CustomButton.button_classes.each { |db| @resolve[:target_classes][db] = ui_lookup(:model => db) }
-      @resolve[:target_classes] = Array(@resolve[:target_classes].invert).sort
+      @resolve[:target_classes] = CustomButton.button_classes.each_with_object({}) do |klass, hash|
+        hash[klass] = target_class_name(klass)
+      end
       @resolve[:new][:attrs] ||= []
       if @resolve[:new][:attrs].empty?
         ApplicationController::AE_MAX_RESOLUTION_FIELDS.times { @resolve[:new][:attrs].push([]) }
@@ -1219,7 +1127,7 @@ module ApplicationController::Buttons
   end
 
   def move_cols_up
-    if !params[:selected_fields] || params[:selected_fields].length == 0 || params[:selected_fields][0] == ""
+    if params[:selected_fields].blank? || params[:selected_fields][0] == ""
       add_flash(_("No fields were selected to move up"), :error)
       return
     end
@@ -1227,7 +1135,7 @@ module ApplicationController::Buttons
     if !consecutive
       add_flash(_("Select only one or consecutive fields to move up"), :error)
     else
-      if first_idx > 0
+      if first_idx.positive?
         @edit[:new][:fields][first_idx..last_idx].reverse_each do |field|
           pulled = @edit[:new][:fields].delete(field)
           @edit[:new][:fields].insert(first_idx - 1, pulled)
@@ -1240,7 +1148,7 @@ module ApplicationController::Buttons
   end
 
   def move_cols_down
-    if !params[:selected_fields] || params[:selected_fields].length == 0 || params[:selected_fields][0] == ""
+    if params[:selected_fields].blank? || params[:selected_fields][0] == ""
       add_flash(_("No fields were selected to move down"), :error)
       return
     end
@@ -1249,7 +1157,7 @@ module ApplicationController::Buttons
       add_flash(_("Select only one or consecutive fields to move down"), :error)
     else
       if last_idx < @edit[:new][:fields].length - 1
-        insert_idx = last_idx + 1   # Insert before the element after the last one
+        insert_idx = last_idx + 1 # Insert before the element after the last one
         insert_idx = -1 if last_idx == @edit[:new][:fields].length - 2 # Insert at end if 1 away from end
         @edit[:new][:fields][first_idx..last_idx].each do |field|
           pulled = @edit[:new][:fields].delete(field)

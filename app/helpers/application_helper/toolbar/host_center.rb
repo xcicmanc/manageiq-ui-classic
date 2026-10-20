@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::HostCenter < ApplicationHelper::Toolbar::Basic
   button_group('host_vmdb', [
     select(
       :host_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -47,7 +47,8 @@ class ApplicationHelper::Toolbar::HostCenter < ApplicationHelper::Toolbar::Basic
           'pficon pficon-edit fa-lg',
           t = N_('Edit this item'),
           t,
-          :url => "/edit"),
+          :klass => ApplicationHelper::Button::HostEdit,
+          :url   => "/edit"),
         button(
           :host_toggle_maintenance,
           'pficon pficon-edit fa-lg',
@@ -68,7 +69,7 @@ class ApplicationHelper::Toolbar::HostCenter < ApplicationHelper::Toolbar::Basic
   button_group('host_policy', [
     select(
       :host_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :items => [
@@ -100,26 +101,10 @@ class ApplicationHelper::Toolbar::HostCenter < ApplicationHelper::Toolbar::Basic
       ]
     ),
   ])
-  button_group('host_lifecycle', [
-    select(
-      :host_lifecycle_choice,
-      'fa fa-recycle fa-lg',
-      t = N_('Lifecycle'),
-      t,
-      :items => [
-        button(
-          :host_miq_request_new,
-          'pficon pficon-add-circle-o fa-lg',
-          t = N_('Provision this item'),
-          t,
-          :klass => ApplicationHelper::Button::HostMiqRequestNew),
-      ]
-    ),
-  ])
   button_group('host_monitoring', [
     select(
       :host_monitoring_choice,
-      'ff ff-monitoring fa-lg',
+      nil,
       t = N_('Monitoring'),
       t,
       :items => [
@@ -154,45 +139,45 @@ class ApplicationHelper::Toolbar::HostCenter < ApplicationHelper::Toolbar::Basic
           nil,
           N_('Put this item into Maintenance Mode'),
           N_('Enter Maintenance Mode'),
-          :image   => "enter_maint_mode",
+          :icon    => "pficon pficon-maintenance",
           :confirm => N_("Put this item into Maintenance Mode?"),
-          :klass   => ApplicationHelper::Button::GenericFeatureButton,
+          :klass   => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
           :options => {:feature => :enter_maint_mode}),
         button(
           :host_exit_maint_mode,
           nil,
           N_('Take this item out of Maintenance Mode'),
           N_('Exit Maintenance Mode'),
-          :image   => "exit_maint_mode",
+          :icon    => "pficon pficon-maintenance",
           :confirm => N_("Take this item out of Maintenance Mode?"),
-          :klass   => ApplicationHelper::Button::GenericFeatureButton,
+          :klass   => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
           :options => {:feature => :exit_maint_mode}),
         button(
           :host_standby,
           nil,
           N_('Shutdown this item to Standby Mode'),
           N_('Enter Standby Mode'),
-          :image   => "standby",
+          :icon    => "pficon pficon-asleep fa-lg",
           :confirm => N_("Shutdown this item to Standby Mode?"),
-          :klass   => ApplicationHelper::Button::HostFeatureButton,
+          :klass   => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
           :options => {:feature => :standby}),
         button(
           :host_shutdown,
           nil,
           N_('Shutdown this item'),
           N_('Shutdown'),
-          :image   => "guest_shutdown",
+          :icon    => "fa fa-stop fa-lg",
           :confirm => N_("Shutdown this item?"),
-          :klass   => ApplicationHelper::Button::HostFeatureButtonWithDisable,
+          :klass   => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
           :options => {:feature => :shutdown}),
         button(
           :host_reboot,
           nil,
           N_('Restart this item'),
           N_('Restart'),
-          :image   => "guest_restart",
+          :icon    => "pficon pficon-restart fa-lg",
           :confirm => N_("Restart this item?"),
-          :klass   => ApplicationHelper::Button::HostFeatureButton,
+          :klass   => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
           :options => {:feature => :reboot}),
         separator,
         button(
@@ -200,27 +185,27 @@ class ApplicationHelper::Toolbar::HostCenter < ApplicationHelper::Toolbar::Basic
           nil,
           N_('Power On this item'),
           N_('Power On'),
-          :image   => "power_on",
+          :icon    => "pficon pficon-on fa-lg",
           :confirm => N_("Power On this item?"),
-          :klass   => ApplicationHelper::Button::HostFeatureButton,
+          :klass   => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
           :options => {:feature => :start}),
         button(
           :host_stop,
           nil,
           N_('Power Off this item'),
           N_('Power Off'),
-          :image   => "power_off",
+          :icon    => "pficon pficon-off fa-lg",
           :confirm => N_("Power Off this item?"),
-          :klass   => ApplicationHelper::Button::HostFeatureButton,
+          :klass   => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
           :options => {:feature => :stop}),
         button(
           :host_reset,
           nil,
           N_('Reset this item'),
           N_('Reset'),
-          :image   => "power_reset",
+          :icon    => "fa fa-refresh fa-lg",
           :confirm => N_("Reset this item?"),
-          :klass   => ApplicationHelper::Button::HostFeatureButtonWithDisable,
+          :klass   => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
           :options => {:feature => :reset}),
       ]
     ),

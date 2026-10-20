@@ -3,25 +3,26 @@ module OrchestrationStackHelper::TextualSummary
   include TextualMixins::TextualEmsCloud
   include TextualMixins::TextualGroupTags
   include TextualMixins::TextualName
+  include TextualMixins::TextualCustomButtonEvents
   #
   # Groups
   #
 
   def textual_group_properties
-    TextualGroup.new(_("Properties"), %i(name description type status status_reason))
+    TextualGroup.new(_("Properties"), %i[name description type status status_reason])
   end
 
   def textual_group_lifecycle
-    TextualGroup.new(_("Lifecycle"), %i(retirement_date))
+    TextualGroup.new(_("Lifecycle"), %i[retirement_date])
   end
 
   def textual_group_relationships
     TextualGroup.new(
       _("Relationships"),
-      %i(
+      %i[
         ems_cloud service parent_orchestration_stack child_orchestration_stack orchestration_template
         instances security_groups cloud_networks parameters outputs resources
-      )
+      ]
     )
   end
 
@@ -29,15 +30,15 @@ module OrchestrationStackHelper::TextualSummary
   # Items
   #
   def textual_type
-    ui_lookup(:model => @record.type)
+    {:label => _('Type'), :value => ui_lookup(:model => @record.type)}
   end
 
   def textual_status
-    @record.status
+    {:label => _('Status'), :value => @record.status}
   end
 
   def textual_status_reason
-    @record.status_reason
+    {:label => _('Status Reason'), :value => @record.status_reason}
   end
 
   def textual_retirement_date
@@ -65,9 +66,9 @@ module OrchestrationStackHelper::TextualSummary
 
   def textual_child_orchestration_stack
     num = @record.number_of(:children)
-    if num == 1 && role_allows(:feature => "orchestration_stack_show")
+    if num == 1 && role_allows?(:feature => "orchestration_stack_show")
       @record.children.first
-    elsif num > 1 && role_allows(:feature => "orchestration_stack_show_list")
+    elsif num > 1 && role_allows?(:feature => "orchestration_stack_show_list")
       h         = {:label => _("Child Orchestration Stacks"), :icon => "ff ff-stack", :value => num}
       h[:link]  = url_for_only_path(:action => 'show', :id => @record.id, :display => 'children')
       h[:title] = _("Show all Child Orchestration Stacks")
@@ -78,7 +79,7 @@ module OrchestrationStackHelper::TextualSummary
   def textual_orchestration_template
     template = @record.try(:orchestration_template)
     return nil if template.nil?
-    h = {:label => _('Orchestration Template'), :icon => "ff ff-template", :value => template.name}
+    h = {:label => _('Orchestration Template'), :icon => "pficon pficon-template", :value => template.name}
     if role_allows?(:feature => "orchestration_templates_view")
       h[:title] = _("Show this Orchestration Template")
       h[:link] = url_for_only_path(:action => 'show', :id => @record, :display => 'stack_orchestration_template')
@@ -89,7 +90,7 @@ module OrchestrationStackHelper::TextualSummary
   def textual_instances
     num   = @record.number_of(:vms)
     h     = {:label => _('Instances'), :icon => "pficon pficon-virtual-machine", :value => num}
-    if num > 0 && role_allows?(:feature => "vm_show_list")
+    if num.positive? && role_allows?(:feature => "vm_show_list")
       h[:link]  = url_for_only_path(:action => 'show', :id => @record, :display => 'instances')
       h[:title] = _("Show all Instances")
     end
@@ -109,7 +110,7 @@ module OrchestrationStackHelper::TextualSummary
   def textual_parameters
     num   = @record.number_of(:parameters)
     h     = {:label => _("Parameters"), :icon => "ff ff-parameter", :value => num}
-    if num > 0
+    if num.positive?
       h[:link]  = url_for_only_path(:controller => controller.controller_name, :action => 'parameters', :id => @record)
       h[:title] = _("Show all parameters")
     end
@@ -118,8 +119,8 @@ module OrchestrationStackHelper::TextualSummary
 
   def textual_outputs
     num   = @record.number_of(:outputs)
-    h     = {:label => _("Outputs"), :icon => "ff ff-output", :value => num}
-    if num > 0
+    h     = {:label => _("Outputs"), :icon => "ff ff-file-output-o", :value => num}
+    if num.positive?
       h[:link]  = url_for_only_path(:controller => controller.controller_name, :action => 'outputs', :id => @record)
       h[:title] = _("Show all outputs")
     end
@@ -129,7 +130,7 @@ module OrchestrationStackHelper::TextualSummary
   def textual_resources
     num   = @record.number_of(:resources)
     h     = {:label => _("Resources"), :icon => "ff ff-resource", :value => num}
-    if num > 0
+    if num.positive?
       h[:link]  = url_for_only_path(:controller => controller.controller_name, :action => 'resources', :id => @record)
       h[:title] = _("Show all resources")
     end

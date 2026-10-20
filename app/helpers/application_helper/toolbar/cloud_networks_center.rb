@@ -4,7 +4,7 @@ class ApplicationHelper::Toolbar::CloudNetworksCenter < ApplicationHelper::Toolb
     [
       select(
         :cloud_network_vmdb_choice,
-        'fa fa-cog fa-lg',
+        nil,
         t = N_('Configuration'),
         t,
         :items => [
@@ -15,24 +15,6 @@ class ApplicationHelper::Toolbar::CloudNetworksCenter < ApplicationHelper::Toolb
             t,
             :klass => ApplicationHelper::Button::CloudNetworkNew
           ),
-          separator,
-          button(
-            :cloud_network_edit,
-            'pficon pficon-edit fa-lg',
-            t = N_('Edit selected Cloud Network'),
-            t,
-            :url_parms => 'main_div',
-            :enabled   => false,
-            :onwhen    => '1'),
-          button(
-            :cloud_network_delete,
-            'pficon pficon-delete fa-lg',
-            t = N_('Delete selected Cloud Networks'),
-            t,
-            :url_parms => 'main_div',
-            :confirm   => N_('Warning: The selected Cloud Networks and ALL of their components will be removed!'),
-            :enabled   => false,
-            :onwhen    => '1+')
         ]
       )
     ]
@@ -42,7 +24,7 @@ class ApplicationHelper::Toolbar::CloudNetworksCenter < ApplicationHelper::Toolb
     [
       select(
         :cloud_network_policy_choice,
-        'fa fa-shield fa-lg',
+        nil,
         t = N_('Policy'),
         t,
         :enabled => false,

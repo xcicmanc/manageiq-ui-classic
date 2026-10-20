@@ -1,5 +1,4 @@
 module ReportHelper
-
   TIMER_DAYS = [
     [N_("Day"), "1"],
     [N_("2 Days"), "2"],
@@ -34,7 +33,7 @@ module ReportHelper
     [N_("5 Months"), "5"],
     [N_("6 Months"), "6"],
   ].freeze
-  
+
   Timer = Struct.new(
     :typ,
     :months,
@@ -51,10 +50,10 @@ module ReportHelper
     end
 
     def update_from_hash(params)
-      %w(typ moths weeks days hours).each do |i|
+      %w[typ moths weeks days hours].each do |i|
         self[i] = params[:"timer_#{i}"] if params[:"timer_#{i}"]
       end
-      %w(start_hour start_min).each do |i|
+      %w[start_hour start_min].each do |i|
         self[i] = params[i.to_sym] if params[i.to_sym]
       end
       self.start_date = params[:miq_date_1] if params[:miq_date_1]

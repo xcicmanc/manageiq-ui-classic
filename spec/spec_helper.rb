@@ -2,16 +2,16 @@ require 'simplecov'
 SimpleCov.start
 
 ENV["RAILS_ENV"] ||= 'test'
-require 'pathname'
-require Pathname.new(__dir__).join("manageiq/config/environment").to_s
 require 'rails-controller-testing'
 require 'rspec/rails'
 
 Rails::Controller::Testing.install
-require 'manageiq-ui-classic'
+require 'manageiq/ui/classic'
 
 support_path = Pathname.new(__dir__).join('support')
 Dir[support_path.join("**/*.rb")].each { |f| require f }
+
+require 'miq-hash_struct'
 
 # TODO: isolate the helpers we need for UI specs instead of general Dir glob
 #
@@ -21,20 +21,18 @@ Dir[support_path.join("**/*.rb")].each { |f| require f }
 # require core_support_path.join('presenter_helper.rb')
 # require core_support_path.join('menu_helper.rb')
 # require core_support_path.join('automation_helper.rb')
-# require core_support_path.join('factory_girl_helper.rb')
+# require core_support_path.join('factory_bot_helper.rb')
 # require core_support_path.join('button_helper.rb')
 # require core_support_path.join('settings_helper.rb')
 #
 # Known:
-# require core_support_path.join("examples_group/shared_examples_for_application_helper.rb")
 # require core_support_path.join("rake_task_example_group.rb")
 Dir[Rails.root.join('spec', 'shared', '**', '*.rb')].each { |f| require f }
 
-Dir[ManageIQ::UI::Classic::Engine.root.join('spec/shared/controllers/**/*.rb')].each { |f| require f }
-Dir[ManageIQ::Gems::Pending.root.join("spec/support/custom_matchers/*.rb")].each { |f| require f }
+Dir[ManageIQ::UI::Classic::Engine.root.join('spec/shared/**/*.rb')].each { |f| require f }
 
 RSpec.configure do |config|
-  config.fixture_path = Rails.root.join("spec/fixtures")
+  config.fixture_paths = [Rails.root.join("spec/fixtures")]
   config.use_transactional_fixtures = true
   config.use_instantiated_fixtures  = false
 
@@ -45,11 +43,14 @@ RSpec.configure do |config|
     config.example_status_persistence_file_path = Rails.root.join("tmp/rspec_example_store.txt")
   end
 
+  config.include Spec::Support::SupportsHelper
   config.include Spec::Support::AuthHelper, :type => :view
   config.include Spec::Support::ViewHelper, :type => :view
+  config.include ApplicationHelper, :type => :view
 
   config.include Spec::Support::ControllerHelper, :type => :controller
   config.include Spec::Support::AuthHelper, :type => :controller
+  config.include Spec::Support::TaggingHelper, :type => :controller
 
   config.include Spec::Support::AuthHelper, :type => :helper
 

@@ -1,0 +1,17 @@
+.report-table-toolbar {
+  .cds--table-toolbar {
+    overflow: visible;
+    z-index: 300;
+
+    .cds--toolbar-content {
+      justify-content: flex-start;
+
+      .cds--dropdown__wrapper {
+        .cds--dropdown {
+          min-height: 48px;
+          min-width: 185px;
+        }
+      }
+    }
+  }
+}

@@ -1,14 +1,24 @@
 class EmsCloudController < ApplicationController
   include Mixins::GenericListMixin
   include Mixins::GenericShowMixin
-  include EmsCommon        # common methods for EmsInfra/Cloud controllers
-  include Mixins::EmsCommonAngular
+  include Mixins::EmsCommon # common methods for EmsInfra/Cloud controllers
   include Mixins::GenericSessionMixin
+  include Mixins::DashboardViewMixin
+  include Mixins::BreadcrumbsMixin
 
   before_action :check_privileges
   before_action :get_session_data
   after_action :cleanup_action
   after_action :set_session_data
+
+  # when methods are evaluated from this constant and return true that means: column is displayed
+  DISPLAY_GTL_METHODS = [
+    :user_super_admin?
+  ].freeze
+
+  def user_super_admin?
+    current_user.super_admin_user?
+  end
 
   def self.model
     ManageIQ::Providers::CloudManager
@@ -18,32 +28,30 @@ class EmsCloudController < ApplicationController
     @table_name ||= "ems_cloud"
   end
 
-  def ems_path(*args)
-    ems_cloud_path(*args)
-  end
-
-  def new_ems_path
-    new_ems_cloud_path
-  end
-
-  def ems_cloud_form_fields
-    ems_form_fields
+  def show
+    @breadcrumbs = [{:name => _('Cloud Providers'), :url => '/ems_cloud/show_list'}]
+    super
   end
 
   # Special EmsCloud link builder for restful routes
   def show_link(ems, options = {})
-    ems_path(ems.id, options)
+    ems_cloud_path(ems.id, options)
   end
 
   def restful?
     true
   end
-  public :restful?
+
+  def launch_console
+    open_console('ems_native_console')
+  end
 
   menu_section :clo
+  feature_for_actions "#{controller_name}_show_list", *ADV_SEARCH_ACTIONS
   has_custom_buttons
 
   def sync_users
+    assert_privileges('ems_cloud_user_sync')
     ems = find_record_with_rbac(model, params[:id])
     @in_a_form = true
     drop_breadcrumb(:name => _("Sync Users"), :url => "/ems_cloud/sync_users")
@@ -76,9 +84,11 @@ class EmsCloudController < ApplicationController
         render_sync_page(ems, selected_admin_role, selected_member_role, selected_password, selected_verify)
       else
         password_digest = nil
-        password_digest = BCrypt::Password.create(selected_password) unless selected_password.blank?
+        password_digest = BCrypt::Password.create(selected_password) if selected_password.present?
         ems.sync_users_queue(session[:userid], selected_admin_role, selected_member_role, password_digest)
-        redirect_to(ems_cloud_path(params[:id], :flash_msg => _("Sync users queued.")))
+
+        flash_to_session(_("Sync users queued."))
+        redirect_to(ems_cloud_path(params[:id]))
       end
     else
       render_sync_page(ems, selected_admin_role, selected_member_role, selected_password, selected_verify)
@@ -98,5 +108,26 @@ class EmsCloudController < ApplicationController
                        :admin_roles          => admin_roles,
                        :member_roles         => member_roles,
                        :ems                  => ems})
+  end
+
+  def download_data
+    assert_privileges('ems_cloud_show_list')
+    super
+  end
+
+  def download_summary_pdf
+    assert_privileges('ems_cloud_show')
+    super
+  end
+
+  def breadcrumbs_options
+    {
+      :breadcrumbs => [
+        {:title => _("Compute")},
+        {:title => _("Clouds")},
+        {:title => _("Providers"), :url => controller_url},
+      ],
+      :record_info => @ems,
+    }.compact
   end
 end

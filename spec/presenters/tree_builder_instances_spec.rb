@@ -1,32 +1,31 @@
 describe TreeBuilderInstances do
   before do
-    @vm_cloud_with_az = FactoryGirl.create(:vm_cloud,
-                                           :ext_management_system => FactoryGirl.create(:ems_google),
-                                           :storage               => FactoryGirl.create(:storage),
-                                           :availability_zone     => FactoryGirl.create(:availability_zone_google))
-    @vm_cloud_without_az = FactoryGirl.create(:vm_cloud,
-                                              :ext_management_system => FactoryGirl.create(:ems_google),
-                                              :storage               => FactoryGirl.create(:storage),)
+    @vm_cloud_with_az = FactoryBot.create(:vm_cloud,
+                                           :ext_management_system => FactoryBot.create(:ems_google),
+                                           :storage               => FactoryBot.create(:storage),
+                                           :availability_zone     => FactoryBot.create(:availability_zone_google))
+    @vm_cloud_without_az = FactoryBot.create(:vm_cloud,
+                                              :ext_management_system => FactoryBot.create(:ems_google),
+                                              :storage               => FactoryBot.create(:storage),)
 
-    login_as FactoryGirl.create(:user_with_group, :role => "operator", :settings => {})
+    login_as FactoryBot.create(:user_with_group, :role => "operator", :settings => {})
 
-    allow(MiqServer).to receive(:my_server) { FactoryGirl.create(:miq_server) }
+    allow(MiqServer).to receive(:my_server) { FactoryBot.create(:miq_server) }
 
-    @instances_tree = TreeBuilderInstances.new(:instances, :instances_tree, {}, nil)
+    @instances_tree = TreeBuilderInstances.new(:instances_tree, {}, nil)
   end
 
   it 'sets tree to have leaf and not lazy' do
-    root_options = @instances_tree.tree_init_options(nil)
+    root_options = @instances_tree.tree_init_options
 
-    expect(root_options).to eq(:leaf => 'VmCloud', :lazy => false)
+    expect(root_options).to eq(:allow_reselect => true)
   end
 
   it 'sets tree to have full ids, not lazy and no root' do
-    locals = @instances_tree.set_locals_for_render
+    locals = @instances_tree.send(:set_locals_for_render)
 
     expect(locals[:tree_id]).to eq("instances_treebox")
     expect(locals[:tree_name]).to eq("instances_tree")
-    expect(locals[:autoload]).to eq(true)
   end
 
   it 'sets root correctly' do
@@ -36,43 +35,33 @@ describe TreeBuilderInstances do
   end
 
   it 'sets providers nodes correctly' do
-    providers = @instances_tree.x_get_tree_roots(false, nil)
+    allow(@instances_tree).to receive(:role_allows?).and_return(true)
+    providers = @instances_tree.send(:x_get_tree_roots)
 
     expect(providers).to eq([@vm_cloud_with_az.ext_management_system,
                              @vm_cloud_without_az.ext_management_system,
-                             {:id    => "arch",
-                              :text  => "<Archived>",
-                              :image => "svg/currentstate-archived.svg",
-                              :tip   => "Archived Instances"},
-                             {:id    => "orph",
-                              :text  => "<Orphaned>",
-                              :image => "svg/currentstate-orphaned.svg",
-                              :tip   => "Orphaned Instances"}])
+                             {:id              => "arch",
+                              :text            => "<Archived>",
+                              :icon            => "fa fa-archive",
+                              :icon_background => "#336699",
+                              :color           => '#fff',
+                              :tip             => "Archived Instances"},
+                             {:id              => "orph",
+                              :text            => "<Orphaned>",
+                              :icon            => "ff ff-orphaned",
+                              :icon_background => "#336699",
+                              :color           => '#fff',
+                              :tip             => "Orphaned Instances"}])
   end
 
   it 'sets availability zones correctly if vms are hidden' do
-    User.current_user.settings[:display] = {:display_vms => false}
-
-    provider_with_az = @instances_tree.x_get_tree_roots(false, nil)[0] # provider with vm that has availability zone
-    provider_without_az = @instances_tree.x_get_tree_roots(false, nil)[1] # provider with vm that doesn't have availability zone
+    provider_with_az = @instances_tree.send(:x_get_tree_roots)[0] # provider with vm that has availability zone
+    provider_without_az = @instances_tree.send(:x_get_tree_roots)[1] # provider with vm that doesn't have availability zone
     allow(provider_with_az).to receive(:availability_zones) { [@vm_cloud_with_az.availability_zone] }
     az = @instances_tree.x_get_tree_ems_kids(provider_with_az, false)
     vm_without_az = @instances_tree.x_get_tree_ems_kids(provider_without_az, false)
 
     expect(az).to eq(provider_with_az.availability_zones)
     expect(vm_without_az).to eq([])
-  end
-
-  it 'sets availability zones correctly if vms are shown' do
-    User.current_user.settings[:display] = {:display_vms => true}
-
-    provider_with_az = @instances_tree.x_get_tree_roots(false, nil)[0] # provider with vm that has availability zone
-    provider_without_az = @instances_tree.x_get_tree_roots(false, nil)[1] # provider with vm that doesn't have availability zone
-    allow(provider_with_az).to receive(:availability_zones) { [@vm_cloud_with_az.availability_zone] }
-    az = @instances_tree.x_get_tree_ems_kids(provider_with_az, false)
-    vm_without_az = @instances_tree.x_get_tree_ems_kids(provider_without_az, false)
-
-    expect(az).to eq([@vm_cloud_with_az.availability_zone])
-    expect(vm_without_az).to eq([@vm_cloud_without_az])
   end
 end

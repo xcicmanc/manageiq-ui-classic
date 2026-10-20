@@ -1,4 +1,29 @@
 module MiqAeClassHelper
+  AE_CLASS_TAB_IDS = %w[instances methods props schema].freeze
+
+  DATASTORE_TYPES = {
+    :list => 'ns_list', :details => 'ns_details', :instances => 'class_instances', :methods => 'class_methods',
+    :domain => 'domain_overrides', :schema => 'class_fields', :fields => 'instant_fields'
+  }.freeze
+
+  def ae_class_tab_configuration
+    [:instances, :methods, :props, :schema]
+  end
+
+  def ae_class_tab_content(key_name, active_tab: nil, &)
+    if ae_class_tab_configuration.include?(key_name)
+      css_class = 'tab-pane tab_content'
+      css_class += ' active' if active_tab == key_name.to_s
+      tag.div(:id => key_name, :class => css_class, &)
+    end
+  end
+
+  def ae_class_tab_index(active_tab)
+    return 0 unless active_tab
+
+    AE_CLASS_TAB_IDS.index(active_tab) || 0
+  end
+
   def editable_domain?(record)
     record.editable?
   end
@@ -9,23 +34,24 @@ module MiqAeClassHelper
 
   def add_read_only_suffix(node_string, editable, enabled)
     if enabled && !editable
-      suffix = "Locked"
+      _("%{node_string} (Locked)") % {:node_string => node_string}
     elsif editable && !enabled
-      suffix = "Disabled"
+      _("%{node_string} (Disabled)") % {:node_string => node_string}
     else # !rec.enabled && !rec.editable?
-      suffix = "Locked & Disabled"
+      _("%{node_string} (Locked & Disabled)") % {:node_string => node_string}
     end
-    "#{node_string} (#{suffix})".html_safe
   end
 
   def domain_display_name(domain)
-    @record.fqname.split('/').first == domain.name ? "#{domain.name} (Same Domain)" : domain.name
+    @record.fqname.split('/').first == domain.name ? _("%{domain_name} (Same Domain)") % {:domain_name => domain.name} : domain.name
   end
 
   def domain_display_name_using_name(record, current_domain_name)
     domain_name = record.domain.name
     if domain_name == current_domain_name
-      return "#{domain_name} (Same Domain)", nil
+      return _("%{domain_name} (Same Domain)") % {:domain_name => domain_name}, nil
+    elsif !record.domain.enabled
+      return _("%{node_string} (Disabled)") % {:node_string => domain_name}, record.id
     else
       return domain_name, record.id
     end
@@ -34,9 +60,7 @@ module MiqAeClassHelper
   def record_name(rec)
     column   = rec.display_name.blank? ? :name : :display_name
     rec_name = if rec.kind_of?(MiqAeNamespace) && rec.domain?
-                 editable_domain?(rec) && rec.enabled ? rec.send(column) : add_read_only_suffix(rec.send(column),
-                                                                                                editable_domain?(rec),
-                                                                                                rec.enabled)
+                 editable_domain?(rec) && rec.enabled ? rec.send(column) : add_read_only_suffix(rec.send(column), editable_domain?(rec), rec.enabled)
                else
                  rec.send(column)
                end
@@ -63,7 +87,7 @@ module MiqAeClassHelper
   end
 
   def nonblank(*items)
-    items.detect { |item| !item.blank? }
+    items.detect(&:present?)
   end
 
   def ae_field_fonticon(field)
@@ -87,7 +111,7 @@ module MiqAeClassHelper
     when 'null coalescing', 'nil_class'
       'fa fa-question'
     when 'host'
-      'pficon pficon-screen'
+      'pficon pficon-container-node'
     when 'vm'
       'pficon pficon-virtual-machine'
     when 'storage'
@@ -124,5 +148,260 @@ module MiqAeClassHelper
       Rails.logger.warn("Missing fonticon for MiqAeField type \"#{field}\"")
       'fa fa-file-text-o'
     end
+  end
+
+  def state_class?(cls_id)
+    MiqAeClass.find_by(:id => cls_id).state_machine?
+  end
+
+  def location_fancy_name(location)
+    case location
+    when 'builtin'
+      _('Built-in')
+    when 'playbook'
+      _('Playbook')
+    when 'inline'
+      _('Inline')
+    when 'expression'
+      _('Expression')
+    when 'ansible_job_template'
+      _('Ansible Job Template')
+    when 'ansible_workflow_template'
+      _('Ansible Workflow Template')
+    else
+      location
+    end
+  end
+
+  def playbook_label(location)
+    case location
+    when 'playbook'
+      _('Playbook')
+    when 'ansible_job_template'
+      _('Job Template')
+    when 'ansible_workflow_template'
+      _('Workflow Template')
+    else
+      location
+    end
+  end
+
+  def available_locations_with_labels
+    MiqAeMethod.available_locations.sort.map { |l| [location_fancy_name(l), l] }
+  end
+
+  def default_datastore_data(record, cells)
+    {:id => record.id.to_s, :clickId => "#{class_prefix(record.class)}-#{record.id}", :clickable => true, :cells => cells}
+  end
+
+  def ns_list_data(grid_data)
+    has_options = User.current_user.super_admin_user?
+    datastore_options(has_options)
+    grid_data.each do |record|
+      next if record.name == '$'
+
+      cells = []
+      cells.push({:is_checkbox => true})
+      if record.git_enabled?
+        cells.push({:image => 'svg/ae_git_domain.svg'})
+      elsif record.name == MiqAeDatastore::MANAGEIQ_DOMAIN
+        cells.push({:icon => 'ff ff-manageiq'})
+      elsif record.top_level_namespace
+        cells.push({:image => "svg/vendor-#{record.top_level_namespace.downcase}.svg"})
+      else
+        cells.push({:icon => 'fa fa-globe', :type => 'i'})
+      end
+      cells.push({:text => record_name(record)})
+      cells.push({:text => record.description})
+      cells.push({:text => record.enabled})
+      cells.push({:text => record.tenant.name}) if has_options
+      data = default_datastore_data(record, cells)
+      push_data(data)
+    end
+  end
+
+  def common_list_data(details_data)
+    details_data.each do |record|
+      next if record.name == '$'
+
+      cells = []
+      cells.push({:is_checkbox => true})
+      if record.decorate.try(:fileicon)
+        cells.push({:image => ActionController::Base.helpers.image_path(record.decorate.fileicon)})
+      else
+        cells.push({:icon => record.decorate.fonticon, :type => 'i'})
+      end
+      cells.push({:text => record_name(record)})
+      data = default_datastore_data(record, cells)
+      push_data(data)
+    end
+  end
+
+  def domain_overrides_data(domain_data)
+    domain_data.each do |name, id|
+      cells = []
+      cells.push({:text => name})
+      if id
+        push_data({:id => id.to_s, :clickId => "#{domain_data[:prefix]}-#{id}", :clickable => true, :cells => cells})
+      else
+        push_data({:id => '', :clickable => false, :cells => cells})
+      end
+    end
+  end
+
+  def schema_data(schema_data)
+    schema_items = ["name", "description", "default_value", "collect", "message", "on_entry", "on_exit", "on_error", "max_retries", "max_time"]
+    schema_data.each_with_index do |ae_field, index|
+      cells = []
+      icon = ae_field.substitute ? "pficon pficon-ok" : "pficon pficon-close"
+      schema_items.each do |fname|
+        case fname
+        when 'name'
+          multiple_icons = [ae_field_fonticon(ae_field.aetype)]
+          if ae_field.datatype.present? && ae_field.datatype != "string"
+            multiple_icons.push(ae_field_fonticon(ae_field.datatype))
+          end
+          multiple_icons.push(icon)
+          cells.push({:icon => multiple_icons, :text => "#{ae_field.display_name} (#{ae_field.name})"})
+        when 'default_value'
+          cells.push({:text => ae_field.datatype == "password" ? "********" : ae_field.send(fname)})
+        else
+          cells.push({:text => ae_field.send(fname)})
+        end
+      end
+      push_data({:id => index.to_s, :clickable => false, :cells => cells})
+    end
+  end
+
+  def class_field_data(field_data)
+    has_options = state_class?(field_data[:record].class_id)
+    datastore_options(has_options)
+    field_data[:fields].each_with_index do |field, index|
+      cells = []
+      ae_value = field.ae_values.find_or_initialize_by(:instance_id => field_data[:record].id, :field_id => field.id)
+      multiple_icons = [ae_field_fonticon(field.aetype)]
+      unless field.datatype.blank? || field.datatype == 'string'
+        multiple_icons.push(ae_field_fonticon(field.datatype))
+      end
+      multiple_icons.push("pficon-ok#{field.substitute ? '' : '-closed'}")
+      cells.push({:icon => multiple_icons, :text => record_name(field)})
+      cells.push({:text => field.datatype == 'password' ? '********' : nonblank(ae_value.value, field.default_value)})
+      if has_options
+        cells.push({:text => nonblank(ae_value.on_entry, field.on_entry)})
+        cells.push({:text => nonblank(ae_value.on_exit, field.on_exit)})
+        cells.push({:text => nonblank(ae_value.on_error, field.on_error)})
+        cells.push({:text => nonblank(ae_value.max_retries, field.max_retries)})
+        cells.push({:text => nonblank(ae_value.max_time, field.max_time)})
+      end
+      cells.push({:text => nonblank(ae_value.collect, field.collect)})
+      cells.push({:text => field.message})
+      push_data({:id => index.to_s, :clickable => false, :cells => cells})
+    end
+  end
+
+  def class_properties_data(name, record)
+    data = {:title => _("Properties"), :mode => "class_props", :clickable => false}
+    data[:rows] = [
+      {:cells => {:label => _('Fully Qualified Name'), :value => name}},
+      {:cells => {:label => _('Name'), :value => record.name}},
+      {:cells => {:label => _('Display Name'), :value => record.display_name}},
+      {:cells => {:label => _('Description'), :value => record.try(:description)}},
+      {:cells => {:label => _('Instances'), :value => record.ae_instances.length}},
+    ]
+    miq_structured_list(data)
+  end
+
+  def push_data(data)
+    @initial_data.push(data)
+  end
+
+  def datastore_options(option)
+    @has_options = option
+  end
+
+  def datastore_data(type, data)
+    @initial_data = []
+    case type
+    when DATASTORE_TYPES[:list]
+      ns_list_data(data)
+    when DATASTORE_TYPES[:details], DATASTORE_TYPES[:instances], DATASTORE_TYPES[:methods]
+      common_list_data(data)
+    when DATASTORE_TYPES[:domain]
+      domain_overrides_data(data)
+    when DATASTORE_TYPES[:schema]
+      schema_data(data)
+    when DATASTORE_TYPES[:fields]
+      class_field_data(data)
+    end
+  end
+
+  def datastore_form(ae_ns, sb_data, type)
+    domain = ae_ns.domain?
+    react('DatastoreForm', {:type          => DATASTORE_TYPES[type],
+                            :domain        => domain,
+                            :namespacePath => domain ? "" : sb_data[:namespace_path],
+                            :namespaceId   => ae_ns.id || 'new',
+                            :nameReadOnly  => domain && !ae_ns.editable_property?(:name),
+                            :descReadOnly  => domain && !ae_ns.editable_property?(:description)})
+  end
+
+  def method_details(ae_method, sb_data)
+    rows = [
+      row_data(_('Type'), ae_method.location),
+      row_data(_('Fully Qualified Name'), sb_data[:namespace_path]),
+      row_data(_('Name'), ae_method.name),
+      row_data(_('Display Name'), ae_method.display_name),
+      row_data(_('Created On'), format_timezone(ae_method.created_on, Time.zone, "gtl")),
+    ]
+
+    miq_structured_list({
+                          :title => _('Main Info'),
+                          :mode  => "method_details",
+                          :rows  => rows
+                        })
+  end
+
+  def method_inline_data(ae_method)
+    rows = [
+      row_data('', {:input => 'code_mirror', :props => {:mode => 'ruby', :payload => ae_method.data}})
+    ]
+    miq_structured_list({
+                          :title => _('Data'),
+                          :mode  => "method_inline_data",
+                          :rows  => rows
+                        })
+  end
+
+  def method_builtin_data(ae_method)
+    rows = [
+      row_data(_('Builtin name'), ae_method.data),
+    ]
+    miq_structured_list({
+                          :title => _('Data'),
+                          :mode  => "method_builtin_data",
+                          :rows  => rows
+                        })
+  end
+
+  def embedded_method_list(embedded_methods)
+    if embedded_methods.present?
+      data = {
+        :title   => _("Embedded Methods"),
+        :mode    => "embedded_method_list",
+        :rows    => [],
+        :headers => [_('Path')],
+      }
+      data[:rows] += embedded_methods.try(:map) do |method|
+        {:cells => [_(method.to_s)]}
+      end
+      miq_structured_list(data)
+    end
+  end
+
+  private
+
+  def row_data(label, value, style = "", icon: false)
+    data = value.kind_of?(Array) ? [value[0], value[1]].join(', ') : value
+    {:cells => {:label => label, (icon ? :icon : :value) => data, :color => style}}
   end
 end

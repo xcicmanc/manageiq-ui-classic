@@ -8,6 +8,7 @@ module ViewHelper
   MAX_NAME_LEN = 255
   MAX_DESC_LEN = 255
   MAX_HOSTNAME_LEN = 255
+  MAX_LEN_SMALL_TEXT_FIELD = 50
 
   ALL_TIMEZONES = ActiveSupport::TimeZone.all.collect { |tz| ["(GMT#{tz.formatted_offset}) #{tz.name}", tz.name] }.freeze
 
@@ -135,7 +136,7 @@ module ViewHelper
 
   class << self
     def concat_tag(*args, &block)
-      concat content_tag(*args, &block)
+      concat(content_tag(*args, &block))
     end
   end
 end

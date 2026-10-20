@@ -4,20 +4,15 @@ class TreeBuilderPolicySimulationResults < TreeBuilder
 
   has_kids_for Hash, [:x_get_tree_hash_kids]
 
-  def initialize(name, type, sandbox, build = true, root = nil)
-    @root = root
-    super(name, type, sandbox, build)
+  def initialize(name, sandbox, build = true, **params)
+    @root = params[:root]
+    super(name, sandbox, build)
   end
 
   private
 
-  def tree_init_options(_tree_name)
-    {:full_ids => true, :lazy => false}
-  end
-
-  def set_locals_for_render
-    locals = super
-    locals.merge!(:autoload => true)
+  def tree_init_options
+    {:full_ids => true}
   end
 
   def root_options
@@ -115,8 +110,8 @@ class TreeBuilderPolicySimulationResults < TreeBuilder
      :selectable => false}
   end
 
-  def x_get_tree_roots(count_only = false, _options = nil)
-    count_only_or_objects(count_only, vm_nodes(@root[:results]))
+  def x_get_tree_roots
+    count_only_or_objects(false, vm_nodes(@root[:results]))
   end
 
   def x_get_tree_hash_kids(parent, count_only)

@@ -1,8 +1,17 @@
 class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::Basic
+  button_group('vms_reload', [
+    button(
+      :vms_reload,
+      'fa fa-refresh fa-lg',
+      N_('Refresh this page'),
+      nil,
+      :url   => "reload",
+      :klass => ApplicationHelper::Button::Reload)
+  ])
   button_group('vm_vmdb', [
     select(
       :vm_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       N_('Configuration'),
       :enabled => false,
       :onwhen  => "1+",
@@ -90,6 +99,7 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
           'pficon pficon-edit fa-lg',
           N_('Reconfigure the Memory/CPUs of selected items'),
           N_('Reconfigure Selected items'),
+          :klass        => ApplicationHelper::Button::VmReconfigureMultiple,
           :url_parms    => "main_div",
           :send_checked => true,
           :enabled      => false,
@@ -100,7 +110,7 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
   button_group('vm_policy', [
     select(
       :vm_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       N_('Policy'),
       :enabled => false,
       :onwhen  => "1+",
@@ -114,15 +124,16 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
           :send_checked => true,
           :enabled      => false,
           :onwhen       => "1+"),
-        button(
-          :vm_policy_sim,
-          'fa fa-play-circle-o fa-lg',
-          N_('View Policy Simulation for the selected items'),
-          N_('Policy Simulation'),
-          :url_parms    => "main_div",
-          :send_checked => true,
-          :enabled      => false,
-          :onwhen       => "1+"),
+        # TODO: Add this button back when the page is fixed
+        # button(
+        #   :vm_policy_sim,
+        #   'fa fa-play-circle-o fa-lg',
+        #   N_('View Policy Simulation for the selected items'),
+        #   N_('Policy Simulation'),
+        #   :url_parms    => "main_div",
+        #   :send_checked => true,
+        #   :enabled      => false,
+        #   :onwhen       => "1+"),
         button(
           :vm_tag,
           'pficon pficon-edit fa-lg',
@@ -140,7 +151,7 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
           :url_parms    => "main_div",
           :send_checked => true,
           :confirm      => N_("Initiate Check Compliance of the last known configuration for the selected items?"),
-          :enabled      => false,
+          :enabled      => true,
           :onwhen       => "1+",
           :klass        => ApplicationHelper::Button::VmCheckCompliance),
       ]
@@ -149,7 +160,7 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
   button_group('vm_lifecycle', [
     select(
       :vm_lifecycle_choice,
-      'fa fa-recycle fa-lg',
+      nil,
       N_('Lifecycle'),
       :items => [
         button(
@@ -172,7 +183,7 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
           :klass        => ApplicationHelper::Button::BasicImage),
         button(
           :vm_publish,
-          'pficon pficon-export',
+          'pficon pficon-export fa-lg',
           N_('Publish selected VM to a Template'),
           :url_parms    => "main_div",
           :send_checked => true,
@@ -181,7 +192,7 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
           :klass        => ApplicationHelper::Button::BasicImage),
         button(
           :vm_migrate,
-          'fa fa-reply fa-rotate-90 fa-lg',
+          'pficon pficon-migration fa-lg',
           N_('Migrate selected items to another Host/Datastore'),
           N_('Migrate selected items'),
           :url_parms    => "main_div",
@@ -189,13 +200,6 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
           :enabled      => false,
           :onwhen       => "1+",
           :klass        => ApplicationHelper::Button::BasicImage),
-        button(
-          :vm_transform,
-          'fa fa-random fa-lg',
-          t = N_('Transform tagged VMs to RHV'),
-          t,
-          :klass => ApplicationHelper::Button::MassTransformVmButton
-        ),
         button(
           :vm_retire,
           'fa fa-clock-o fa-lg',
@@ -223,7 +227,7 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
   button_group('vm_operations', [
     select(
       :vm_power_choice,
-      'fa fa-power-off fa-lg',
+      nil,
       N_('Power Operations'),
       N_('Power'),
       :enabled => false,
@@ -234,7 +238,7 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
           nil,
           N_('Shutdown the Guest OS on the selected items'),
           N_('Shutdown Guest'),
-          :image        => "guest_shutdown",
+          :icon         => "fa fa-stop fa-lg",
           :url_parms    => "main_div",
           :send_checked => true,
           :confirm      => N_("Shutdown the Guest OS on the selected items?"),
@@ -245,7 +249,7 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
           nil,
           N_('Restart the Guest OS on the selected items'),
           N_('Restart Guest'),
-          :image        => "guest_restart",
+          :icon         => "pficon pficon-restart fa-lg",
           :url_parms    => "main_div",
           :send_checked => true,
           :confirm      => N_("Restart the Guest OS on the selected items?"),
@@ -257,7 +261,7 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
           nil,
           N_('Power On the selected items'),
           N_('Power On'),
-          :image        => "power_on",
+          :icon         => "pficon pficon-on fa-lg",
           :url_parms    => "main_div",
           :send_checked => true,
           :confirm      => N_("Power On the selected items?"),
@@ -268,7 +272,7 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
           nil,
           N_('Power Off the selected items'),
           N_('Power Off'),
-          :image        => "power_off",
+          :icon         => "pficon pficon-off fa-lg",
           :url_parms    => "main_div",
           :send_checked => true,
           :confirm      => N_("Power Off the selected items?"),
@@ -279,7 +283,7 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
           nil,
           N_('Suspend the selected items'),
           N_('Suspend'),
-          :image        => "power_suspend",
+          :icon         => "pficon pficon-paused fa-lg",
           :url_parms    => "main_div",
           :send_checked => true,
           :confirm      => N_("Suspend the selected items?"),
@@ -290,10 +294,21 @@ class ApplicationHelper::Toolbar::VmInfrasCenter < ApplicationHelper::Toolbar::B
           nil,
           N_('Reset the selected items'),
           N_('Reset'),
-          :image        => "power_reset",
+          :icon         => "fa fa-refresh fa-lg",
           :url_parms    => "main_div",
           :send_checked => true,
           :confirm      => N_("Reset the selected items?"),
+          :enabled      => false,
+          :onwhen       => "1+"),
+        button(
+          :vm_terminate,
+          nil,
+          N_('Delete the selected items'),
+          N_('Delete'),
+          :icon         => "pficon pficon-delete fa-lg",
+          :url_parms    => "main_div",
+          :send_checked => true,
+          :confirm      => N_("Delete the selected items?"),
           :enabled      => false,
           :onwhen       => "1+"),
       ]

@@ -1,2 +1,7 @@
 #main_div
-  = render :partial => 'layouts/gtl'
+  - if EmsInfra.any?
+    = render :partial => 'layouts/gtl'
+  - else
+    = render :partial => 'layouts/empty',
+             :locals => {:add_message => _("Add a new Infrastructure Provider"),
+                         :documentation => ::Settings.docs.infra_provider}

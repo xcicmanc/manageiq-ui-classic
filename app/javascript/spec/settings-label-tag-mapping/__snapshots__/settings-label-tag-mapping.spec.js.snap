@@ -1,0 +1,709 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`SettingsLabelTagMapping component should render a SettingsLabelTagMapping component with warning 1`] = `
+<div>
+  <div
+    class="miq-custom-tab-content-header"
+  >
+    <div
+      class="tab-content-header-title"
+    >
+      <h3>
+        Map Tags
+      </h3>
+    </div>
+    <div
+      class="tab-content-header-actions"
+    >
+      <button
+        class="cds--btn cds--btn--primary"
+        title="Click on this row to create a new mapping rule"
+        type="button"
+      >
+        Add Mapping Rule
+      </button>
+    </div>
+  </div>
+  <div
+    class="miq-custom-tab-content-notification"
+  >
+    <div
+      class="miq-notification-message-container alert alert-warning"
+    >
+      <span
+        class="pficon pficon-warning-triangle-o"
+      />
+      <strong>
+        Caution: Mappings with Resource Entity 'All-Entities' could cause overwriting existing tags on resources with mapped provider labels.
+      </strong>
+    </div>
+  </div>
+  <div
+    class="miq-data-table settings-label-tag-mappings-list"
+  >
+    <div
+      class="cds--data-table-content"
+    >
+      <table
+        class="cds--data-table cds--data-table--lg cds--data-table--visible-overflow-menu"
+      >
+        <thead>
+          <tr>
+            <th
+              class="miq-data-table-header"
+              id="data-table-2__header-resource_entity"
+              scope="col"
+            >
+              <div
+                class="cds--table-header-label"
+              >
+                Resource Entity
+                <div
+                  class="cds--table-header-label--decorator-inner"
+                />
+              </div>
+            </th>
+            <th
+              class="miq-data-table-header"
+              id="data-table-2__header-resource_label"
+              scope="col"
+            >
+              <div
+                class="cds--table-header-label"
+              >
+                Resource Label
+                <div
+                  class="cds--table-header-label--decorator-inner"
+                />
+              </div>
+            </th>
+            <th
+              class="miq-data-table-header"
+              id="data-table-2__header-tag_category"
+              scope="col"
+            >
+              <div
+                class="cds--table-header-label"
+              >
+                Tag Category
+                <div
+                  class="cds--table-header-label--decorator-inner"
+                />
+              </div>
+            </th>
+            <th
+              class="miq-data-table-header"
+              id="data-table-2__header-actions"
+              scope="col"
+            >
+              <div
+                class="cds--table-header-label"
+              >
+                Actions
+                <div
+                  class="cds--table-header-label--decorator-inner"
+                />
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody
+          aria-live="polite"
+        >
+          <tr
+            class=""
+            tabindex="0"
+            title=""
+          >
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource name"
+                >
+                  resource name
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource label"
+                >
+                  resource label
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="category"
+                >
+                  category
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <button
+                  class="miq-data-table-button cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+                  tabindex="0"
+                  title="Click to delete this mapping"
+                  type="button"
+                >
+                  <span
+                    class="cds--front-line"
+                    title="Click to delete this mapping"
+                  >
+                    Delete
+                  </span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr
+            class=""
+            tabindex="1"
+            title=""
+          >
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource name"
+                >
+                  resource name
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource label"
+                >
+                  resource label
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="category"
+                >
+                  category
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <button
+                  class="miq-data-table-button cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+                  tabindex="0"
+                  title="Click to delete this mapping"
+                  type="button"
+                >
+                  <span
+                    class="cds--front-line"
+                    title="Click to delete this mapping"
+                  >
+                    Delete
+                  </span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr
+            class=""
+            tabindex="2"
+            title=""
+          >
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource name"
+                >
+                  resource name
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource label"
+                >
+                  resource label
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="category"
+                >
+                  category
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <button
+                  class="miq-data-table-button cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+                  tabindex="0"
+                  title="Click to delete this mapping"
+                  type="button"
+                >
+                  <span
+                    class="cds--front-line"
+                    title="Click to delete this mapping"
+                  >
+                    Delete
+                  </span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr
+            class=""
+            tabindex="3"
+            title=""
+          >
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource name"
+                >
+                  resource name
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource label"
+                >
+                  resource label
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="category"
+                >
+                  category
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <button
+                  class="miq-data-table-button cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+                  tabindex="0"
+                  title="Click to delete this mapping"
+                  type="button"
+                >
+                  <span
+                    class="cds--front-line"
+                    title="Click to delete this mapping"
+                  >
+                    Delete
+                  </span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`SettingsLabelTagMapping component should render a SettingsLabelTagMapping component without warning 1`] = `
+<div>
+  <div
+    class="miq-custom-tab-content-header"
+  >
+    <div
+      class="tab-content-header-title"
+    >
+      <h3>
+        Map Tags
+      </h3>
+    </div>
+    <div
+      class="tab-content-header-actions"
+    >
+      <button
+        class="cds--btn cds--btn--primary"
+        title="Click on this row to create a new mapping rule"
+        type="button"
+      >
+        Add Mapping Rule
+      </button>
+    </div>
+  </div>
+  <div
+    class="miq-data-table settings-label-tag-mappings-list"
+  >
+    <div
+      class="cds--data-table-content"
+    >
+      <table
+        class="cds--data-table cds--data-table--lg cds--data-table--visible-overflow-menu"
+      >
+        <thead>
+          <tr>
+            <th
+              class="miq-data-table-header"
+              id="data-table-1__header-resource_entity"
+              scope="col"
+            >
+              <div
+                class="cds--table-header-label"
+              >
+                Resource Entity
+                <div
+                  class="cds--table-header-label--decorator-inner"
+                />
+              </div>
+            </th>
+            <th
+              class="miq-data-table-header"
+              id="data-table-1__header-resource_label"
+              scope="col"
+            >
+              <div
+                class="cds--table-header-label"
+              >
+                Resource Label
+                <div
+                  class="cds--table-header-label--decorator-inner"
+                />
+              </div>
+            </th>
+            <th
+              class="miq-data-table-header"
+              id="data-table-1__header-tag_category"
+              scope="col"
+            >
+              <div
+                class="cds--table-header-label"
+              >
+                Tag Category
+                <div
+                  class="cds--table-header-label--decorator-inner"
+                />
+              </div>
+            </th>
+            <th
+              class="miq-data-table-header"
+              id="data-table-1__header-actions"
+              scope="col"
+            >
+              <div
+                class="cds--table-header-label"
+              >
+                Actions
+                <div
+                  class="cds--table-header-label--decorator-inner"
+                />
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody
+          aria-live="polite"
+        >
+          <tr
+            class=""
+            tabindex="0"
+            title=""
+          >
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource name"
+                >
+                  resource name
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource label"
+                >
+                  resource label
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="category"
+                >
+                  category
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <button
+                  class="miq-data-table-button cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+                  tabindex="0"
+                  title="Click to delete this mapping"
+                  type="button"
+                >
+                  <span
+                    class="cds--front-line"
+                    title="Click to delete this mapping"
+                  >
+                    Delete
+                  </span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr
+            class=""
+            tabindex="1"
+            title=""
+          >
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource name"
+                >
+                  resource name
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource label"
+                >
+                  resource label
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="category"
+                >
+                  category
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <button
+                  class="miq-data-table-button cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+                  tabindex="0"
+                  title="Click to delete this mapping"
+                  type="button"
+                >
+                  <span
+                    class="cds--front-line"
+                    title="Click to delete this mapping"
+                  >
+                    Delete
+                  </span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr
+            class=""
+            tabindex="2"
+            title=""
+          >
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource name"
+                >
+                  resource name
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource label"
+                >
+                  resource label
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="category"
+                >
+                  category
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <button
+                  class="miq-data-table-button cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+                  tabindex="0"
+                  title="Click to delete this mapping"
+                  type="button"
+                >
+                  <span
+                    class="cds--front-line"
+                    title="Click to delete this mapping"
+                  >
+                    Delete
+                  </span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr
+            class=""
+            tabindex="3"
+            title=""
+          >
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource name"
+                >
+                  resource name
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="resource label"
+                >
+                  resource label
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <span
+                  class="cds--front-line"
+                  title="category"
+                >
+                  category
+                </span>
+              </div>
+            </td>
+            <td>
+              <div
+                class="cell"
+              >
+                <button
+                  class="miq-data-table-button cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+                  tabindex="0"
+                  title="Click to delete this mapping"
+                  type="button"
+                >
+                  <span
+                    class="cds--front-line"
+                    title="Click to delete this mapping"
+                  >
+                    Delete
+                  </span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+`;

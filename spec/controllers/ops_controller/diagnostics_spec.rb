@@ -1,62 +1,30 @@
-shared_examples "logs_collect" do |type|
-  let(:klass) { type.classify.constantize }
-  let(:zone) { double("Zone", :name => "foo") }
-  let(:server) { double("MiqServer", :logon_status => :ready, :id => 1, :my_zone => zone) }
-  before do
-    sb_hash = {
-      :trees            => {:diagnostics_tree => {:active_node => active_node}},
-      :active_tree      => :diagnostics_tree,
-      :diag_selected_id => instance_variable_get("@#{type}").id,
-      :active_tab       => "diagnostics_roles_servers"
-    }
-    controller.instance_variable_set(:@sb, sb_hash)
-    allow(MiqServer).to receive(:my_server).and_return(server)
-  end
-
-  it "not running" do
-    allow_any_instance_of(MiqServer).to receive(:status).and_return("stopped")
-
-    expect(controller).to receive(:replace_right_cell).with(:nodetype => active_node)
-
-    controller.send(:logs_collect)
-
-    expect(assigns(:flash_array).first[:message]).to include("requires a started server")
-  end
-
-  it "collection already in progress" do
-    expect_any_instance_of(klass).to receive(:log_collection_active_recently?).and_return(true)
-    expect(controller).to receive(:replace_right_cell).with(:nodetype => active_node)
-
-    controller.send(:logs_collect)
-
-    expect(assigns(:flash_array).first[:message]).to include("already in progress")
-  end
-
-  context "nothing preventing collection" do
-    it "succeeds" do
-      expect_any_instance_of(klass).to receive(:log_collection_active_recently?).and_return(false)
-      expect_any_instance_of(klass).to receive(:synchronize_logs).with(user.userid, :context => klass.name)
-      expect(controller).to receive(:replace_right_cell).with(:nodetype => active_node)
-
-      controller.send(:logs_collect)
-
-      expect(assigns(:flash_array).first[:message]).to include("has been initiated")
-    end
-
-    it "collection raises and error" do
-      expect_any_instance_of(klass).to receive(:log_collection_active_recently?).and_return(false)
-      expect_any_instance_of(klass).to receive(:synchronize_logs).and_raise(StandardError)
-      expect(controller).to receive(:replace_right_cell).with(:nodetype => active_node)
-
-      controller.send(:logs_collect)
-
-      expect(assigns(:flash_array).first[:message]).to include("Log collection error returned")
-    end
-  end
-end
-
 describe OpsController do
   render_views
+
+  describe '#report_data' do
+    before do
+      stub_user(:features => :all)
+      EvmSpecHelper.create_guid_miq_server_zone
+      FactoryBot.create(:miq_worker, :miq_server => server)
+    end
+
+    let(:server) { FactoryBot.create(:miq_server) }
+
+    it 'returns workers with checkboxes' do
+      report_data_request(
+        :model       => 'MiqWorker',
+        :parent_id   => nil,
+        :named_scope => [['with_miq_server_id', server.id]],
+        :explorer    => true,
+        :gtl_dbname  => nil
+      )
+      results = assert_report_data_response
+      expect(results['data']['rows'].length).to eq(1)
+      expect(results['data']['rows'][0]["cells"][0]).to have_key("is_checkbox")
+      expect(results['data']['rows'][0]["cells"][0]["is_checkbox"]).to be_truthy
+    end
+  end
+
   context "#tree_select" do
     it "renders zone list for diagnostics_tree root node" do
       stub_user(:features => :all)
@@ -71,64 +39,13 @@ describe OpsController do
     end
   end
 
-  context "#log_collection_form_fields" do
-    it "renders log_collection_form_fields" do
-      stub_user(:features => :all)
-      EvmSpecHelper.create_guid_miq_server_zone
-      MiqRegion.seed
-
-      _guid, @miq_server, @zone = EvmSpecHelper.remote_guid_miq_server_zone
-      file_depot = FileDepotNfs.create(:name => "abc", :uri => "nfs://abc")
-      @miq_server.update_attributes(:log_file_depot_id => file_depot.id)
-
-      session[:sandboxes] = {"ops" => {:active_tree        => :diagnostics_tree,
-                                       :selected_typ       => "miq_server",
-                                       :selected_server_id => @miq_server.id}}
-      post :tree_select, :params => { :id => 'root', :format => :js }
-      get :log_collection_form_fields, :params => { :id => @miq_server.id }
-      expect(response.status).to eq(200)
-    end
-  end
-
-  context "#set_credentials" do
-    it "uses params[:log_password] to set the creds hash if it exists" do
-      stub_user(:features => :all)
-      EvmSpecHelper.create_guid_miq_server_zone
-      MiqRegion.seed
-
-      _guid, @miq_server, @zone = EvmSpecHelper.remote_guid_miq_server_zone
-      controller.instance_variable_set(:@record, @miq_server)
-      controller.instance_variable_set(:@_params,
-                                       :log_userid   => "default_userid",
-                                       :log_password => "default_password2")
-      default_creds = {:userid => "default_userid", :password => "default_password2"}
-      expect(controller.send(:set_credentials)).to include(:default => default_creds)
-    end
-
-    it "uses stored password to set the creds hash" do
-      stub_user(:features => :all)
-      EvmSpecHelper.create_guid_miq_server_zone
-      MiqRegion.seed
-
-      _guid, @miq_server, @zone = EvmSpecHelper.remote_guid_miq_server_zone
-      file_depot = FileDepotSmb.create(:name => "abc", :uri => "smb://abc")
-      expect(@miq_server).to receive(:log_file_depot).and_return(file_depot)
-      expect(file_depot).to receive(:authentication_password).and_return('default_password')
-      controller.instance_variable_set(:@record, @miq_server)
-      controller.instance_variable_set(:@_params,
-                                       :log_userid => "default_userid")
-      default_creds = {:userid => "default_userid", :password => "default_password"}
-      expect(controller.send(:set_credentials)).to include(:default => default_creds)
-    end
-  end
-
   context "::Diagnostics" do
     let!(:user) { stub_user(:features => :all) }
     before do
       EvmSpecHelper.local_miq_server
       MiqRegion.seed
       _guid, @miq_server, @zone = EvmSpecHelper.remote_guid_miq_server_zone
-      @miq_server_to_delete = FactoryGirl.create(:miq_server)
+      @miq_server_to_delete = FactoryBot.create(:miq_server)
       @miq_server_to_delete.last_heartbeat -= 20.minutes
       @miq_server_to_delete.save
     end
@@ -151,7 +68,7 @@ describe OpsController do
         :diag_selected_id => @miq_server.id,
         :active_tab       => "diagnostics_roles_servers"
       }
-      @miq_server.update_attributes(:status => "stopped")
+      @miq_server.update(:status => "stopped")
       allow(controller).to receive(:build_server_tree)
       controller.instance_variable_set(:@sb, sb_hash)
 
@@ -167,14 +84,14 @@ describe OpsController do
     describe '#delete_server' do
       context "server does exist" do
         it 'deletes server and refreshes screen' do
-          server = FactoryGirl.create(:miq_server, :zone => @zone)
+          server = FactoryBot.create(:miq_server, :zone => @zone)
           sb_hash = {
             :trees            => {:diagnostics_tree => {:active_node => "z-#{@zone.id}"}},
             :active_tree      => :diagnostics_tree,
             :diag_selected_id => @miq_server_to_delete.id,
             :active_tab       => "diagnostics_roles_servers"
           }
-          @server_role = FactoryGirl.create(
+          @server_role = FactoryBot.create(
             :server_role,
             :name              => "smartproxy",
             :description       => "SmartProxy",
@@ -182,7 +99,7 @@ describe OpsController do
             :external_failover => false,
             :role_scope        => "zone"
           )
-          @assigned_server_role = FactoryGirl.create(
+          @assigned_server_role = FactoryBot.create(
             :assigned_server_role,
             :miq_server_id  => server.id,
             :server_role_id => @server_role.id,
@@ -190,7 +107,7 @@ describe OpsController do
             :priority       => 1
           )
           controller.instance_variable_set(:@sb, sb_hash)
-          controller.instance_variable_set(:@_params, :pressed => "zone_delete_server")
+          controller.params = {:pressed => "zone_delete_server"}
           expect(controller).to receive :render
 
           controller.send(:delete_server)
@@ -254,7 +171,7 @@ describe OpsController do
 
       context "#role_start" do
         before do
-          assigned_server_role = FactoryGirl.create(
+          assigned_server_role = FactoryBot.create(
             :assigned_server_role,
             :miq_server_id  => 1,
             :server_role_id => 1,
@@ -269,7 +186,7 @@ describe OpsController do
           }
 
           controller.instance_variable_set(:@sb, sb_hash)
-          controller.instance_variable_set(:@_params, :pressed => "role_start", :action => "x_button")
+          controller.params = {:pressed => "role_start", :action => "x_button"}
           expect(controller).to receive :build_server_tree
           expect(controller).to receive(:render)
         end
@@ -284,42 +201,6 @@ describe OpsController do
           controller.send(:role_start)
           expect(assigns(:selected_server)).to eq(@zone)
         end
-      end
-    end
-
-    context "#logs_collect" do
-      context "Server" do
-        let(:active_node) { "svr-#{@miq_server.id}" }
-        include_examples "logs_collect", "miq_server"
-      end
-      context "Zone" do
-        let(:active_node) { "z-#{@zone.id}" }
-        include_examples "logs_collect", "zone"
-      end
-    end
-
-    context "#log_depot_edit" do
-      it "renders validate button" do
-        server_id = @miq_server.id
-        sb_hash = {
-          :selected_server_id => server_id,
-          :selected_typ       => "miq_server"
-        }
-        edit = {
-          :new => {},
-          :key => "logdepot_edit__#{server_id}"
-        }
-        session[:edit] = edit
-        controller.instance_variable_set(:@sb, sb_hash)
-        allow(controller).to receive(:set_credentials)
-          .and_return(:default => {:userid => "testuser", :password => 'password'})
-        controller.instance_variable_set(:@_params,
-                                         :log_userid => "default_user",
-                                         :button     => "validate",
-                                         :id         => server_id)
-        expect(controller).to receive(:render)
-        expect(response.status).to eq(200)
-        controller.send(:log_depot_edit)
       end
     end
   end

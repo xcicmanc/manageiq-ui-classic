@@ -1,0 +1,113 @@
+const { merge } = require('webpack-merge');
+
+const { env, output } = require('./configuration.js');
+const babelrc = require('../../.babelrc.js');
+const nodeModules = '../../node_modules';
+const appBasePath = (env.NODE_ENV === 'production') ? '/packs/' : '../../assets/images/layout/';// Need different paths for developement and prod envs.
+
+let babelOptions = merge(babelrc, {
+  babelrc: false,
+  compact: false,
+  cacheDirectory: env.BABEL_CACHE_DIR || true, // defaults to node_modules/.cache/babel-loader
+});
+
+// set WEBPACK_VERBOSE=1 to get more warnings
+if (env.WEBPACK_VERBOSE) {
+  // don't drop any whitespace from the bundle, prevents warnings about filesize over the limit
+  delete babelOptions.compact;
+}
+
+module.exports = [
+  {
+    test: /\.(js|jsx|mjs|cjs|ts|tsx)$/,
+    use: [{
+      loader: 'babel-loader',
+      options: babelOptions,
+    }],
+    // Explicitly include @carbon packages and its nested es-toolkit package to be transpiled
+    // Also include react-checkbox-tree v2+ for transpilation because it ships untranspiled class fields
+    // Also include temporal-polyfill because its chunk files use optional chaining
+    // and are pulled in transitively by @carbon/utilities/date-picker
+    // Also include @xterm packages because v6+ ships optional chaining in its .mjs builds
+    exclude: /node_modules\/(?!(@carbon|@tanstack|@xterm|es-toolkit|react-checkbox-tree|temporal-polyfill))/,
+  },
+  {
+    // matches both the actual path and the aliased one
+    test: /gettext_i18n_rails_js.*jed\.js/,
+    use: {
+      loader: 'imports-loader',
+      options: {
+        wrapper: {
+          thisArg: 'window',
+          args: {
+            exports: 'undefined',
+            define: 'undefined',
+          },
+        },
+      },
+    },
+  },
+  {
+    test: /\.(jpg|jpeg|png|gif|svg|eot|ttf|woff|woff2)$/i,
+    use: [{
+      loader: 'file-loader',
+      options: {
+        publicPath: output.publicPath,
+        name: '[name]-[hash].[ext]',
+      },
+    }],
+  },
+
+  {
+    test: /\.(scss|sass|css)$/i,
+    use: [
+      'style-loader',
+      {
+        loader: 'css-loader',
+        options: {
+          // Function to filter URLs - return false to skip processing
+          url: (url) => {
+            // Don't process URLs that start with /upload/ - these are runtime user-uploaded assets
+            if (url.startsWith('/upload/')) {
+              return false;
+            }
+            // Don't process absolute paths starting with /packs/ in production
+            // These will be resolved at runtime
+            if (url.startsWith('/packs/')) {
+              return false;
+            }
+            return true;
+          },
+        },
+      },
+      {
+        loader: 'postcss-loader',
+        options: {
+          sourceMap: true,
+        },
+      },
+      {
+        loader: 'sass-loader',
+        options: {
+          additionalData: `$img-base-path: '${appBasePath}';`,
+          sassOptions: {
+            sourceMap: true,
+            includePaths: [
+              `${nodeModules}/bootstrap-sass/assets/stylesheets`,
+              `${nodeModules}/bootstrap/scss`,
+              `${nodeModules}/patternfly/dist/sass/patternfly`,
+              `${nodeModules}/font-awesome/scss`,
+              `${nodeModules}/@manageiq/font-fabulous/assets/stylesheets`,
+              // Configuring Sass to lookup from node_modules folder(for Carbon and other modern Sass packages)
+              'node_modules',
+            ],
+            implementation: require('sass').default,
+            quietDeps: true, // TODO: Ignore patternfly and fontawesome sass warnings; remove this once we've removed those packages
+            silenceDeprecations: ["legacy-js-api"], // TODO: Ignore sass-loader warnings; remove those once we've upgraded sass-loader to v16+
+          },
+        },
+      },
+    ],
+  },
+
+];

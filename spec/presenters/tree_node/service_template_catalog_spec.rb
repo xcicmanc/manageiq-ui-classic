@@ -1,10 +1,8 @@
-require 'shared/presenters/tree_node/common'
-
 describe TreeNode::ServiceTemplateCatalog do
-  subject { described_class.new(object, nil, {}) }
+  subject { described_class.new(object, nil, nil) }
   let(:object) do
-    tenant = FactoryGirl.create(:tenant)
-    FactoryGirl.create(:service_template_catalog, :name => 'foo', :tenant => tenant)
+    tenant = FactoryBot.create(:tenant)
+    FactoryBot.create(:service_template_catalog, :name => 'foo', :tenant => tenant)
   end
 
   include_examples 'TreeNode::Node#key prefix', 'stc-'

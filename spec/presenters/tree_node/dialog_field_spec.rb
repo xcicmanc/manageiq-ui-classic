@@ -1,8 +1,6 @@
-require 'shared/presenters/tree_node/common'
-
 describe TreeNode::DialogField do
-  subject { described_class.new(object, nil, {}) }
-  let(:object) { FactoryGirl.create(:dialog_field) }
+  subject { described_class.new(object, nil, nil) }
+  let(:object) { FactoryBot.create(:dialog_field) }
 
   include_examples 'TreeNode::Node#key prefix', '-'
   include_examples 'TreeNode::Node#icon', 'ff ff-field'

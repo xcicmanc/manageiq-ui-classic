@@ -22,7 +22,7 @@ describe StorageHelper do
   describe '#textual methods' do
     context 'for zero VMs' do
       before do
-        @record = FactoryGirl.create(:storage)
+        @record = FactoryBot.create(:storage)
       end
 
       it 'returns correct Hash' do
@@ -45,7 +45,7 @@ describe StorageHelper do
 
     context 'for any number of VMs' do
       before do
-        @record = FactoryGirl.create(:storage)
+        @record = FactoryBot.create(:storage)
         allow(self).to receive(:role_allows?).and_return(true)
         allow(self).to receive(:url_for_only_path).and_return('link')
       end
@@ -59,7 +59,7 @@ describe StorageHelper do
                                              :title => "Show all Managed/Registered VMs")
       end
       it 'returns correct Hash' do
-        allow(@record).to receive(:total_managed_unregistered_vms).and_return(1)
+        allow(@record).to receive(:total_unregistered_vms).and_return(1)
         expect(textual_unregistered_vms).to eq(:label => "Managed/Unregistered VMs",
                                                :icon  => "pficon pficon-virtual-machine",
                                                :value => 1,
@@ -75,4 +75,27 @@ describe StorageHelper do
       end
     end
   end
+
+  before do
+    instance_variable_set(:@record, "total_space" => 150)
+  end
+
+  include_examples "textual_group", "Properties", %i(store_type free_space used_space total_space)
+
+  include_examples "textual_group", "Information for Registered VMs", %i(uncommitted_space used_uncommitted_space),
+                   "registered_vms"
+
+  include_examples "textual_group", "Relationships", %i(
+    hosts
+    managed_vms
+    managed_miq_templates
+    registered_vms
+    unregistered_vms
+    unmanaged_vms
+    custom_button_events
+  )
+
+  include_examples "textual_group_smart_management"
+
+  include_examples "textual_group", "Content", %i(files disk_files snapshot_files vm_ram_files vm_misc_files debris_files)
 end

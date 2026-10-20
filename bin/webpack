@@ -20,8 +20,40 @@ unless File.exist?(WEBPACK_CONFIG)
   exit!
 end
 
-newenv  = { "NODE_PATH" => NODE_MODULES_PATH.shellescape }
-cmdline = ["yarn", "run", "webpack", "--", "--config", WEBPACK_CONFIG] + ARGV
+# HACK: Check if --openssl-legacy-provider flag is available and use it.
+#   If nodejs is compiled with openssl 3, then this flag is available
+#   If nodejs is compiled with openssl 1.1, then this flag is not available
+#     and will fail if we hardcode it into NODE_OPTIONS
+#
+# This can be removed once we upgrade from webpack 4.0 to 5.0
+`node --openssl-legacy-provider -v`
+# if node supported this flag, then the command return status (i.e.: $? ) will be successful
+has_legacy_openssl = $?.success?
+node_options = "--max_old_space_size=4096"
+node_options << " --openssl-legacy-provider" if has_legacy_openssl
+
+newenv  = {
+  "NODE_PATH"    => NODE_MODULES_PATH.shellescape,
+  "NODE_OPTIONS" => node_options
+}
+
+# TODO: Replace this with eslint-webpack-plugin once webpack is upgraded to v5
+# Run ESLint on TypeScript files before webpack build (skip in watch mode)
+if ARGV.include?("--watch") || ARGV.include?("-w")
+  puts "[SKIP] Skipping ESLint check in watch mode.\n"
+else
+  puts "Running ESLint on TypeScript files..."
+  Dir.chdir(APP_PATH) do
+    eslint_result = system("yarn", "eslint", "app/javascript/**/*.{ts,tsx}")
+    unless eslint_result
+      puts "\n[ERROR] ESLint found errors in TypeScript files."
+      exit 1
+    end
+  end
+  puts "[OK] ESLint passed for TypeScript files.\n"
+end
+
+cmdline = ["yarn", "run", "webpack", "--config", WEBPACK_CONFIG] + ARGV
 
 Dir.chdir(APP_PATH) do
   exec newenv, *cmdline

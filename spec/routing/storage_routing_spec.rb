@@ -4,7 +4,6 @@ describe "routes for StorageController" do
   let(:controller_name) { "storage" }
 
   it_behaves_like "A controller that has advanced search routes"
-  it_behaves_like "A controller that has compare routes"
   it_behaves_like "A controller that has dialog runner routes"
   it_behaves_like "A controller that has download_data routes"
   it_behaves_like "A controller that has performance routes"
@@ -83,18 +82,6 @@ describe "routes for StorageController" do
   describe "#show" do
     it "routes with GET" do
       expect(get("/#{controller_name}/show")).to route_to("#{controller_name}#show")
-    end
-  end
-
-  describe "#show_details" do
-    it "routes with POST" do
-      expect(post("/#{controller_name}/show_details")).to route_to("#{controller_name}#show_details")
-    end
-  end
-
-  describe "#show_association" do
-    it "routes with POST" do
-      expect(post("/#{controller_name}/show_association")).to route_to("#{controller_name}#show_association")
     end
   end
 

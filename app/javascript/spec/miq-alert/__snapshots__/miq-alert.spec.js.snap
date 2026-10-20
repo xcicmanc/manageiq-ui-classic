@@ -1,0 +1,1208 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`MiqAlertStructuredList should render alert expression structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_alert_expression"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="0"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content color"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              Expression1
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="1"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content color"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              Expression2
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="2"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content color"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              Expression3
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MiqAlertStructuredList should render alert info structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_alert_info"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="0"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          D
+          e
+          s
+          c
+          r
+          i
+          p
+          t
+          i
+          o
+          n
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              bar
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="1"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          A
+          c
+          t
+          i
+          v
+          e
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              Yes
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="2"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          S
+          e
+          v
+          e
+          r
+          i
+          t
+          y
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="3"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          B
+          a
+          s
+          e
+          d
+           
+          O
+          n
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              Server
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="4"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          E
+          x
+          p
+          r
+          e
+          s
+          s
+          i
+          o
+          n
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              Expression
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="5"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          W
+          h
+          a
+          t
+           
+          t
+          o
+           
+          E
+          v
+          a
+          l
+          u
+          a
+          t
+          e
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              What to evaluate
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="6"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          D
+          r
+          i
+          v
+          i
+          n
+          g
+           
+          E
+          v
+          e
+          n
+          t
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              Hourly
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="7"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          N
+          o
+          t
+          i
+          f
+          i
+          c
+          a
+          t
+          i
+          o
+          n
+           
+          F
+          r
+          e
+          q
+          u
+          e
+          n
+          c
+          y
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              1 Hour
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MiqAlertStructuredList should render alert management event structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_alert_management_event"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="0"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          E
+          v
+          e
+          n
+          t
+           
+          N
+          a
+          m
+          e
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              Event name
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MiqAlertStructuredList should render alert parameter structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_alert_parameters"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="0"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          D
+          e
+          s
+          c
+          r
+          i
+          p
+          t
+          i
+          o
+          n
+           
+          t
+          y
+          p
+          e
+           
+          1
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              type1 value1
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="1"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          D
+          e
+          s
+          c
+          r
+          i
+          p
+          t
+          i
+          o
+          n
+           
+          t
+          y
+          p
+          e
+           
+          2
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="multi_row_cell"
+            >
+              <div
+                class="sub_row_item"
+                title=""
+              >
+                <div
+                  class="sub_value"
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    type2 value1
+                  </div>
+                </div>
+              </div>
+              <div
+                class="sub_row_item"
+                title=""
+              >
+                <div
+                  class="sub_value"
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    type2 value2
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="2"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          D
+          e
+          s
+          c
+          r
+          i
+          p
+          t
+          i
+          o
+          n
+           
+          t
+          y
+          p
+          e
+           
+          3
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content color"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              type3 value1
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MiqAlertStructuredList should render alert profile structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_alert_profiles"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row clickable"
+        role="row"
+        tabindex="0"
+        title="View this Alert Profile"
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title="View this Alert Profile"
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row clickable"
+        role="row"
+        tabindex="1"
+        title="View this Alert Profile"
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title="View this Alert Profile"
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row clickable"
+        role="row"
+        tabindex="2"
+        title="View this Alert Profile"
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title="View this Alert Profile"
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MiqAlertStructuredList should render alert referenced structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_alert_referenced"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row clickable"
+        role="row"
+        tabindex="0"
+        title="View this Action"
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title="View this Action"
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row clickable"
+        role="row"
+        tabindex="1"
+        title="View this Action"
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title="View this Action"
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row clickable"
+        role="row"
+        tabindex="2"
+        title="View this Action"
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title="View this Action"
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MiqAlertStructuredList should render alert sms structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_alert_send_sms"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="0"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          H
+          o
+          s
+          t
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="multi_row_cell"
+            >
+              <div
+                class="sub_row_item"
+                title=""
+              >
+                <div
+                  class="sub_value"
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    value1
+                  </div>
+                </div>
+              </div>
+              <div
+                class="sub_row_item"
+                title=""
+              >
+                <div
+                  class="sub_value"
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    value2
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="1"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          V
+          e
+          r
+          s
+          i
+          o
+          n
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="multi_row_cell"
+            >
+              <div
+                class="sub_row_item"
+                title=""
+              >
+                <div
+                  class="sub_value"
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    value1
+                  </div>
+                </div>
+              </div>
+              <div
+                class="sub_row_item"
+                title=""
+              >
+                <div
+                  class="sub_value"
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    value2
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="2"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          T
+          r
+          a
+          p
+           
+          N
+          u
+          m
+          b
+          e
+          r
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              123
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MiqAlertStructuredList should render alert timeline event structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_alert_timeline_event"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="0"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          S
+          h
+          o
+          w
+           
+          o
+          n
+           
+          T
+          i
+          m
+          e
+          l
+          i
+          n
+          e
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              True
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MiqAlertStructuredList should render alert variable structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_alert_variable"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="0"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td content_value array_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="expand wrap_text"
+          >
+            object_id
+          </div>
+        </div>
+        <div
+          class="cds--structured-list-td content_value array_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="expand wrap_text"
+          >
+            type
+          </div>
+        </div>
+        <div
+          class="cds--structured-list-td content_value array_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="expand wrap_text"
+          >
+            value
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="1"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td content_value array_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="expand wrap_text"
+          >
+            object_id
+          </div>
+        </div>
+        <div
+          class="cds--structured-list-td content_value array_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="expand wrap_text"
+          >
+            type
+          </div>
+        </div>
+        <div
+          class="cds--structured-list-td content_value array_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="expand wrap_text"
+          >
+            value
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="2"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td content_value array_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="expand wrap_text"
+          >
+            object_id
+          </div>
+        </div>
+        <div
+          class="cds--structured-list-td content_value array_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="expand wrap_text"
+          >
+            type
+          </div>
+        </div>
+        <div
+          class="cds--structured-list-td content_value array_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="expand wrap_text"
+          >
+            value
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

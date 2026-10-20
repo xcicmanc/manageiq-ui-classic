@@ -9,7 +9,7 @@ module Mixins
             live_migrate
             @refresh_partial = "vm_common/live_migrate"
           else
-            javascript_redirect :controller => 'vm', :action => 'live_migrate', :escape => false
+            javascript_redirect(:controller => 'vm', :action => 'live_migrate', :escape => false)
           end
         end
 
@@ -17,7 +17,7 @@ module Mixins
 
         def live_migrate
           assert_privileges("instance_live_migrate")
-          drop_breadcrumb(:name => _("Live Migrate Instances"), :url  => "/vm_cloud/live_migrate") unless @explorer
+          drop_breadcrumb(:name => _("Live Migrate Instances"), :url => "/vm_cloud/live_migrate") unless @explorer
           @sb[:explorer] = @explorer
           @in_a_form = true
           @live_migrate = true
@@ -25,7 +25,6 @@ module Mixins
           @live_migrate_items = find_records_with_rbac(VmOrTemplate.order(:name), session[:live_migrate_items])
           build_targets_hash(@live_migrate_items)
           @view = get_db_view(VmOrTemplate)
-          @view.table = MiqFilter.records2table(@live_migrate_items, @view.cols + ['id'])
 
           render :action => "show" unless @explorer
         end
@@ -46,7 +45,7 @@ module Mixins
               hosts = connection.hosts.select { |h| h.service_name == "compute" && h.host_name != current_hostname }.map do |h|
                 {:name => h.host_name, :id => h.host_name}
               end
-            rescue
+            rescue StandardError
               hosts = []
             end
           end
@@ -63,7 +62,7 @@ module Mixins
           when "submit"
             @live_migrate_items = find_records_with_rbac(VmOrTemplate.order(:name), session[:live_migrate_items])
             @live_migrate_items.each do |vm|
-              if vm.supports_live_migrate?
+              if vm.supports?(:live_migrate)
                 options = {
                   :hostname         => params['auto_select_host'] == 'on' ? nil : params['destination_host'],
                   :block_migration  => params['block_migration']   == 'on',
@@ -84,10 +83,11 @@ module Mixins
           end
           @sb[:action] = nil
           if @sb[:explorer]
+            @sb[:explorer] = nil
             replace_right_cell
           else
-            session[:flash_msgs] = @flash_array.dup
-            javascript_redirect previous_breadcrumb_url
+            flash_to_session
+            javascript_redirect(previous_breadcrumb_url)
           end
         end
       end

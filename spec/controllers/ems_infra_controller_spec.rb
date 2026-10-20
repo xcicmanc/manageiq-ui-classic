@@ -1,10 +1,9 @@
 describe EmsInfraController do
-  include CompressedIds
-
   let!(:server) { EvmSpecHelper.local_miq_server(:zone => zone) }
-  let(:zone) { FactoryGirl.build(:zone) }
-  context "#button" do
-    before(:each) do
+  let(:zone) { FactoryBot.build(:zone) }
+
+  describe "#button" do
+    before do
       stub_user(:features => :all)
       EvmSpecHelper.create_guid_miq_server_zone
 
@@ -12,9 +11,11 @@ describe EmsInfraController do
     end
 
     it "EmsInfra check compliance is called when Compliance is pressed" do
-      ems_infra = FactoryGirl.create(:ems_vmware)
-      expect(controller).to receive(:check_compliance)
+      ems_infra = FactoryBot.create(:ems_vmware)
+      expect(controller).to receive(:check_compliance).and_call_original
       post :button, :params => {:pressed => "ems_infra_check_compliance", :format => :js, :id => ems_infra.id}
+      expect(controller.send(:flash_errors?)).not_to be_truthy
+      expect(assigns(:flash_array).first[:message]).to include('Check Compliance successfully initiated')
     end
 
     it "when VM Right Size Recommendations is pressed" do
@@ -30,8 +31,8 @@ describe EmsInfraController do
     end
 
     it "when VM Migrate is pressed" do
-      ems = FactoryGirl.create(:ems_vmware)
-      vm = FactoryGirl.create(:vm_vmware, :ext_management_system => ems)
+      ems = FactoryBot.create(:ems_vmware)
+      vm = FactoryBot.create(:vm_vmware, :ext_management_system => ems)
       post :button, :params => { :pressed => "vm_migrate", :format => :js, "check_#{vm.id}" => 1, :id => ems.id }
       expect(controller.send(:flash_errors?)).not_to be_truthy
       expect(response.body).to include("/miq_request/prov_edit?")
@@ -69,41 +70,100 @@ describe EmsInfraController do
     end
 
     it "should set correct VM for right-sizing when on list of VM's of another CI" do
-      ems_infra = FactoryGirl.create(:ext_management_system)
-      vm = FactoryGirl.create(:vm_vmware, :ext_management_system => ems_infra)
+      ems_infra = FactoryBot.create(:ext_management_system)
+      vm = FactoryBot.create(:vm_vmware, :ext_management_system => ems_infra)
       allow(controller).to receive(:find_records_with_rbac) { [vm] }
       post :button, :params => { :pressed => "vm_right_size", :id => ems_infra.id, :display => 'vms', "check_#{vm.id}" => '1' }
       expect(controller.send(:flash_errors?)).not_to be_truthy
-      expect(response.body).to include("/vm/right_size/#{ApplicationRecord.uncompress_id(vm.id)}")
+      expect(response.body).to include("/vm/right_size/#{vm.id}")
     end
 
     it "when Host Analyze then Check Compliance is pressed" do
-      ems_infra = FactoryGirl.create(:ems_vmware)
+      ems_infra = FactoryBot.create(:ems_vmware)
       expect(controller).to receive(:analyze_check_compliance_hosts)
       post :button, :params => {:pressed => "host_analyze_check_compliance", :id => ems_infra.id, :format => :js}
       expect(controller.send(:flash_errors?)).not_to be_truthy
     end
 
-    it "when vm_transform is pressed" do
-      ems_infra = FactoryGirl.create(:ems_vmware)
-      expect(controller).to receive(:vm_transform)
-      post :button, :params => {:pressed => "vm_transform", :id => ems_infra.id, :format => :js}
-      expect(controller.send(:flash_errors?)).not_to be_truthy
+    context 'operations on Clusters, Orchestration Stacks, Datastores of selected Provider' do
+      before do
+        controller.params = {:pressed => pressed}
+        controller.instance_variable_set(:@display, display)
+      end
+
+      context 'SSA on selected Clusters from a nested list' do
+        let(:pressed) { 'ems_cluster_scan' }
+        let(:display) { 'ems_clusters' }
+
+        it 'returns proper record class' do
+          expect(controller.send(:record_class)).to eq(EmsCluster)
+        end
+      end
+
+      context 'retirement for Orchestration Stacks displayed in a nested list' do
+        let(:pressed) { 'orchestration_stack_retire_now' }
+        let(:display) { 'orchestration_stacks' }
+
+        it 'returns proper record class' do
+          expect(controller.send(:record_class)).to eq(OrchestrationStack)
+        end
+      end
+
+      context 'SSA on selected Datastores from a nested list' do
+        let(:pressed) { 'storage_scan' }
+        let(:display) { 'storages' }
+
+        it 'returns proper record class' do
+          expect(controller.send(:record_class)).to eq(Storage)
+        end
+      end
+    end
+
+    context 'Check Compliance of Last Known Configuration on VMs' do
+      let(:vm) { FactoryBot.create(:vm_vmware) }
+      let(:ems_infra) { FactoryBot.create(:ems_vmware) }
+
+      before do
+        allow(controller).to receive(:assert_privileges)
+        allow(controller).to receive(:performed?).and_return(true)
+        allow(controller).to receive(:render)
+        controller.instance_variable_set(:@display, 'vms')
+        controller.params = {:miq_grid_checks => vm.id.to_s, "select-row-#{vm.id.to_s}" => "on", :pressed => 'vm_check_compliance', :id => ems_infra.id.to_s, :controller => 'ems_infra'}
+      end
+
+      it 'does not initiate Check Compliance because of missing Compliance policies' do
+        controller.send(:button)
+        expect(controller.instance_variable_get(:@flash_array)).to eq([{:message => 'No Compliance Policies assigned to one or more of the selected items', :level => :error}])
+      end
+
+      context 'VM Compliance policy set' do
+        let(:policy) { FactoryBot.create(:miq_policy, :mode => 'compliance', :towhat => 'Vm', :active => true) }
+
+        before do
+          vm.add_policy(policy)
+          allow(MiqPolicy).to receive(:policy_for_event?).and_return(true)
+        end
+
+        it 'initiates Check Compliance action' do
+          controller.send(:button)
+          expect(controller.instance_variable_get(:@flash_array)).to eq([{:message => 'Check Compliance initiated for 1 VM and Instance from the ManageIQ Database', :level => :success}])
+        end
+      end
     end
   end
 
   describe "#create" do
     before do
-      user = FactoryGirl.create(:user, :features => "ems_infra_new")
+      # USE: stub_user :features => %w(ems_infra_new ems_infra_edit)
+      user = FactoryBot.create(:user, :features => %w(ems_infra_new ems_infra_edit))
 
       allow(user).to receive(:server_timezone).and_return("UTC")
       allow_any_instance_of(described_class).to receive(:set_user_time_zone)
-      allow(controller).to receive(:check_privileges).and_return(true)
       login_as user
     end
 
     it "adds a new provider" do
-      controller.instance_variable_set(:@breadcrumbs, [])
+      allow(controller).to receive(:previous_breadcrumb_url).and_return("previous-url")
       get :new
       expect(response.status).to eq(200)
     end
@@ -112,14 +172,14 @@ describe EmsInfraController do
   describe "#scaling" do
     before do
       stub_user(:features => :all)
-      @ems = instance_double("mock_infra_provider", :id => 1, :hosts => [1, 2])
+      @ems = FactoryBot.create(:ems_infra, :hosts => [FactoryBot.create(:host), FactoryBot.create(:host)])
       allow(controller).to receive(:get_infra_provider).and_return(@ems)
-      p1 = instance_double("mock_stack_parameter1", :name => "compute-1::count", :value => 1)
-      p2 = instance_double("mock_stack_parameter2", :name => "controller-1::count", :value => 1)
+      p1 = FactoryBot.create(:orchestration_stack_parameter, :name => "compute-1::count", :value => 1)
+      p2 = FactoryBot.create(:orchestration_stack_parameter, :name => "controller-1::count", :value => 1)
       stack_parameters = [p1, p2]
-      @orchestration_stack = instance_double("mock stack", :id => 1, :parameters => stack_parameters, :update_ready? => true)
+      @orchestration_stack = FactoryBot.create(:orchestration_stack, :parameters => stack_parameters)
       allow(@ems).to receive(:direct_orchestration_stacks).and_return([@orchestration_stack])
-      @orchestration_stack_parameter_compute = FactoryGirl.create(:orchestration_stack_parameter_openstack_infra_compute)
+      @orchestration_stack_parameter_compute = FactoryBot.create(:orchestration_stack_parameter_openstack_infra_compute)
     end
 
     it "when values are not changed" do
@@ -127,7 +187,8 @@ describe EmsInfraController do
       expect(controller.send(:flash_errors?)).to be_truthy
       flash_messages = assigns(:flash_array)
       expect(flash_messages.first[:message]).to include(
-        "A value must be changed or provider stack will not be updated.")
+        "A value must be changed or provider stack will not be updated."
+      )
     end
 
     it "when values are changed, but exceed number of hosts available" do
@@ -136,7 +197,8 @@ describe EmsInfraController do
       expect(controller.send(:flash_errors?)).to be_truthy
       flash_messages = assigns(:flash_array)
       expect(flash_messages.first[:message]).to include(
-        "Assigning #{@ems.hosts.count * 2} but only have #{@ems.hosts.count} hosts available.")
+        "Assigning #{@ems.hosts.count * 2} but only have #{@ems.hosts.count} hosts available."
+      )
     end
 
     it "when values are changed, values do not exceed number of hosts available" do
@@ -144,9 +206,9 @@ describe EmsInfraController do
       post :scaling, :params => { :id => @ems.id, :scale => "", :orchestration_stack_id => @orchestration_stack.id,
                                   @orchestration_stack_parameter_compute.name => 2 }
       expect(controller.send(:flash_errors?)).to be_falsey
-      expect(response.body).to include("redirected")
-      expect(response.body).to include("ems_infra")
-      expect(response.body).to include("1+to+2")
+      expect(response.status).to eq(302)
+      assert_redirected_to(controller.ems_infra_path(@ems.id))
+      expect(session[:flash_msgs]).to match [a_hash_including(:message => "Scaling compute-1::count from 1 to 2 ", :level => :success)]
     end
 
     it "when no orchestration stack is available" do
@@ -161,22 +223,23 @@ describe EmsInfraController do
   describe "#scaledown" do
     before do
       stub_user(:features => :all)
-      @host1 = instance_double("mock_host0", :name => "Compute1-xxx", :id => 0, :maintenance => false, :number_of => 0, :uid_ems => 0, :ems_ref_obj => "openstack-perf-host-nova-instance", :cloud_services => "")
-      @host2 = instance_double("mock_host1", :name => "Compute2-xxx", :id => 1, :maintenance => true, :number_of => 0, :uid_ems => 1, :ems_ref_obj => "openstack-perf-host-nova-instance", :cloud_services => "")
-      @ems = instance_double("mock_infra_provider", :id => 1, :hosts => [@host1, @host2])
+      @host1 = FactoryBot.create(:host_openstack_infra_compute, :maintenance => false)
+      @host2 = FactoryBot.create(:host_openstack_infra_compute_maintenance)
+      @ems = FactoryBot.create(:ems_openstack_infra, :hosts => [@host1, @host2])
       allow(controller).to receive(:get_infra_provider).and_return(@ems)
       allow(controller).to receive(:get_hosts_to_scaledown_from_ids).and_return([@host2])
-      p1 = instance_double("mock_stack_parameter1", :name => "compute-1::count", :value => 1)
-      p2 = instance_double("mock_stack_parameter2", :name => "controller-1::count", :value => 1)
+      p1 = FactoryBot.create(:orchestration_stack_parameter, :name => "compute-1::count", :value => 1)
+      p2 = FactoryBot.create(:orchestration_stack_parameter, :name => "controller-1::count", :value => 1)
       stack_parameters = [p1, p2]
-      r1 = instance_double("mock_stack_resource1", :physical_resource => "openstack-perf-host-nova-instance", :stack_id => 1)
-      r2 = instance_double("Mock_stack_resource2", :physical_resource => "1", :logical_resource => "1", :stack_id => 1)
+      r1 = FactoryBot.create(:orchestration_stack_resource, :physical_resource => @host1.ems_ref)
+      r2 = FactoryBot.create(:orchestration_stack_resource, :physical_resource => "1", :logical_resource => "1")
       stack_resources = [r1, r2]
-      @orchestration_stack = instance_double("mock stack", :class => "OrchestrationStack", :id => "1", :parameters => stack_parameters, :resources => stack_resources, :update_ready? => true, :ems_ref => "1")
+      @orchestration_stack = FactoryBot.create(:orchestration_stack, :parameters => stack_parameters, :resources => stack_resources)
+      allow(@orchestration_stack).to receive(:update_ready?).and_return(true)
       allow(@ems).to receive(:direct_orchestration_stacks).and_return([@orchestration_stack])
       allow(@ems).to receive(:orchestration_stacks).and_return([@orchestration_stack])
       allow(controller).to receive(:find_record_with_rbac).and_return(@orchestration_stack)
-      @orchestration_stack_parameter_compute = FactoryGirl.create(:orchestration_stack_parameter_openstack_infra_compute)
+      @orchestration_stack_parameter_compute = FactoryBot.create(:orchestration_stack_parameter_openstack_infra_compute)
     end
 
     it "when no compute hosts are selected" do
@@ -190,25 +253,26 @@ describe EmsInfraController do
     it "when values are changed, but selected host is in incorrect state" do
       allow(controller).to receive(:get_hosts_to_scaledown_from_ids).and_return([@host1])
       post :scaledown, :params => {:id => @ems.id, :scaledown => "",
-           :orchestration_stack_id => @orchestration_stack.id, :host_ids => [@ems.hosts[0].id]}
+           :orchestration_stack_id => @orchestration_stack.id, :host_ids => [@host1.id]}
       expect(controller.send(:flash_errors?)).to be_truthy
       flash_messages = assigns(:flash_array)
       expect(flash_messages.first[:message]).to include(
-        "Not all hosts can be removed from the deployment.")
+        "Not all hosts can be removed from the deployment."
+      )
     end
 
     it "when values are changed, selected host is in correct state" do
       expect(@orchestration_stack).to receive(:scale_down_queue)
       post :scaledown, :params => {:id => @ems.id, :scaledown => "",
-                                   :orchestration_stack_id => @orchestration_stack.id, :host_ids => [@ems.hosts[1].id]}
+                                   :orchestration_stack_id => @orchestration_stack.id, :host_ids => [@host2.id]}
       expect(controller.send(:flash_errors?)).to be_falsey
-      expect(response.body).to include("redirected")
-      expect(response.body).to include("ems_infra")
-      expect(response.body).to include("down+to+1")
+      expect(response.status).to eq(302)
+      assert_redirected_to(controller.ems_infra_path(@ems.id))
+      expect(session[:flash_msgs]).to match [a_hash_including(:message => " Scaling down to 1 compute nodes", :level => :success)]
     end
 
     it "when no orchestration stack is available" do
-      @ems = FactoryGirl.create(:ems_openstack_infra)
+      @ems = FactoryBot.create(:ems_openstack_infra)
       allow(controller).to receive(:get_infra_provider).and_return(@ems)
       post :scaledown, :params => {:id => @ems.id, :scaledown => "", :orchestration_stack_id => nil}
       expect(controller.send(:flash_errors?)).to be_truthy
@@ -220,7 +284,7 @@ describe EmsInfraController do
   describe "#register_and_configure_nodes" do
     before do
       stub_user(:features => :all)
-      @ems = FactoryGirl.create(:ems_openstack_infra_with_stack_and_compute_nodes)
+      @ems = FactoryBot.create(:ems_openstack_infra_with_stack_and_compute_nodes)
       allow_any_instance_of(ManageIQ::Providers::Openstack::InfraManager)
         .to receive(:openstack_handle).and_return([])
       allow_any_instance_of(EmsInfraController)
@@ -235,8 +299,8 @@ describe EmsInfraController do
         .to receive(:register_and_configure_nodes).and_return("SUCCESS")
       post :register_nodes, :params => {:id => @ems.id, :nodes_json => @nodes_example, :register => 1}
       expect(controller.send(:flash_errors?)).to be_falsey
-      expect(response.body).to include("redirected")
-      expect(response.body).to include("ems_infra")
+      expect(response.status).to eq(302)
+      assert_redirected_to(%r(#{controller.ems_infra_path(@ems.id)}))
     end
 
     it "when failure expected, workflow service not reachable" do
@@ -268,38 +332,90 @@ describe EmsInfraController do
 
   describe "#show" do
     render_views
-    before(:each) do
+
+    before do
       EvmSpecHelper.create_guid_miq_server_zone
-      login_as FactoryGirl.create(:user)
-      @ems = FactoryGirl.create(:ems_vmware)
+      login_as FactoryBot.create(:user, :features => "none")
+      @ems = FactoryBot.create(:ems_vmware)
     end
 
     let(:url_params) { {} }
 
     subject { get :show, :params => {:id => @ems.id}.merge(url_params) }
 
-    context "display=timeline" do
-      let(:url_params) { {:display => 'timeline'} }
-      it { is_expected.to have_http_status 200 }
+    context "display=hosts" do
+      it 'renders custom buttons for hosts accessed from relationship screen' do
+        custom_button = FactoryBot.create(
+          :custom_button, :name => "My Button", :applies_to_class => "Host",
+          :visibility => {:roles => ["_ALL_"]},
+          :options => {:display => true, :open_url => false, :display_for => "both"}
+        )
+        custom_button_set = FactoryBot.create(
+          :custom_button_set, :set_data => {
+            :applies_to_class => "Host", :button_order => [custom_button.id]
+          }
+        )
+        custom_button_set.add_member(custom_button)
+        controller.instance_variable_set(:@record, @ems)
+        allow(controller).to receive(:controller).and_return(controller)
+
+        # format js to avoid redirection (application_controller/explorer.rb#generic_x_show)
+        get :show, :params => {:id => @ems.id, :display => 'hosts', :format => :js}
+
+        toolbar = controller.send(:toolbar_from_hash)
+        toolbar_custom_button = toolbar.select do |button_group|
+          button_group&.map do |button|
+            button if button[:id].starts_with?("custom_")
+          end&.compact.present?
+        end.flatten.first
+
+        expect(toolbar_custom_button).not_to be_nil
+        expect(toolbar_custom_button[:items].count).to eql(1)
+        expect(response.status).to eq(200)
+      end
     end
 
-    context "render listnav partial" do
-      render_views
+    context "display=timeline" do
+      let(:url_params) { {:display => 'timeline'} }
 
       it do
+        bypass_rescue
         is_expected.to have_http_status 200
-        is_expected.not_to render_template(:partial => "layouts/listnav/_ems_infra")
+      end
+
+      it 'timeline toolbar is selected' do
+        expect(ApplicationHelper::Toolbar::TimelineCenter).to receive(:definition).and_call_original
+        subject
+      end
+
+      it "contains timelines title" do
+        subject
+        expect(response.body).to include("Timelines for #{ui_lookup(:table => controller.controller_name)} &quot;#{@ems.name}&quot;")
+      end
+    end
+
+    context "renders views" do
+      render_views
+
+      it "renders show" do
+        is_expected.to have_http_status 200
+      end
+
+      it "listnav correctly for timeline" do
+        get :show, :params => { :id => @ems.id, :display => 'timeline' }
+        expect(response.status).to eq(200)
       end
     end
 
     it "shows associated datastores" do
-      @datastore = FactoryGirl.create(:storage, :name => 'storage_name')
+      @datastore = FactoryBot.create(:storage, :name => 'storage_name')
       @datastore.parent = @ems
       controller.instance_variable_set(:@breadcrumbs, [])
       get :show, :params => {:id => @ems.id, :display => 'storages'}
       expect(response.status).to eq(200)
       expect(response).to render_template('shared/views/ems_common/show')
-      expect(assigns(:breadcrumbs)).to eq([{:name => "#{@ems.name} (All Datastores)", :url => "/ems_infra/#{@ems.id}?display=storages"}])
+      expect(assigns(:breadcrumbs)).to eq([{:name => "Infrastructure Providers", :url => "/ems_infra/show_list"},
+                                           {:name => "#{@ems.name} (All Datastores)", :url => "/ems_infra/#{@ems.id}?display=storages"}])
 
       # display needs to be saved to session for GTL pagination and such
       expect(session[:ems_infra_display]).to eq('storages')
@@ -307,14 +423,15 @@ describe EmsInfraController do
 
     it " can tag associated datastores" do
       stub_user(:features => :all)
-      datastore = FactoryGirl.create(:storage, :name => 'storage_name')
+      datastore = FactoryBot.create(:storage, :name => 'storage_name')
       datastore.parent = @ems
       controller.instance_variable_set(:@_orig_action, "x_history")
       get :show, :params => {:id => @ems.id, :display => 'storages'}
-      post :button, :params => {:id => @ems.id, :display => 'storages', :miq_grid_checks => to_cid(datastore.id), :pressed => "storage_tag", :format => :js}
+      post :button, :params => {:id => @ems.id, :display => 'storages', :miq_grid_checks => datastore.id, "select-row-#{datastore.id.to_s}" => "on", :pressed => "storage_tag", :format => :js}
       expect(response.status).to eq(200)
       _breadcrumbs = controller.instance_variable_get(:@breadcrumbs)
-      expect(assigns(:breadcrumbs)).to eq([{:name => "#{@ems.name} (All Datastores)",
+      expect(assigns(:breadcrumbs)).to eq([{:name => "Infrastructure Providers", :url => "/ems_infra/show_list"},
+                                           {:name => "#{@ems.name} (All Datastores)",
                                             :url  => "/ems_infra/#{@ems.id}?display=storages"},
                                            {:name => "Tag Assignment", :url => "//tagging_edit"}])
     end
@@ -327,10 +444,6 @@ describe EmsInfraController do
         is_expected.not_to render_template('shared/views/ems_common/show')
       end
 
-      it 'never render listnav' do
-        is_expected.not_to render_template(:partial => "layouts/listnav/_ems_container")
-      end
-
       it 'uses its own template' do
         is_expected.to have_http_status 200
         is_expected.not_to render_template(:partial => "ems_container/show_dashboard")
@@ -339,415 +452,68 @@ describe EmsInfraController do
   end
 
   describe "#show_list" do
-    before(:each) do
+    before do
       stub_user(:features => :all)
-      FactoryGirl.create(:ems_vmware)
+      FactoryBot.create(:ems_vmware)
       get :show_list
     end
+
     it { expect(response.status).to eq(200) }
   end
 
-  describe "breadcrumbs path on a 'show' page of an Infrastructure Provider accessed from Dashboard maintab" do
+  context "breadcrumbs path on a 'show' page of an Infrastructure Provider accessed from Dashboard maintab" do
     before do
       stub_user(:features => :all)
       EvmSpecHelper.create_guid_miq_server_zone
     end
+
     context "when previous breadcrumbs path contained 'Cloud Providers'" do
       it "shows 'Infrastructure Providers -> (Summary)' breadcrumb path" do
-        ems = FactoryGirl.create("ems_vmware")
+        ems = FactoryBot.create(:ems_vmware)
         get :show, :params => { :id => ems.id }
         breadcrumbs = controller.instance_variable_get(:@breadcrumbs)
-        expect(breadcrumbs).to eq([{:name => "#{ems.name} (Dashboard)", :url => "/ems_infra/#{ems.id}"}])
+        expect(breadcrumbs).to eq([{:name => "Infrastructure Providers", :url => "/ems_infra/show_list"},
+                                   {:name => "#{ems.name} (Dashboard)", :url => "/ems_infra/#{ems.id}"}])
       end
-    end
-  end
-
-  describe "#build_credentials" do
-    before(:each) do
-      @ems = FactoryGirl.create(:ems_openstack_infra)
-    end
-    context "#build_credentials only contains credentials that it supports and has a username for in params" do
-      let(:default_creds) { {:userid => "default_userid", :password => "default_password"} }
-      let(:amqp_creds)    { {:userid => "amqp_userid",    :password => "amqp_password"} }
-      let(:ssh_keypair_creds) { {:userid => "ssh_keypair_userid", :auth_key => "ssh_keypair_password"} }
-
-      it "uses the passwords from params for validation if they exist" do
-        controller.instance_variable_set(:@_params,
-                                         :default_userid       => default_creds[:userid],
-                                         :default_password     => default_creds[:password],
-                                         :amqp_userid          => amqp_creds[:userid],
-                                         :amqp_password        => amqp_creds[:password],
-                                         :ssh_keypair_userid   => ssh_keypair_creds[:userid],
-                                         :ssh_keypair_password => ssh_keypair_creds[:auth_key])
-        expect(@ems).to receive(:supports_authentication?).with(:amqp).and_return(true)
-        expect(@ems).to receive(:supports_authentication?).with(:ssh_keypair).and_return(true)
-        expect(@ems).to receive(:supports_authentication?).with(:oauth)
-        expect(@ems).to receive(:supports_authentication?).with(:auth_key)
-        expect(controller.send(:build_credentials, @ems, :validate)).to eq(:default     => default_creds.merge!(:save => false),
-                                                                           :amqp        => amqp_creds.merge!(:save => false),
-                                                                           :ssh_keypair => ssh_keypair_creds.merge!(:save => false))
-      end
-
-      it "uses the stored passwords for validation if passwords dont exist in params" do
-        controller.instance_variable_set(:@_params,
-                                         :default_userid     => default_creds[:userid],
-                                         :amqp_userid        => amqp_creds[:userid],
-                                         :ssh_keypair_userid => ssh_keypair_creds[:userid])
-        expect(@ems).to receive(:authentication_password).and_return(default_creds[:password])
-        expect(@ems).to receive(:authentication_password).with(:amqp).and_return(amqp_creds[:password])
-        expect(@ems).to receive(:supports_authentication?).with(:amqp).and_return(true)
-        expect(@ems).to receive(:authentication_key).with(:ssh_keypair).and_return(ssh_keypair_creds[:auth_key])
-        expect(@ems).to receive(:supports_authentication?).with(:ssh_keypair).and_return(true)
-        expect(@ems).to receive(:supports_authentication?).with(:oauth)
-        expect(@ems).to receive(:supports_authentication?).with(:auth_key)
-        expect(controller.send(:build_credentials, @ems, :validate)).to eq(:default     => default_creds.merge!(:save => false),
-                                                                           :amqp        => amqp_creds.merge!(:save => false),
-                                                                           :ssh_keypair => ssh_keypair_creds.merge!(:save => false))
-      end
-    end
-  end
-
-  describe "SCVMM - create, update, validate, cancel" do
-    before do
-      allow(controller).to receive(:check_privileges).and_return(true)
-      allow(controller).to receive(:assert_privileges).and_return(true)
-      login_as FactoryGirl.create(:user, :features => "ems_infra_new")
-    end
-
-    render_views
-
-    it 'creates on post' do
-      expect do
-        post :create, :params => {
-          "button"                    => "add",
-          "name"                      => "foo",
-          "emstype"                   => "scvmm",
-          "zone"                      => zone.name,
-          "cred_type"                 => "default",
-          "default_hostname"          => "foo.com",
-          "default_security_protocol" => "ssl",
-          "default_userid"            => "foo",
-          "default_password"          => "[FILTERED]",
-        }
-      end.to change { ManageIQ::Providers::Microsoft::InfraManager.count }.by(1)
-    end
-
-    it 'creates and updates an authentication record on post' do
-      expect do
-        post :create, :params => {
-          "button"                    => "add",
-          "name"                      => "foo_scvmm",
-          "emstype"                   => "scvmm",
-          "zone"                      => zone.name,
-          "cred_type"                 => "default",
-          "default_hostname"          => "foo.com",
-          "default_security_protocol" => "ssl",
-          "default_userid"            => "foo",
-          "default_password"          => "[FILTERED]",
-        }
-      end.to change { Authentication.count }.by(1)
-
-      expect(response.status).to eq(200)
-      scvmm = ManageIQ::Providers::Microsoft::InfraManager.where(:name => "foo_scvmm").first
-      expect(scvmm.authentications.size).to eq(1)
-
-      expect do
-        post :update, :params => {
-          "id"               => scvmm.id,
-          "button"           => "save",
-          "default_hostname" => "host_scvmm_updated",
-          "name"             => "foo_scvmm",
-          "emstype"          => "scvmm",
-          "default_userid"   => "bar",
-          "default_password" => "[FILTERED]",
-        }
-      end.not_to change { Authentication.count }
-
-      expect(response.status).to eq(200)
-      expect(scvmm.authentications.first).to have_attributes(:userid => "bar", :password => "[FILTERED]")
-    end
-
-    it "validates credentials for a new record" do
-      expect(ManageIQ::Providers::Microsoft::InfraManager).to receive(:build_connect_params)
-
-      post :create, :params => {
-        "button"           => "validate",
-        "cred_type"        => "default",
-        "name"             => "foo_scvmm",
-        "emstype"          => "scvmm",
-        "zone"             => zone.name,
-        "default_userid"   => "foo",
-        "default_password" => "[FILTERED]",
-      }
-
-      expect(response.status).to eq(200)
-    end
-
-    it "cancels a new record" do
-      post :create, :params => {
-        "button"           => "cancel",
-        "cred_type"        => "default",
-        "name"             => "foo_scvmm",
-        "emstype"          => "scvmm",
-        "zone"             => zone.name,
-        "default_userid"   => "foo",
-        "default_password" => "[FILTERED]",
-      }
-
-      expect(response.status).to eq(200)
-    end
-  end
-
-  describe "Openstack - create, update" do
-    before do
-      allow(controller).to receive(:check_privileges).and_return(true)
-      allow(controller).to receive(:assert_privileges).and_return(true)
-      login_as FactoryGirl.create(:user, :features => "ems_infra_new")
-    end
-
-    render_views
-
-    it 'creates on post' do
-      expect do
-        post :create, :params => {
-          "button"                        => "add",
-          "name"                          => "foo",
-          "emstype"                       => "openstack_infra",
-          "zone"                          => zone.name,
-          "cred_type"                     => "default",
-          "default_hostname"              => "foo.com",
-          "default_api_port"              => "5000",
-          "default_security_protocol"     => "ssl",
-          "default_userid"                => "foo",
-          "default_password"              => "[FILTERED]",
-          "amqp_hostname"                 => "foo_amqp.com",
-          "amqp_api_port"                 => "5672",
-          "amqp_security_protocol"        => "ssl",
-          "amqp_userid"                   => "amqp_foo",
-          "amqp_password"                 => "[FILTERED]",
-          "ssh_keypair_hostname"          => "foo_ssh.com",
-          "ssh_keypair_port"              => "5372",
-          "ssh_keypair_security_protocol" => "ssl",
-          "ssh_keypair_userid"            => "ssh_foo",
-          "ssh_keypair_password"          => "[FILTERED]",
-        }
-      end.to change { ManageIQ::Providers::Openstack::InfraManager.count }.by(1)
-    end
-
-    it 'creates and updates an authentication record on post' do
-      expect do
-        post :create, :params => {
-          "button"                        => "add",
-          "name"                          => "foo_openstack",
-          "emstype"                       => "openstack_infra",
-          "zone"                          => zone.name,
-          "cred_type"                     => "default",
-          "default_hostname"              => "foo.com",
-          "default_api_port"              => "5000",
-          "default_security_protocol"     => "ssl",
-          "default_userid"                => "foo",
-          "default_password"              => "[FILTERED]",
-          "amqp_hostname"                 => "foo_amqp.com",
-          "amqp_api_port"                 => "5672",
-          "amqp_security_protocol"        => "ssl",
-          "amqp_userid"                   => "amqp_foo",
-          "amqp_password"                 => "[FILTERED]",
-          "ssh_keypair_hostname"          => "foo_ssh.com",
-          "ssh_keypair_port"              => "5372",
-          "ssh_keypair_security_protocol" => "ssl",
-          "ssh_keypair_userid"            => "ssh_foo",
-          "ssh_keypair_password"          => "[FILTERED]",
-        }
-      end.to change { Authentication.count }.by(3)
-
-      expect(response.status).to eq(200)
-      openstack = ManageIQ::Providers::Openstack::InfraManager.where(:name => "foo_openstack").first
-      expect(openstack.authentications.size).to eq(3)
-
-      expect do
-        post :update, :params => {
-          "id"               => openstack.id,
-          "button"           => "save",
-          "default_hostname" => "host_openstack_updated",
-          "name"             => "foo_openstack",
-          "emstype"          => "openstack_infra",
-          "default_userid"   => "bar",
-          "default_password" => "[FILTERED]",
-        }
-      end.not_to change { Authentication.count }
-
-      expect(response.status).to eq(200)
-      expect(openstack.authentications.first).to have_attributes(:userid => "bar", :password => "[FILTERED]")
-    end
-  end
-
-  describe "Redhat - create, update" do
-    before do
-      allow(controller).to receive(:check_privileges).and_return(true)
-      allow(controller).to receive(:assert_privileges).and_return(true)
-      ems = FactoryGirl.create(:user, :features => "ems_infra_new")
-      login_as ems
-      allow_any_instance_of(ManageIQ::Providers::Redhat::InfraManager)
-        .to receive(:supported_api_versions).and_return([3, 4])
-    end
-
-    render_views
-
-    let(:creation_params) do
-      {
-        "button"                => "add",
-        "name"                  => "foo_rhevm",
-        "emstype"               => "rhevm",
-        "zone"                  => zone.name,
-        "cred_type"             => "default",
-        "default_hostname"      => "foo.com",
-        "default_api_port"      => "5000",
-        "default_userid"        => "foo",
-        "default_password"      => "[FILTERED]",
-        "metrics_hostname"      => "foo_metrics.com",
-        "metrics_api_port"      => "5672",
-        "metrics_userid"        => "metrics_foo",
-        "metrics_password"      => "[FILTERED]",
-        "metrics_database_name" => "metrics_dwh"
-      }
-    end
-
-    subject(:create) { post :create, :params => creation_params }
-
-    it 'creates on post' do
-      expect do
-        create
-      end.to change { ManageIQ::Providers::Redhat::InfraManager.where("name" => creation_params["name"]).count }.by(1)
-    end
-
-    it 'creates authentication records on post' do
-      expect do
-        create
-      end.to change { Authentication.count }.by(2)
-
-      expect(response.status).to eq(200)
-      rhevm = ManageIQ::Providers::Redhat::InfraManager.where(:name => "foo_rhevm").first
-      expect(rhevm.authentications.size).to eq(2)
-    end
-
-    it 'updates authentication records on post' do
-      create
-      rhevm = ManageIQ::Providers::Redhat::InfraManager.where(:name => "foo_rhevm").first
-      expect do
-        post :update, :params => {
-          "id"               => rhevm.id,
-          "button"           => "save",
-          "default_hostname" => "host_rhevm_updated",
-          "name"             => "foo_rhevm",
-          "emstype"          => "rhevm",
-          "default_userid"   => "bar",
-          "default_password" => "[FILTERED]",
-        }
-      end.not_to change { Authentication.count }
-
-      expect(response.status).to eq(200)
-      expect(rhevm.authentications.first).to have_attributes(:userid => "bar", :password => "[FILTERED]")
-    end
-
-    context "Metrics endpoint" do
-      it 'creates endpoints records on post' do
-        create
-        expect(response.status).to eq(200)
-        rhevm = ManageIQ::Providers::Redhat::InfraManager.where(:name => "foo_rhevm").first
-        expect(rhevm.endpoints.size).to eq(2)
-      end
-
-      it 'updates metrics endpoint records on post when button is "save"' do
-        create
-        rhevm = ManageIQ::Providers::Redhat::InfraManager.where(:name => "foo_rhevm").first
-
-        updated_metrics_params = { "default_hostname"      => "host_rhevm",
-                                   "metrics_hostname"      => "foo_metrics.com",
-                                   "metrics_api_port"      => "5672",
-                                   "metrics_userid"        => "metrics_foo",
-                                   "metrics_password"      => "[FILTERED]",
-                                   "metrics_database_name" => "metrics_dwh_updated"
-        }
-
-        expect do
-          post :update, :params => { "id" => rhevm.id, :button => 'save' }.merge(updated_metrics_params)
-        end.not_to change { Endpoint.count }
-
-        expect(Endpoint.where(:path => updated_metrics_params["metrics_database_name"]).count)
-          .to eq(1)
-      end
-
-      it 'tries to varify with the right params on post when button is "validate"' do
-        create
-        rhevm = ManageIQ::Providers::Redhat::InfraManager.where(:name => "foo_rhevm").first
-        expect_any_instance_of(ManageIQ::Providers::Redhat::InfraManager).to receive(:authentication_check)
-          .with("metrics",
-                hash_including(:save => false, :database => creation_params["metrics_database_name"]))
-        post :update, creation_params.merge(:button => "validate", :cred_type => "metrics", :id => rhevm.id)
-      end
-    end
-  end
-
-  describe "VMWare - create, update" do
-    before do
-      allow(controller).to receive(:check_privileges).and_return(true)
-      allow(controller).to receive(:assert_privileges).and_return(true)
-      login_as FactoryGirl.create(:user, :features => "ems_infra_new")
-    end
-
-    render_views
-
-    it 'creates on post' do
-      expect do
-        post :create, :params => {
-          "button"           => "add",
-          "name"             => "foo",
-          "emstype"          => "vmwarews",
-          "zone"             => zone.name,
-          "cred_type"        => "default",
-          "default_hostname" => "foo.com",
-          "default_userid"   => "foo",
-          "default_password" => "[FILTERED]",
-        }
-      end.to change { ManageIQ::Providers::Vmware::InfraManager.count }.by(1)
-    end
-
-    it 'creates and updates an authentication record on post' do
-      expect do
-        post :create, :params => {
-          "button"           => "add",
-          "name"             => "foo_vmware",
-          "emstype"          => "vmwarews",
-          "zone"             => zone.name,
-          "cred_type"        => "default",
-          "default_hostname" => "foo.com",
-          "default_userid"   => "foo",
-          "default_password" => "[FILTERED]",
-        }
-      end.to change { Authentication.count }.by(1)
-
-      expect(response.status).to eq(200)
-      vmware = ManageIQ::Providers::Vmware::InfraManager.where(:name => "foo_vmware").first
-      expect(vmware.authentications.size).to eq(1)
-
-      expect do
-        post :update, :params => {
-          "id"               => vmware.id,
-          "button"           => "save",
-          "default_hostname" => "host_vmware_updated",
-          "name"             => "foo_vmware",
-          "emstype"          => "vmwarews",
-          "default_userid"   => "bar",
-          "default_password" => "[FILTERED]",
-        }
-      end.not_to change { Authentication.count }
-
-      expect(response.status).to eq(200)
-      expect(vmware.authentications.first).to have_attributes(:userid => "bar", :password => "[FILTERED]")
     end
   end
 
   include_examples '#download_summary_pdf', :ems_vmware
 
   it_behaves_like "controller with custom buttons"
+  it_behaves_like "Set Default in search bar"
+
+  context "hiding tenant column for non admin user" do
+    before do
+      Tenant.seed
+      EvmSpecHelper.local_miq_server
+    end
+
+    let!(:record) { FactoryBot.create(:ems_infra, :tenant => Tenant.root_tenant) }
+
+    let(:report) do
+      FactoryBot.create(:miq_report,
+                         :name        => 'Infrastructure Providers',
+                         :db          => 'EmsInfra',
+                         :title       => 'Infrastructure Providers',
+                         :cols        => %w[name hostname],
+                         :col_order   => %w[name hostname tenant.name],
+                         :headers     => %w[Name Hostname Tenant],
+                         :col_options => {"tenant.name" => {:display_method => :user_super_admin?}},
+                         :include     => {"tenant" => {"columns" => ['name']}})
+    end
+
+    include_examples 'hiding tenant column for non admin user', :name => "Name", :hostname => "Hostname"
+  end
+
+  describe "When the console button is pressed" do
+    before do
+      allow(controller).to receive(:launch_console).and_return(true)
+    end
+
+    it "redirects to new url" do
+      post :launch_console
+      expect(response.status).to eq(302)
+    end
+  end
 end

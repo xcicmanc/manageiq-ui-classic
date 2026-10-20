@@ -1,26 +1,20 @@
-# rubocop: disable ClassLength
 class TreeBuilderPolicySimulation < TreeBuilder
   # exp_build_string method needed
   include ApplicationController::ExpressionHtml
 
   has_kids_for Hash, [:x_get_tree_hash_kids]
 
-  def initialize(name, type, sandbox, build = true, **params)
+  def initialize(name, sandbox, build = true, **params)
     @data = params[:root]
     @root_name = params[:root_name]
     @policy_options = params[:options]
-    super(name, type, sandbox, build)
+    super(name, sandbox, build)
   end
 
   private
 
-  def tree_init_options(_tree_name)
-    {:lazy => false, :full_ids => true}
-  end
-
-  def set_locals_for_render
-    locals = super
-    locals.merge!(:autoload => true, :cookie_prefix => 'edit_')
+  def tree_init_options
+    {:full_ids => true}
   end
 
   def root_options
@@ -46,20 +40,20 @@ class TreeBuilderPolicySimulation < TreeBuilder
     end
   end
 
-  def x_get_tree_roots(count_only = false, _options = {})
-    if @data.present?
-      nodes = reject_na_nodes(@data).map do |node|
-        {:id         => node['id'],
-         :text       => prefixed_title(_('Policy Profile'), node['description']),
-         :icon       => node_icon(node["result"]),
-         :tip        => node['description'],
-         :selectable => false,
-         :policies   => node['policies']}
-      end
-    else
-      nodes = [{:id => nil, :text => _("Items out of scope"), :icon => 'fa fa-ban', :selectable => false}]
-    end
-    count_only_or_objects(count_only, nodes)
+  def x_get_tree_roots
+    nodes = if @data.present?
+              reject_na_nodes(@data).map do |node|
+                {:id         => node['id'],
+                 :text       => prefixed_title(_('Policy Profile'), node['description']),
+                 :icon       => node_icon(node["result"]),
+                 :tip        => node['description'],
+                 :selectable => false,
+                 :policies   => node['policies']}
+              end
+            else
+              [{:id => nil, :text => _("Items out of scope"), :icon => 'fa fa-ban', :selectable => false}]
+            end
+    count_only_or_objects(false, nodes)
   end
 
   def node_out_of_scope?(node)
@@ -96,7 +90,7 @@ class TreeBuilderPolicySimulation < TreeBuilder
   end
 
   def condition_node(parent)
-    nodes = reject_na_nodes parent[:conditions]
+    nodes = reject_na_nodes(parent[:conditions])
     nodes = nodes.sort_by { |a| a["description"] }.map do |node|
       {:id         => node['id'],
        :text       => prefixed_title(_('Condition'), node['description']),
@@ -123,9 +117,9 @@ class TreeBuilderPolicySimulation < TreeBuilder
 
   def get_correct_node(parent, node_name)
     if node_name == :scope
-      scope_node parent
+      scope_node(parent)
     elsif node_name == :expression
-      expression_node parent
+      expression_node(parent)
     end
   end
 
@@ -137,8 +131,8 @@ class TreeBuilderPolicySimulation < TreeBuilder
 
   def x_get_tree_hash_kids(parent, count_only)
     nodes = []
-    nodes.concat(policy_nodes(parent)) unless parent[:policies].blank?
-    nodes.concat(condition_node(parent)) unless parent[:conditions].blank?
+    nodes.concat(policy_nodes(parent)) if parent[:policies].present?
+    nodes.concat(condition_node(parent)) if parent[:conditions].present?
     push_node(parent, :scope, nodes)
     push_node(parent, :expression, nodes)
     count_only_or_objects(count_only, nodes)

@@ -1,257 +1,153 @@
 describe MiqPolicyController do
-  before(:each) do
+  before do
     stub_user(:features => :all)
   end
 
-  describe "#import" do
-    include_context "valid session"
-
-    let(:params) { {:import_file_upload_id => 123, :commit => commit} }
-    let(:miq_policy_import_service) { double("MiqPolicyImportService") }
-
-    before do
-      allow(MiqPolicyImportService).to receive(:new).and_return(miq_policy_import_service)
-    end
-
-    shared_examples_for "MiqPolicyController#import" do
-      it "assigns the import file upload id" do
-        post :import, :params => params
-        expect(assigns(:import_file_upload_id)).to eq("123")
-      end
-    end
-
-    context "when the commit parameter is import" do
-      let(:commit) { "import" }
+  describe '#set_search_text' do
+    context 'clearing search text' do
+      let(:search) { "some_text" }
+      let(:tree) { :any_tree }
 
       before do
-        allow(miq_policy_import_service).to receive(:import_policy)
+        controller.params = {:action => 'search_clear'}
+        controller.instance_variable_set(:@sb, :active_tree => tree, :pol_search_text => {tree => search})
+        controller.instance_variable_set(:@search_text, search)
       end
 
-      it_behaves_like "MiqPolicyController#import"
-
-      it "imports a policy" do
-        expect(miq_policy_import_service).to receive(:import_policy).with("123")
-        post :import, :params => params
-      end
-    end
-
-    context "when the commit parameter is cancel" do
-      let(:commit) { "cancel" }
-
-      before do
-        allow(miq_policy_import_service).to receive(:cancel_import)
-      end
-
-      it_behaves_like "MiqPolicyController#import"
-
-      it "cancels the import" do
-        expect(miq_policy_import_service).to receive(:cancel_import).with("123")
-        post :import, :params => params
+      it 'clears search text from the Search form' do
+        controller.send(:set_search_text)
+        expect(controller.instance_variable_get(:@sb)[:pol_search_text][tree]).to be(nil)
+        expect(controller.instance_variable_get(:@search_text)).to be(nil)
       end
     end
   end
 
-  describe "#upload" do
-    include_context "valid session"
+  context "GenericSessionMixin" do
+    let(:lastaction) { 'lastaction' }
+    let(:display) { 'display' }
+    let(:current_page) { 'current_page' }
+    let(:layout) { 'miq_policy' }
 
-    shared_examples_for "MiqPolicyController#upload that cannot locate an import file" do
-      it "redirects with a cannot locate import file error message" do
-        post :upload, :params => params
-        expect(response).to redirect_to(
-          :action      => "export",
-          :dbtype      => "dbtype",
-          :flash_msg   => "Use the Choose file button to locate an Import file",
-          :flash_error => true
-        )
+    describe '#get_session_data' do
+      it "Sets variables correctly" do
+        allow(controller).to receive(:session).and_return(:miq_policy_lastaction   => lastaction,
+                                                          :miq_policy_display      => display,
+                                                          :miq_policy_current_page => current_page,
+                                                          :layout                  => layout)
+        allow(controller).to receive(:alert_build_pulldowns).and_return(nil)
+        controller.send(:get_session_data)
+
+        expect(controller.instance_variable_get(:@title)).to eq("Policies")
+        expect(controller.instance_variable_get(:@layout)).to eq(layout)
+        expect(controller.instance_variable_get(:@lastaction)).to eq(lastaction)
+        expect(controller.instance_variable_get(:@display)).to eq(display)
+        expect(controller.instance_variable_get(:@current_page)).to eq(current_page)
       end
     end
 
-    let(:params) { {:dbtype => "dbtype", :upload => upload} }
+    describe '#set_session_data' do
+      it "Sets session correctly" do
+        controller.instance_variable_set(:@lastaction, lastaction)
+        controller.instance_variable_set(:@display, display)
+        controller.instance_variable_set(:@current_page, current_page)
+        controller.instance_variable_set(:@layout, layout)
+        controller.send(:set_session_data)
 
-    context "when there is an upload parameter" do
-      let(:upload) { {:file => file_contents} }
-
-      context "when there is a file upload parameter" do
-        context "when the file upload parameter responds to read" do
-          let(:file_contents) do
-            fixture_file_upload("files/dummy_file.yml", "text/yml")
-          end
-
-          let(:miq_policy_import_service) { double("MiqPolicyImportService") }
-
-          before do
-            allow(MiqPolicyImportService).to receive(:new).and_return(miq_policy_import_service)
-          end
-
-          context "when there is not an error while importing" do
-            let(:import_file_upload) { double("ImportFileUpload", :id => 123) }
-
-            before do
-              allow(miq_policy_import_service).to receive(:store_for_import).and_return(import_file_upload)
-            end
-
-            it "sets the sandbox hide variable to true" do
-              post :upload, :params => params
-              expect(assigns(:sb)[:hide]).to be_truthy
-            end
-
-            it "imports a policy" do
-              expect(miq_policy_import_service).to receive(:store_for_import).with(an_instance_of(ActionDispatch::Http::UploadedFile))
-              post :upload, :params => params
-            end
-
-            it "redirects to import with the import_file_upload_id" do
-              post :upload, :params => params
-              expect(response).to redirect_to(:action => "import", :dbtype => "dbtype", :import_file_upload_id => 123)
-            end
-          end
-
-          context "when there is an error while importing" do
-            before do
-              allow(miq_policy_import_service).to receive(:store_for_import)
-                .with(an_instance_of(ActionDispatch::Http::UploadedFile)).and_raise(StandardError.new("message"))
-            end
-
-            it "redirects to export with an error message" do
-              post :upload, :params => params
-              expect(response).to redirect_to(
-                :action      => "export",
-                :dbtype      => "dbtype",
-                :flash_msg   => "Error during 'Policy Import': message",
-                :flash_error => true
-              )
-            end
-          end
-        end
-
-        context "when the file upload parameter does not respond to read" do
-          let(:file_contents) { "does not respond to read" }
-
-          it_behaves_like "MiqPolicyController#upload that cannot locate an import file"
-        end
-      end
-
-      context "when there is not a file upload parameter" do
-        let(:file_contents) { nil }
-
-        it_behaves_like "MiqPolicyController#upload that cannot locate an import file"
-      end
-    end
-
-    context "when there is not an upload parameter" do
-      let(:upload) { nil }
-
-      it_behaves_like "MiqPolicyController#upload that cannot locate an import file"
-    end
-  end
-
-  describe '#explorer' do
-    context 'when profile param present, but non-existent' do
-      it 'renders explorer with flash message' do
-        post :explorer, :params => { :profile => 42 }
-        expect(response).to render_template('explorer')
-        flash_messages = controller.instance_variable_get(:@flash_array)
-        expect(flash_messages.find { |m| m[:message] == 'Policy Profile no longer exists' }).not_to be_nil
-      end
-    end
-
-    context 'when profile param not present' do
-      it 'renders explorer w/o flash message' do
-        post :explorer
-        expect(response).to render_template('explorer')
-        flash_messages = controller.instance_variable_get(:@flash_array)
-        expect(flash_messages).to be_nil
-      end
-    end
-
-    context 'when profile param is valid' do
-      it 'renders explorer w/o flash and assigns to x_node' do
-        profile = FactoryGirl.create(:miq_policy_set)
-        allow(controller).to receive(:get_node_info).and_return(true)
-        post :explorer, :params => { :profile => profile.id }
-        expect(response).to render_template('explorer')
-        flash_messages = controller.instance_variable_get(:@flash_array)
-        expect(flash_messages).to be_nil
-        expect(controller.x_node).to eq("pp-#{profile.id}")
+        expect(controller.session[:miq_policy_lastaction]).to eq(lastaction)
+        expect(controller.session[:miq_policy_display]).to eq(display)
+        expect(controller.session[:miq_policy_current_page]).to eq(current_page)
+        expect(controller.session[:layout]).to eq(layout)
       end
     end
   end
 
-  describe '#tree_select' do
-    [
-      # [tree_sym, node, partial_name]
-      [:policy_profile_tree, 'root', 'miq_policy/_profile_list'],
-      [:policy_tree, 'root', 'miq_policy/_policy_folders'],
-      [:event_tree, 'root', 'miq_policy/_event_list'],
-      [:condition_tree, 'root', 'miq_policy/_condition_folders'],
-      [:action_tree, 'root', 'miq_policy/_action_list'],
-      [:alert_profile_tree, 'root', 'miq_policy/_alert_profile_folders'],
-      [:alert_tree, 'root', 'miq_policy/_alert_list'],
-    ].each do |tree_sym, node, partial_name|
-      it "renders #{partial_name} when #{tree_sym} tree #{node} node is selected" do
-        session[:sandboxes] = {"miq_policy" => {:active_tree => tree_sym}}
-        session[:settings] ||= {}
+  describe "#show_list" do
+    render_views
 
-        post :tree_select, :params => { :id => node, :format => :js }
-        expect(response).to render_template(partial_name)
-        expect(response.status).to eq(200)
-      end
+    it "renders index" do
+      get :index
+      expect(response.status).to eq(302)
+      expect(response).to redirect_to(:action => 'show_list')
     end
   end
 
-  describe '#replace_right_cell' do
-    it 'should reload policy tree when reload_trees contains :policy_tree' do
-      allow(controller).to receive(:params).and_return(:action => 'whatever')
-      controller.instance_eval { @sb = {:active_tree => :policy_tree} }
-      allow(controller).to receive(:render).and_return(nil)
-      presenter = ExplorerPresenter.new(:active_tree => :policy_tree)
-
-      controller.send(:replace_right_cell, :nodetype => 'root', :replace_trees => [:policy], :presenter => presenter)
-      expect(presenter[:reload_trees]).to have_key(:policy_tree)
-    end
-
-    it 'should not hide center toolbar while doing searches' do
-      allow(controller).to receive(:params).and_return(:action => 'x_search_by_name')
-      controller.instance_eval { @sb = {:active_tree => :action_tree} }
-      controller.instance_eval { @edit = {:new => {:expression => {"???" => "???", :token => 1}}} }
-      allow(controller).to receive(:render).and_return(nil)
-      presenter = ExplorerPresenter.new(:active_tree => :action_tree)
-
-      controller.send(:replace_right_cell, :nodetype => 'root', :replace_trees => [:action], :presenter => presenter)
-      expect(presenter[:set_visible_elements][:toolbar]).to be_truthy
-    end
-
-    it 'should change header' do
-      allow(controller).to receive(:params).and_return(:action => 'whatever')
-      controller.instance_eval { @sb = {:active_tree => :alert_profile_tree} }
-      allow(controller).to receive(:render).and_return(nil)
-      presenter = ExplorerPresenter.new(:active_tree => :alert_profile_tree)
-      controller.send(:get_node_info, 'ap_xx-Storage')
-      presenter[:right_cell_text] = 'foo'
-      controller.send(:replace_right_cell, {:nodetype => 'xx', :replace_trees => [:alert_profile], :presenter => presenter})
-
-      expect(presenter[:right_cell_text]).not_to equal('foo')
-      expect(presenter[:right_cell_text]).to_not be_nil
+  describe "#show" do
+    it "render show" do
+      policy = FactoryBot.create(:miq_policy)
+      get(:show, :params => {:id => policy.id})
+      expect(response.status).to eq(200)
+      expect(controller.instance_variable_get(:@record)).to eq(policy)
     end
   end
 
-  describe 'x_button' do
+  context "#edit" do
     before do
-      ApplicationController.handle_exceptions = true
+      @policy = FactoryBot.create(:miq_policy, :description => "Test_Policy")
+      controller.instance_variable_set(:@lastaction, "show")
     end
 
-    describe 'corresponding methods are called for allowed actions' do
-      MiqPolicyController::POLICY_X_BUTTON_ALLOWED_ACTIONS.each_pair do |action_name, method|
-        it "calls the appropriate method: '#{method}' for action '#{action_name}'" do
-          expect(controller).to receive(method)
-          get :x_button, :params => { :pressed => action_name }
-        end
-      end
+    it "first time in" do
+      controller.edit
+      expect(controller.send(:flash_errors?)).not_to be_truthy
     end
 
-    it 'exception is raised for unknown action' do
-      get :x_button, :params => { :pressed => 'random_dude', :format => :html }
-      expect(response).to render_template('layouts/exception')
+    it "Test reset button" do
+      controller.params = {:button => "reset", :id => @policy.id}
+      allow(controller).to receive(:drop_breadcrumb)
+      expect(controller).to receive(:javascript_redirect).with(:action       => 'edit',
+                                                               :id            => @policy.id,
+                                                               :flash_msg     => _("All changes have been reset"),
+                                                               :flash_warning => true)
+      controller.send(:edit)
+    end
+
+    it "Test cancel button" do
+      controller.params = {:button => "cancel", :id => @policy.id}
+      allow(controller).to receive(:drop_breadcrumb)
+      edit = {:key => "miq_policy_edit__#{@policy.id}", :new => {:description => @policy.description} }
+      controller.instance_variable_set(:@edit, edit)
+      session[:edit] = edit
+      expect(controller).to receive(:javascript_redirect).with(:action    => 'show',
+                                                               :flash_msg => _("Edit of Policy \"%{name}\" was cancelled by the user") % {:name => @policy.description},
+                                                               :id        => @policy.id)
+      controller.send(:edit)
+    end
+
+    it "Shows flash message when saving invalid policy record" do
+      edit = {:key => "miq_policy_edit__#{@policy.id}", :new => {:description => "foo_policy",
+                                                                 :towhat      => "Host",
+                                                                 :expression  => {">" => {"count" => "ContainerGroup.advanced_settings", "value" => "1"}}}}
+      controller.instance_variable_set(:@edit, edit)
+      allow(controller).to receive(:drop_breadcrumb)
+      session[:edit] = assigns(:edit)
+      controller.params = {:id => @policy.id, :button => "save"}
+      expect(controller).to receive(:javascript_flash)
+      controller.edit
+    end
+
+    it "Test saving a policy record" do
+      edit = {:key => "miq_policy_edit__#{@policy.id}", :new => {:description => "foo_policy",
+                                                                 :towhat      => "Host",
+                                                                 :mode        => "control",
+                                                                 :expression  => {">" => {"count" => "ContainerGroup.advanced_settings", "value" => "1"}}}}
+      controller.instance_variable_set(:@edit, edit)
+      allow(controller).to receive(:drop_breadcrumb)
+      session[:edit] = assigns(:edit)
+      controller.params = {:id => @policy.id, :button => "save"}
+      expect(controller).to receive(:javascript_redirect).with(:action    => 'show',
+                                                               :flash_msg => "Policy \"foo_policy\" was saved",
+                                                               :id        => @policy.id)
+      controller.edit
+    end
+  end
+
+    describe "breadcrumbs" do
+    before { EvmSpecHelper.local_miq_server }
+
+    it "shows 'Policies' on list screen" do
+      get :show_list
+
+      expect(controller.data_for_breadcrumbs.pluck(:title)[1]).to eq("Policies")
     end
   end
 end

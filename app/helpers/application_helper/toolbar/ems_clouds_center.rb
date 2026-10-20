@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::EmsCloudsCenter < ApplicationHelper::Toolbar::
   button_group('ems_cloud_vmdb', [
     select(
       :ems_cloud_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -16,14 +16,6 @@ class ApplicationHelper::Toolbar::EmsCloudsCenter < ApplicationHelper::Toolbar::
           :confirm      => N_("Refresh relationships and power states for all items related to the selected Cloud Providers?"),
           :enabled      => false,
           :onwhen       => "1+"),
-        button(
-          :ems_cloud_discover,
-          'fa fa-search fa-lg',
-          t = N_('Discover Cloud Providers'),
-          t,
-          :url       => "/discover",
-          :url_parms => "?discover_type=ems",
-          :klass     => ApplicationHelper::Button::ButtonNewDiscover),
         separator,
         button(
           :ems_cloud_new,
@@ -57,7 +49,7 @@ class ApplicationHelper::Toolbar::EmsCloudsCenter < ApplicationHelper::Toolbar::
   button_group('ems_cloud_policy', [
     select(
       :ems_cloud_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :enabled => false,
@@ -97,7 +89,7 @@ class ApplicationHelper::Toolbar::EmsCloudsCenter < ApplicationHelper::Toolbar::
   button_group('ems_cloud_authentication', [
     select(
       :ems_cloud_authentication_choice,
-      'fa fa-lock fa-lg',
+      nil,
       t = N_('Authentication'),
       t,
       :enabled => false,

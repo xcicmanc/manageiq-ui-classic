@@ -1,0 +1,456 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Show Service Request Page should render 1`] = `
+<div>
+  <div
+    class="service-request-form"
+  >
+    <form>
+      <div
+        class="cds--form-item"
+      >
+        <div
+          class="cds--select"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="selectedUser"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-1"
+            >
+              *
+            </span>
+            Requester:
+          </label>
+          <div
+            class="cds--select-input__wrapper"
+          >
+            <select
+              class="cds--select-input"
+              id="selectedUser"
+              name="selectedUser"
+              title="All"
+            >
+              <option
+                class="cds--select-option"
+                label="All"
+                value="all"
+              >
+                All
+              </option>
+              <option
+                class="cds--select-option"
+                label="Administrator"
+                value="1"
+              >
+                Administrator
+              </option>
+            </select>
+            <svg
+              aria-hidden="true"
+              class="cds--select__arrow"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div
+        class=""
+        id="approval_state"
+        name="approval_state"
+      >
+        <fieldset
+          class="cds--fieldset"
+        >
+          <legend
+            class="cds--label"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-1"
+            >
+              *
+            </span>
+            Approval State:
+          </legend>
+          <div
+            class="cds--form-item cds--checkbox-wrapper"
+          >
+            <input
+              aria-label="Pending Approval"
+              checked=""
+              class="cds--checkbox"
+              id="approvalStates-pending_approval"
+              label="Pending Approval"
+              name="approvalStates"
+              type="checkbox"
+              value="pending_approval"
+            />
+            <label
+              class="cds--checkbox-label"
+              for="approvalStates-pending_approval"
+              title=""
+            >
+              <div
+                class="cds--checkbox-label-text"
+                dir="auto"
+              >
+                Pending Approval
+              </div>
+            </label>
+            <div
+              class="cds--checkbox__validation-msg"
+            />
+          </div>
+          <div
+            class="cds--form-item cds--checkbox-wrapper"
+          >
+            <input
+              aria-label="Approved"
+              checked=""
+              class="cds--checkbox"
+              id="approvalStates-approved"
+              label="Approved"
+              name="approvalStates"
+              type="checkbox"
+              value="approved"
+            />
+            <label
+              class="cds--checkbox-label"
+              for="approvalStates-approved"
+              title=""
+            >
+              <div
+                class="cds--checkbox-label-text"
+                dir="auto"
+              >
+                Approved
+              </div>
+            </label>
+            <div
+              class="cds--checkbox__validation-msg"
+            />
+          </div>
+          <div
+            class="cds--form-item cds--checkbox-wrapper"
+          >
+            <input
+              aria-label="Denied"
+              checked=""
+              class="cds--checkbox"
+              id="approvalStates-denied"
+              label="Denied"
+              name="approvalStates"
+              type="checkbox"
+              value="denied"
+            />
+            <label
+              class="cds--checkbox-label"
+              for="approvalStates-denied"
+              title=""
+            >
+              <div
+                class="cds--checkbox-label-text"
+                dir="auto"
+              >
+                Denied
+              </div>
+            </label>
+            <div
+              class="cds--checkbox__validation-msg"
+            />
+          </div>
+        </fieldset>
+      </div>
+      <div
+        class="cds--form-item"
+      >
+        <div
+          class="cds--select"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="types"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-1"
+            >
+              *
+            </span>
+            Type:
+          </label>
+          <div
+            class="cds--select-input__wrapper"
+          >
+            <select
+              class="cds--select-input"
+              id="types"
+              name="types"
+              title="All"
+            >
+              <option
+                class="cds--select-option"
+                label="All"
+                value="all"
+              >
+                All
+              </option>
+              <option
+                class="cds--select-option"
+                label="Foreman Provision"
+                value="provision_via_foreman"
+              >
+                Foreman Provision
+              </option>
+              <option
+                class="cds--select-option"
+                label="VM Provision"
+                value="template"
+              >
+                VM Provision
+              </option>
+              <option
+                class="cds--select-option"
+                label="VM Clone"
+                value="clone_to_vm"
+              >
+                VM Clone
+              </option>
+              <option
+                class="cds--select-option"
+                label="VM Publish"
+                value="clone_to_template"
+              >
+                VM Publish
+              </option>
+              <option
+                class="cds--select-option"
+                label="Orchestration Stack Retire"
+                value="orchestration_stack_retire"
+              >
+                Orchestration Stack Retire
+              </option>
+              <option
+                class="cds--select-option"
+                label="Physical Server Provision"
+                value="provision_physical_server"
+              >
+                Physical Server Provision
+              </option>
+              <option
+                class="cds--select-option"
+                label="Physical Server Firmware Update"
+                value="physical_server_firmware_update"
+              >
+                Physical Server Firmware Update
+              </option>
+              <option
+                class="cds--select-option"
+                label="Service Retire"
+                value="service_retire"
+              >
+                Service Retire
+              </option>
+              <option
+                class="cds--select-option"
+                label="Service Reconfigure"
+                value="service_reconfigure"
+              >
+                Service Reconfigure
+              </option>
+              <option
+                class="cds--select-option"
+                label="Service Provision"
+                value="clone_to_service"
+              >
+                Service Provision
+              </option>
+              <option
+                class="cds--select-option"
+                label="VM Cloud Reconfigure"
+                value="vm_cloud_reconfigure"
+              >
+                VM Cloud Reconfigure
+              </option>
+              <option
+                class="cds--select-option"
+                label="VM Migrate"
+                value="vm_migrate"
+              >
+                VM Migrate
+              </option>
+              <option
+                class="cds--select-option"
+                label="VM Reconfigure"
+                value="vm_reconfigure"
+              >
+                VM Reconfigure
+              </option>
+              <option
+                class="cds--select-option"
+                label="VM Retire"
+                value="vm_retire"
+              >
+                VM Retire
+              </option>
+            </select>
+            <svg
+              aria-hidden="true"
+              class="cds--select__arrow"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item"
+      >
+        <div
+          class="cds--select"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="selectedPeriod"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-1"
+            >
+              *
+            </span>
+            Request Date:
+          </label>
+          <div
+            class="cds--select-input__wrapper"
+          >
+            <select
+              class="cds--select-input"
+              id="selectedPeriod"
+              name="selectedPeriod"
+              title="Last 7 Days"
+            >
+              <option
+                class="cds--select-option"
+                label="Last 24 Hours"
+                value="1"
+              >
+                Last 24 Hours
+              </option>
+              <option
+                class="cds--select-option"
+                label="Last 7 Days"
+                value="7"
+              >
+                Last 7 Days
+              </option>
+              <option
+                class="cds--select-option"
+                label="Last 365 Days"
+                value="365"
+              >
+                Last 365 Days
+              </option>
+            </select>
+            <svg
+              aria-hidden="true"
+              class="cds--select__arrow"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="reasonText"
+          >
+            Reason:
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="reasonText"
+              maxlength="128"
+              name="reasonText"
+              type="text"
+              value=""
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="custom-button-wrapper"
+      >
+        <button
+          class="btnRight cds--btn cds--btn--primary"
+          id="submit"
+          type="submit"
+        >
+          Apply
+        </button>
+        <button
+          class="btnRight cds--btn cds--btn--secondary"
+          id="reset"
+          type="button"
+        >
+          Reset
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+`;

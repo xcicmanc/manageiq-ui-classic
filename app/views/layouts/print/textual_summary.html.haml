@@ -1,0 +1,6 @@
+- if @record.kind_of?(ManageIQ::Providers::AutomationManager::InventoryGroup)
+  = render :partial => "automation_manager/main_inventory_group"
+- elsif @record.kind_of?(ManageIQ::Providers::AnsibleTower::AutomationManager::ConfigurationWorkflow) || @record.kind_of?(ConfigurationScript)
+  = render :partial => "automation_manager/configuration_script"
+- else
+  = render :partial => "layouts/textual_groups_generic"

@@ -1,10 +1,9 @@
-require 'shared/presenters/tree_node/common'
-
 describe TreeNode::MiqServer do
-  subject { described_class.new(object, nil, {}) }
+  before { EvmSpecHelper.local_miq_server }
+  subject { described_class.new(object, nil, nil) }
   let(:object) do
-    zone = FactoryGirl.create(:zone)
-    FactoryGirl.create(:miq_server, :zone => zone)
+    zone = FactoryBot.create(:zone)
+    FactoryBot.create(:miq_server, :zone => zone)
   end
 
   include_examples 'TreeNode::Node#key prefix', 'svr-'
@@ -19,7 +18,7 @@ describe TreeNode::MiqServer do
 
   describe '#expand' do
     it 'returns with true' do
-      expect(subject.expand).to be_truthy
+      expect(subject.expanded).to be_truthy
     end
   end
 end

@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::HostAggregateCenter < ApplicationHelper::Toolb
   button_group('host_aggregate_vmdb', [
     select(
       :host_aggregate_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -14,11 +14,11 @@ class ApplicationHelper::Toolbar::HostAggregateCenter < ApplicationHelper::Toolb
           :url_parms    => "main_div",
           :send_checked => true,
           :klass        => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
-          :options      => {:feature => :update_aggregate}
+          :options      => {:feature => :update}
         ),
         button(
           :host_aggregate_add_host,
-          'pficon pficon-screen fa-lg',
+          'pficon pficon-container-node fa-lg',
           N_('Select this Host Aggregate'),
           N_('Add Host to Host Aggregate'),
           :url_parms    => "main_div",
@@ -28,7 +28,7 @@ class ApplicationHelper::Toolbar::HostAggregateCenter < ApplicationHelper::Toolb
         ),
         button(
           :host_aggregate_remove_host,
-          'pficon pficon-screen fa-lg',
+          'pficon pficon-container-node fa-lg',
           N_('Select this Host Aggregate'),
           N_('Remove Host from Host Aggregate'),
           :url_parms    => "main_div",
@@ -45,7 +45,7 @@ class ApplicationHelper::Toolbar::HostAggregateCenter < ApplicationHelper::Toolb
           :send_checked => true,
           :confirm      => N_("Warning: The selected Host Aggregates will be permanently deleted!"),
           :klass        => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
-          :options      => {:feature => :delete_aggregate}
+          :options      => {:feature => :delete}
         ),
       ]
     ),
@@ -53,7 +53,7 @@ class ApplicationHelper::Toolbar::HostAggregateCenter < ApplicationHelper::Toolb
   button_group('host_aggregate_policy', [
     select(
       :host_aggregate_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :items => [

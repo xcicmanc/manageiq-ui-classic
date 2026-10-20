@@ -1,5 +1,5 @@
 .col-md-12.col-lg-12
-  .form-group
+  .form-group.col-md-12
     %label
       = _("Input Parameters")
   .col-md-6
@@ -9,29 +9,30 @@
           %input{:type         => "text",
                  'ng-model'    => "#{ng_model}.#{prefix}_key",
                  :name         => "#{prefix}_key",
-                 "placeholder" => "Input Name",
+                 "placeholder" => _("Input Name"),
                  "checkchange" => ""}
           %span.help-block{"ng-show" => "#{ng_model}.#{prefix}_key === ''"}
             = _("Required")
-        %td
-          %input{:type         => "text",
-                 'ng-model'    => "#{ng_model}.#{prefix}_value",
-                 'ng-if'       => "#{ng_model}.#{prefix}_type != 'password'",
-                 :name         => "#{prefix}_value",
-                 "placeholder" => "Default value",
-                 "checkchange" => ""}
-          %input{"type"        => "password",
-                 :name         => "#{prefix}_value",
-                 'ng-if'       => "#{ng_model}.#{prefix}_type == 'password'",
-                 'ng-model'    => "#{ng_model}.#{prefix}_value",
-                 "placeholder" => placeholder_if_present("#{ng_model}.#{prefix}_value"),
-                 "ng-change" => ""}
         %td
           %select{"ng-model" => "#{ng_model}.#{prefix}_type",
                   "name"       => "#{prefix}_type",
                   'ng-options' => "v as v for v in #{ng_model}.available_datatypes",
                   'ng-change'  => '',
-                  "pf-select"  => true}
+                  "miq-select" => true}
+        %td
+          %input{:type         => "text",
+                 'ng-model'    => "#{ng_model}.#{prefix}_value",
+                 'ng-if'       => "#{ng_model}.#{prefix}_type != 'password'",
+                 :name         => "#{prefix}_value",
+                 "placeholder" => _("Default value"),
+                 "checkchange" => ""}
+          %input{"type"        => "password",
+                 :autocomplete => "off",
+                 :name         => "#{prefix}_value",
+                 'ng-if'       => "#{ng_model}.#{prefix}_type == 'password'",
+                 'ng-model'    => "#{ng_model}.#{prefix}_value",
+                 "placeholder" => placeholder_if_present("#{ng_model}.#{prefix}_value"),
+                 "ng-change" => ""}
         %td{"ng-if" => "#{ng_model}.#{prefix}_key != ''"}
           %button{:class     => "btn btn-link",
                   :type      => "button",
@@ -48,9 +49,9 @@
             %th
               = _("Input Name")
             %th
-              = _("Default value")
-            %th
               = _("Data Type")
+            %th
+              = _("Default value")
             %th
               = _("Actions")
           %tbody
@@ -64,6 +65,14 @@
                                     "ng-change" => "",
                                     "miqrequired" => ""}
               %td{"ng-if" => "!#{ng_model}.#{prefix}_editMode || (#{ng_model}.#{prefix}_editMode && $index !== #{ng_model}.s_index)"}
+                {{arr[2]}}
+              %td{"ng-if" => "#{ng_model}.#{prefix}_editMode && $index === #{ng_model}.s_index"}
+                %select.form-control{"ng-model"   => "#{ng_model}.key_type",
+                                     "name"       => "key_type",
+                                     'ng-options' => "v as v for v in #{ng_model}.available_datatypes",
+                                     "ng-change"  => '',
+                                     "miq-select" => true}
+              %td{"ng-if" => "!#{ng_model}.#{prefix}_editMode || (#{ng_model}.#{prefix}_editMode && $index !== #{ng_model}.s_index)"}
                 {{arr[2] == 'password' ? '******' : arr[1]}}
               %td{"ng-if" => "#{ng_model}.#{prefix}_editMode && $index === #{ng_model}.s_index"}
                 %input.form-control{:type         => "text",
@@ -72,19 +81,12 @@
                                     'ng-model'    => "#{ng_model}.key_value",
                                     "ng-change" => ""}
                 %input.form-control{"type"        => "password",
+                                    :autocomplete => "off",
                                     :name         => "key_value",
                                     'ng-if'       => "#{ng_model}.key_type == 'password'",
                                     'ng-model'    => "#{ng_model}.key_value",
                                     "placeholder" => placeholder_if_present("#{ng_model}.key_value"),
                                     "ng-change" => ""}
-              %td{"ng-if" => "!#{ng_model}.#{prefix}_editMode || (#{ng_model}.#{prefix}_editMode && $index !== #{ng_model}.s_index)"}
-                {{arr[2]}}
-              %td{"ng-if" => "#{ng_model}.#{prefix}_editMode && $index === #{ng_model}.s_index"}
-                %select.form-control{"ng-model"   => "#{ng_model}.key_type",
-                                     "name"       => "key_type",
-                                     'ng-options' => "v as v for v in #{ng_model}.available_datatypes",
-                                     "ng-change"  => '',
-                                     "pf-select"  => true}
 
               %td.table-view-pf-select
                 %div{"ng-if" => "#{ng_model}.#{prefix}_editMode && $index === #{ng_model}.s_index"}

@@ -1,0 +1,282 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`TagGroup renders just fine 1`] = `
+<div>
+  <ul
+    class="cds--accordion miq-structured-list-accordion tag_group cds--accordion--start"
+  >
+    <li
+      class="cds--accordion__item cds--accordion__item--active"
+    >
+      <button
+        aria-controls="accordion-item-_r_0_"
+        aria-expanded="true"
+        class="cds--accordion__heading"
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          class="cds--accordion__arrow"
+          fill="currentColor"
+          focusable="false"
+          height="16"
+          preserveAspectRatio="xMidYMid meet"
+          viewBox="0 0 16 16"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M11 8 6 13 5.3 12.3 9.6 8 5.3 3.7 6 3z"
+          />
+        </svg>
+        <div
+          class="cds--accordion__title"
+          dir="auto"
+        >
+          Smart Management
+        </div>
+      </button>
+      <div
+        class="cds--accordion__wrapper"
+      >
+        <div
+          class="cds--accordion__content"
+          id="accordion-item-_r_0_"
+        >
+          <div
+            aria-label="Structured list"
+            class="cds--structured-list miq-structured-list tag_group"
+            role="table"
+          >
+            <div
+              class="cds--structured-list-tbody"
+              role="rowgroup"
+            >
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="0"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td label_header"
+                  dir="auto"
+                  role="cell"
+                >
+                  Managed by Zone
+                </div>
+                <div
+                  class="cds--structured-list-td content_value object_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="cell icon"
+                    >
+                      <i
+                        class="pficon pficon-zone"
+                      />
+                    </div>
+                    <div
+                      class="expand wrap_text"
+                    >
+                      default
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="1"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td label_header"
+                  dir="auto"
+                  role="cell"
+                >
+                  My Company X Tags
+                </div>
+                <div
+                  class="cds--structured-list-td content_value object_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="multi_row_cell"
+                    >
+                      <div
+                        class="sub_row_item"
+                        title=""
+                      >
+                        <div
+                          class="cell icon"
+                        >
+                          <i
+                            class="fa fa-tag"
+                          />
+                        </div>
+                        <div
+                          class="sub_label"
+                          title="Dan Test"
+                        >
+                          Dan Test
+                        </div>
+                        <div
+                          class="sub_value"
+                        >
+                          <div
+                            class="expand wrap_text"
+                          >
+                            Test 1
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        class="sub_row_item"
+                        title=""
+                      >
+                        <div
+                          class="cell icon"
+                        >
+                          <i
+                            class="fa fa-tag"
+                          />
+                        </div>
+                        <div
+                          class="sub_label"
+                          title="Demo bla"
+                        >
+                          Demo bla
+                        </div>
+                        <div
+                          class="sub_value"
+                        >
+                          <div
+                            class="expand wrap_text"
+                          >
+                            Policy
+2
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="2"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td label_header"
+                  dir="auto"
+                  role="cell"
+                >
+                  Other Tags
+                </div>
+                <div
+                  class="cds--structured-list-td content_value object_item"
+                  dir="auto"
+                  role="cell"
+                  title="All Other Tags"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="multi_row_cell"
+                    >
+                      <div
+                        class="sub_row_item"
+                        title=""
+                      >
+                        <div
+                          class="cell icon"
+                        >
+                          <i
+                            class="fa fa-tag"
+                          />
+                        </div>
+                        <div
+                          class="sub_label"
+                          title="Test"
+                        >
+                          Test
+                        </div>
+                        <div
+                          class="sub_value"
+                        >
+                          <div
+                            class="expand wrap_text"
+                          >
+                            Test 1
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        class="sub_row_item"
+                        title=""
+                      >
+                        <div
+                          class="cell icon"
+                        >
+                          <i
+                            class="fa fa-tag"
+                          />
+                        </div>
+                        <div
+                          class="sub_label"
+                          title="Demo 2"
+                        >
+                          Demo 2
+                        </div>
+                        <div
+                          class="sub_value"
+                        >
+                          <div
+                            class="expand wrap_text"
+                          >
+                            Policy
+2
+3
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        class="sub_row_item"
+                        title="Click to display the item"
+                      >
+                        <div
+                          class="sub_value"
+                        >
+                          <div
+                            class="expand wrap_text"
+                          >
+                            Demo 3
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </li>
+  </ul>
+</div>
+`;

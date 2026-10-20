@@ -3,21 +3,14 @@ class PictureController < ApplicationController
   skip_after_action :set_global_session_data
 
   def show # GET /pictures/:basename
-    compressed_id, extension = params[:basename].split('.')
-    picture = Picture.find_by_id(from_cid(compressed_id))
-    if picture && picture.extension == extension
-      render_picture_content(picture)
-    else
-      head :not_found
-    end
-  end
+    id, extension = params[:basename].split('.')
 
-  private
+    picture = Picture.where(:extension => extension).find_by(:id => id)
+    return head(:not_found) unless picture
 
-  def render_picture_content(picture)
-    response.headers['Cache-Control'] = "public"
-    response.headers['Content-Type'] = "image/#{picture.extension}"
-    response.headers['Content-Disposition'] = "inline"
-    render :body => picture.content
+    fresh_when(:etag => picture.md5, :public => true)
+
+    extension = 'svg+xml' if extension == 'svg'
+    send_data(picture.content, :type => "image/#{extension}", :disposition => 'inline') if stale?
   end
 end

@@ -1,8 +1,7 @@
-require "rexml/document"
-
 class MiqTemplateController < ApplicationController
   include VmCommon
   include Mixins::GenericListMixin
+  include Mixins::BreadcrumbsMixin
 
   before_action :check_privileges
   before_action :get_session_data
@@ -11,15 +10,19 @@ class MiqTemplateController < ApplicationController
 
   # Override method from Mixins::GenericListMixin
   def index
-    session[:miq_template_type] = nil             # Reset VM type if coming in from All tab
-    redirect_to :action => 'show_list'
+    session[:miq_template_type] = nil # Reset VM type if coming in from All tab
+    redirect_to(:action => 'show_list')
   end
 
   private
 
+  def record_class
+    MiqTemplate
+  end
+
   def get_session_data
     @title          = _("Templates")
-    @layout         = session[:miq_template_type] ? session[:miq_template_type] : "miq_template"
+    @layout         = session[:miq_template_type] || "miq_template"
     @lastaction     = session[:miq_template_lastaction]
     @showtype       = session[:miq_template_showtype]
     @filters        = session[:miq_template_filters]
@@ -42,4 +45,6 @@ class MiqTemplateController < ApplicationController
   end
 
   has_custom_buttons
+  feature_for_actions 'miq_template_timeline', :tl_chooser
+  feature_for_actions 'miq_template_perf', :perf_top_chart
 end

@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::CloudVolumeCenter < ApplicationHelper::Toolbar
   button_group('cloud_volume_vmdb', [
                  select(
                    :cloud_volume_vmdb_choice,
-                   'fa fa-cog fa-lg',
+                   nil,
                    t = N_('Configuration'),
                    t,
                    :items => [
@@ -41,7 +41,7 @@ class ApplicationHelper::Toolbar::CloudVolumeCenter < ApplicationHelper::Toolbar
                        'pficon pficon-volume fa-lg',
                        t = N_('Attach this Cloud Volume to an Instance'),
                        t,
-                       :klass        => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
+                       :klass        => ApplicationHelper::Button::VolumeAttach,
                        :options      => {:feature => :attach_volume},
                        :url_parms    => 'main_div',
                        :send_checked => true,
@@ -55,6 +55,18 @@ class ApplicationHelper::Toolbar::CloudVolumeCenter < ApplicationHelper::Toolbar
                        :url_parms    => 'main_div',
                        :send_checked => true,
                      ),
+
+                     button(
+                       :cloud_volume_clone,
+                       'pficon pficon-volume fa-lg',
+                       t = N_('Clone this Cloud Volume'),
+                       t,
+                       :klass        => ApplicationHelper::Button::VolumeClone,
+                       :options      => {:feature => :clone_volume},
+                       :url_parms    => 'main_div',
+                       :send_checked => true
+                     ),
+
                      button(
                        :cloud_volume_edit,
                        'pficon pficon-edit fa-lg',
@@ -62,15 +74,41 @@ class ApplicationHelper::Toolbar::CloudVolumeCenter < ApplicationHelper::Toolbar
                        t,
                        :url_parms    => 'main_div',
                        :send_checked => true,
+                       :klass     => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
+                       :options   => {:feature => :update},
                      ),
                      button(
                        :cloud_volume_delete,
                        'pficon pficon-delete fa-lg',
                        t = N_('Delete this Cloud Volume'),
                        t,
-                       :url_parms    => 'main_div',
-                       :send_checked => true,
-                       :confirm      => N_('Warning: This Cloud Volume and ALL of its components will be removed!')
+                       :url_parms => 'main_div',
+                       :klass     => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
+                       :options   => {:feature => :delete},
+                       :data      => {'function'      => 'sendDataWithRx',
+                                      'function-data' => {:controller      => 'provider_dialogs',
+                                                          :modal_title     => N_('Delete Volume'),
+                                                          :modal_text      => N_('Are you sure you want to delete this volume?'),
+                                                          :api_url         => 'cloud_volumes',
+                                                          :async_delete    => false,
+                                                          :ajax_reload     => true,
+                                                          :redirect_url    => '/cloud_volume/show_list',
+                                                          :try_safe_delete => true,
+                                                          :component_name  => 'RemoveGenericItemModal'}}
+                     ),
+                     button(
+                       :cloud_volume_refresh,
+                       'fa fa-refresh fa-lg',
+                       N_('Refresh this Cloud Volume'),
+                       N_('Refresh this Cloud Volume'),
+                       :image        => "refresh",
+                       :confirm      => N_("Refresh this Cloud Volume?"),
+                       :options      => {:feature => :refresh},
+                       :api          => {
+                         :action => 'refresh',
+                         :entity => 'cloud_volumes'
+                       },
+                       :send_checked => true
                      ),
                    ]
                  )
@@ -78,7 +116,7 @@ class ApplicationHelper::Toolbar::CloudVolumeCenter < ApplicationHelper::Toolbar
   button_group('cloud_volume_policy', [
     select(
       :cloud_volume_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :items => [

@@ -1,8 +1,19 @@
 class ApplicationHelper::Toolbar::ConfigurationJobsCenter < ApplicationHelper::Toolbar::Basic
+  button_group('configuration_job_reloading', [
+    button(
+      :configuration_job_reload,
+      'fa fa-refresh fa-lg',
+      N_('Refresh this page'),
+      N_('Refresh'),
+      :url_parms    => "main_div",
+      :send_checked => true,
+      :klass        => ApplicationHelper::Button::ButtonWithoutRbacCheck
+    ),
+  ])
   button_group('configuration_job_vmdb', [
     select(
       :configuration_job_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -22,7 +33,7 @@ class ApplicationHelper::Toolbar::ConfigurationJobsCenter < ApplicationHelper::T
   button_group('configuration_job_policy', [
     select(
       :configuration_job_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :enabled => false,

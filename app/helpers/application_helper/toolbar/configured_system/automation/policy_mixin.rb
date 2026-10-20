@@ -3,7 +3,7 @@ module ApplicationHelper::Toolbar::ConfiguredSystem::Automation::PolicyMixin
     included_class.button_group('automation_manager_policy', [
       included_class.select(
         :automation_manager_policy_choice,
-        'fa fa-shield fa-lg',
+        nil,
         N_('Policy'),
         :enabled => true,
         :items   => [
@@ -15,7 +15,8 @@ module ApplicationHelper::Toolbar::ConfiguredSystem::Automation::PolicyMixin
             :url          => "tagging",
             :url_parms    => "main_div",
             :send_checked => true,
-            :enabled      => true
+            :enabled      => true,
+            :onwhen       => "1+"
           ),
         ]
       ),

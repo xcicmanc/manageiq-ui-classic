@@ -9,6 +9,7 @@ class CloudVolumeBackupController < ApplicationController
   include Mixins::GenericFormMixin
   include Mixins::GenericSessionMixin
   include Mixins::GenericShowMixin
+  include Mixins::BreadcrumbsMixin
 
   def volume_select
     assert_privileges("cloud_volume_backup_restore_to_volume")
@@ -26,10 +27,7 @@ class CloudVolumeBackupController < ApplicationController
 
   def volume_form_choices
     assert_privileges("cloud_volume_backup_restore_to_volume")
-    volume_choices = ManageIQ::Providers::CloudManager::CloudVolume.all
-    volume_choices.each do |volume|
-      {:name => volume.name, :id => volume.id}
-    end
+    volume_choices = CloudVolume.pluck(:id, :name).map { |cv| {:id => cv.first, :name => cv.second} }
     render :json => {:volume_choices => volume_choices}
   end
 
@@ -38,39 +36,40 @@ class CloudVolumeBackupController < ApplicationController
     @backup = find_record_with_rbac(CloudVolumeBackup, params[:id])
     case params[:button]
     when "cancel"
-      cancel_action(_("Restore to Cloud Volume \"%{name}\" was cancelled by the user") % {:name => @backup.name})
+      flash_and_redirect(_("Restore to Cloud Volume \"%{name}\" was cancelled by the user") % {:name => @backup.name})
 
     when "restore"
-      task_id = @backup.restore_queue(session[:userid], params[:volume][:ems_ref])
-
+      # volume_id to restore to is optional
+      volume_id = params[:volume].try(:fetch, :ems_ref, nil)
+      new_volume_name = params[:name]
+      task_id = @backup.restore_queue(session[:userid], volume_id, new_volume_name)
       if task_id.kind_of?(Integer)
-        initiate_wait_for_task(:task_id => task_id, :action => "backup_restore_finished")
+        backup_restore_finished(@backup, task_id)
       else
-        add_flash(_("Cloud volume restore failed: Task start failed: ID [%{id}]") %
-        {:id => task_id.to_s}, :error)
-
+        add_flash(_("Cloud volume restore failed: Task start failed"), :error)
         javascript_flash(:spinner_off => true)
       end
     end
   end
 
-  def backup_restore_finished
-    task = MiqTask.find(session[:async][:params][:task_id])
-    @backup = find_record_with_rbac(CloudVolumeBackup, session[:async][:params][:id])
+  def backup_restore_finished(backup, task_id)
+    @breadcrumbs&.pop
+    session[:edit] = nil
+    flash_to_session
+
+    task = MiqTask.find(task_id)
 
     if task.results_ready?
-      add_flash(_("Restoring Cloud Volume \"%{name}\"") % {:name => @backup.name})
+      render :json => {
+        :status   => true,
+        :messages => _("Restoring Cloud Volume \"%{name}\"") % {:name => backup.name}
+      }
     else
-      add_flash(_("Unable to restore Cloud Volume \"%{name}\": %{details}") % {
-        :name    => @backup.name,
-        :details => task.message
-      }, :error)
+      render :json => {
+        :status   => false,
+        :messages => _("Unable to restore Cloud Volume \"%{name}\": %{details}") % {:name => backup.name, :details => task.message}
+      }
     end
-
-    @breadcrumbs.pop if @breadcrumbs
-    session[:edit] = nil
-    session[:flash_msgs] = @flash_array.dup if @flash_array
-    javascript_redirect(:action => "show", :id => @backup.id)
   end
 
   def button
@@ -83,30 +82,43 @@ class CloudVolumeBackupController < ApplicationController
     end
   end
 
+  def download_data
+    assert_privileges('cloud_volume_backup_view')
+    super
+  end
+
   private
 
   def backups_delete
     assert_privileges('cloud_volume_backup_delete')
     backups = find_records_with_rbac(CloudVolumeBackup, checked_or_params)
     backups.each do |backup|
-      begin
-        backup.delete_queue(session[:userid])
-        add_flash(_("Delete of Backup \"%{name}\" was successfully initiated.") % {:name => backup.name})
-      rescue => error
-        add_flash(_("Unable to delete Backup \"%{name}\": %{details}") % {:name    => backup.name,
-                                                                          :details => error},
-                  :error)
-      end
+      backup.delete_queue(session[:userid])
+      add_flash(_("Delete of Backup \"%{name}\" was successfully initiated.") % {:name => backup.name})
+    rescue StandardError => error
+      add_flash(_("Unable to delete Backup \"%{name}\": %{details}") % {:name    => backup.name,
+                                                                        :details => error},
+                :error)
     end
     session[:flash_msgs] = @flash_array
     javascript_redirect(:action => 'show_list')
   end
 
   def textual_group_list
-    [%i(properties relationships), %i(tags)]
+    [%i[properties relationships], %i[tags]]
   end
 
   helper_method :textual_group_list
 
+  def breadcrumbs_options
+    {
+      :breadcrumbs => [
+        {:title => _("Storage")},
+        {:title => _("Volume Backups"), :url => controller_url},
+      ],
+    }
+  end
+
   menu_section :bst
+  feature_for_actions "#{controller_name}_show_list", *ADV_SEARCH_ACTIONS
 end

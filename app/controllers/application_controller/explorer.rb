@@ -4,61 +4,46 @@ module ApplicationController::Explorer
 
   def build_replaced_trees(replace_trees, valid_values)
     return [] unless replace_trees
+
     valid_values.find_all { |tree| replace_trees.include?(tree) }
                 .collect { |tree| try_build_tree(tree) }
                 .compact
   end
 
-  def try_build_tree(tree_symbol)
-    method_name = "build_#{tree_symbol}_tree"
-    return unless respond_to?(method_name, true)
-    build_method = method(method_name)
-    # FIXME: This is temporary, we actually need to remove all the build_*_tree methods and
-    # use the Feature::build_tree instead.
-    build_method.arity == 1 ? build_method.call(tree_symbol) : build_method.call
+  def replace_search_box(presenter, locals = {})
+    presenter.replace(:adv_searchbox_div, r[:partial => 'layouts/x_adv_searchbox', :locals => locals])
+    presenter.replace(:advsearchModal, r[:partial => 'layouts/adv_search']) unless locals[:nameonly]
   end
 
-  # Historical tree item selected
-  def x_history
-    @hist = x_tree_history[params[:item].to_i]  # Set instance var so we know hist button was pressed
-    # remove id that is used in replace_right_cell method in vm_common
-    @sb[@sb[:active_accord]] = nil if @sb.fetch_path(@sb[:active_accord]) && @sb[@sb[:active_accord]] != @hist[:id]
-    if @hist[:button]         # Button press from show screen
-      self.x_node = @hist[:id]
-      params[:id] = parse_nodetype_and_id(x_node).last
-      params[:x_show] = @hist[:item]
-      params[:pressed] = @hist[:button] # Look like we came in with this action
-      params[:display] = @hist[:display]
-      x_button
-    elsif @hist[:display]           # Display link from show screen
-      self.x_node = @hist[:id]
-      params[:id] = parse_nodetype_and_id(x_node).last
-      params[:display] = @hist[:display]
-      show
-    elsif @hist[:action]          # Action link from show screen
-      self.x_node = @hist[:id]
-      params[:id] = parse_nodetype_and_id(x_node).last
-      params[:x_show] = @hist[:item]
-      params[:action] = @hist[:action]  # Look like we came in with this action
-      session[:view] = @hist[:view] if @hist[:view]
-      send(@hist[:action])
-    else                        # Normal explorer tree/link click
-      params[:id] = @hist[:id]
-      tree_select
+  def try_build_tree(tree_symbol)
+    # Legacy support for build_*_tree methods
+    # FIXME: delete this after all of them were converted (remaining: build_reports_tree)
+    method_name = :"build_#{tree_symbol}_tree"
+    if respond_to?(method_name, true)
+      method(method_name).call
+    else
+      features.find { |f| f.name == tree_symbol }.try(:build_tree, @sb)
     end
+  end
+
+  def x_history
+    self.x_node = x_tree[:active_node]
+    params[:id] = parse_nodetype_and_id(x_node).last
+    params[:id].nil? && 'root'.eql?(params[:id]) ? show : tree_select
   end
 
   # FIXME: the code below has to be converted into proper actions called though
   # proper routes, this is just a small step to fix the current situation
   X_BUTTON_ALLOWED_ACTIONS = {
     # group 1
-    'check_compliance' => :s1, 'collect_running_processes' => :s1, 'delete'              => :s1,
+    'check_compliance' => :s1, 'collect_running_processes' => :s1, 'delete' => :s1,
     'snapshot_delete'  => :s1, 'snapshot_delete_all' => :s1,
     'refresh'          => :s1, 'scan'                      => :s1, 'guest_shutdown'      => :s1,
     'guest_restart'    => :s1, 'retire_now'                => :s1, 'snapshot_revert'     => :s1,
     'start'            => :s1, 'stop'                      => :s1, 'suspend'             => :s1,
     'reset'            => :s1, 'terminate'                 => :s1, 'pause'               => :s1,
     'shelve'           => :s1, 'shelve_offload'            => :s1, 'chargeback'          => :s1,
+    'manager_pause'    => :s1, 'manager_resume'            => :s1,
 
     # group 2
     'clone'        => :s2, 'compare'          => :s2, 'drift'           => :s2,
@@ -68,11 +53,13 @@ module ApplicationController::Explorer
     'retire'       => :s2, 'right_size'       => :s2, 'snapshot_add'    => :s2,
     'tag'          => :s2, 'timeline'         => :s2, 'resize'          => :s2,
     'live_migrate' => :s2, 'attach'           => :s2, 'detach'          => :s2,
-    'evacuate'     => :s2, 'service_dialog'   => :s2, 'transform'       => :s2,
+    'evacuate'     => :s2, 'service_dialog'   => :s2,
+    'manager_configuration_script_service_dialog' => :s2,
     'associate_floating_ip'    => :s2,
     'disassociate_floating_ip' => :s2,
     'add_security_group'       => :s2,
     'remove_security_group'    => :s2,
+    'rename'                   => :s2,
 
     # specials
     'perf'         => :show,
@@ -83,13 +70,12 @@ module ApplicationController::Explorer
 
   def x_button
     model, action = pressed2model_action(params[:pressed])
-
-    allowed_models = %w(common image instance vm miq_template provider storage configscript infra_networking automation_manager_provider configuration_manager_provider)
-    raise ActionController::RoutingError.new('invalid button action') unless
+    allowed_models = %w[common image instance vm miq_template provider automation storage infra_networking]
+    raise ActionController::RoutingError, 'Invalid button action' unless
       allowed_models.include?(model)
 
     unless X_BUTTON_ALLOWED_ACTIONS.key?(action)
-      raise ActionController::RoutingError, _('invalid button action')
+      raise ActionController::RoutingError, _('Invalid button action')
     end
 
     @explorer = true
@@ -98,22 +84,22 @@ module ApplicationController::Explorer
 
     # Process model actions that are currently implemented
     if X_BUTTON_ALLOWED_ACTIONS[action] == :s1
+      # resetting action that was stored during other operations
+      @sb[:action] = nil if @sb
       send(method)
     elsif X_BUTTON_ALLOWED_ACTIONS[action] == :s2
       # don't need to set params[:id] and do find_checked_items for methods
       # like ownership, the code in those methods handle it
-      if %w(edit right_size resize attach detach live_migrate evacuate
-            associate_floating_ip disassociate_floating_ip).include?(action)
+      if %w[edit right_size resize attach detach clone live_migrate evacuate
+            associate_floating_ip disassociate_floating_ip publish migrate].include?(action)
         @_params[:id] = (params[:id] ? [params[:id]] : find_checked_items)[0]
       end
-      if ['protect', 'tag'].include?(action)
+      if %w[protect tag].include?(action)
         case model
         when 'storage'
           send(method, Storage)
         when 'infra_networking'
           send(method, Switch)
-        when 'automation_manager_provider', 'configuration_manager_provider'
-          send(method)
         else
           send(method, VmOrTemplate)
         end
@@ -123,6 +109,7 @@ module ApplicationController::Explorer
       # if error rendered, do not render any further, do not record history
       # non-error rendering is done below through @refresh_partial
       return if performed?
+
       @sb[:model]  = model
       @sb[:action] = action
     elsif action == 'perf'
@@ -139,6 +126,7 @@ module ApplicationController::Explorer
     end
 
     return if performed?
+
     # no need to render anything, method will render flash message when async task is completed
 
     if @refresh_partial == "layouts/flash_msg"
@@ -147,8 +135,7 @@ module ApplicationController::Explorer
       # no need to render anything when download_pdf button is pressed on summary screen
       replace_right_cell unless action == 'download_pdf'
     else
-      add_flash(_("Button not yet implemented %{model}:%{action}") %
-        {:model => model, :action => action}, :error) unless @flash_array
+      add_flash(_("Button not yet implemented %{model}:%{action}") % {:model => model, :action => action}, :error) unless @flash_array
       javascript_flash
     end
   end
@@ -156,16 +143,20 @@ module ApplicationController::Explorer
   # Handle name searches typed into list view explorer screens
   def x_search_by_name
     @explorer = true
-    params[:id] = x_node  # Get the current tree node id
+    params[:id] = x_node # Get the current tree node id
     tree_select
   end
 
   # Tree node selected in explorer
   def tree_select(node_info = false)
+    @sb[:action] = nil if @sb
     @explorer = true
     @lastaction = "explorer"
     self.x_active_tree = params[:tree] if params[:tree]
     self.x_node = params[:id]
+
+    assert_accordion_and_tree_privileges(x_active_tree)
+
     if node_info
       get_node_info(x_node)
       replace_right_cell(:nodetype => x_node)
@@ -177,8 +168,12 @@ module ApplicationController::Explorer
   # Accordion selected in explorer
   def accordion_select(node_info = false)
     @lastaction = "explorer"
+    @sb[:action] = nil if @sb
     self.x_active_accord = params[:id].sub(/_accord$/, '')
-    self.x_active_tree   = "#{self.x_active_accord}_tree"
+    self.x_active_tree   = "#{x_active_accord}_tree"
+
+    assert_accordion_and_tree_privileges(x_active_tree)
+
     if node_info
       get_node_info(x_node)
       replace_right_cell(:nodetype => x_node)
@@ -193,7 +188,7 @@ module ApplicationController::Explorer
     @sb[:action] = action = params[:pressed]
 
     unless whitelist.key?(action)
-      raise ActionController::RoutingError, _('invalid button action')
+      raise ActionController::RoutingError, _('Invalid button action')
     end
 
     send_action = whitelist[action]
@@ -201,15 +196,15 @@ module ApplicationController::Explorer
     send_action
   end
 
-  def generic_x_show(x_node_build_options = {})
+  def generic_x_show(_x_node_build_options = {})
     @explorer = true
     respond_to do |format|
       format.js do # AJAX, select the node
         unless @record
-          redirect_to :action => "explorer"
+          redirect_to(:action => "explorer")
           return
         end
-        params[:id] = x_build_node_id(@record, x_node_build_options)
+        params[:id] = x_build_node_id(@record)
         tree_select
       end
       format.html do # HTML, redirect to explorer
@@ -219,14 +214,6 @@ module ApplicationController::Explorer
       end
       format.any { head :not_found } # Anything else, just send 404
     end
-  end
-
-  # Add an item to the tree history array
-  def x_history_add_item(options)
-    x_tree_history.delete_if do |item|
-      ![:id, :action, :button, :display, :item].find { |key| item[key] != options[key] }
-    end
-    x_tree_history.unshift(options).slice!(11..-1)
   end
 
   # Set form vars for tag editor
@@ -245,9 +232,10 @@ module ApplicationController::Explorer
   def x_edit_tags_cancel
     id = params[:id]
     return unless load_edit("#{session[:tag_db]}_edit_tags__#{id}", "replace_cell__explorer")
+
     add_flash(_("Tag Edit was cancelled by the user"))
     get_node_info(x_node)
-    @edit = nil # clean out the saved info
+    @sb[:action] = @edit = nil # clean out the saved info
     replace_right_cell
   end
 
@@ -255,8 +243,8 @@ module ApplicationController::Explorer
     tagging_edit_tags_save_and_replace_right_cell
   end
 
-  def x_build_node_id(object, options = {})
-    TreeNode.new(object, nil, options).key
+  def x_build_node_id(object)
+    TreeNode.new(object).key
   end
 
   # FIXME: move partly to Tree once Trees are made from TreeBuilder
@@ -264,10 +252,11 @@ module ApplicationController::Explorer
     modelname, rec_id, nodetype = TreeBuilder.extract_node_model_and_id(treenodeid)
     return treenodeid if ["root", ""].include?(nodetype) # incase node is root or doesn't have a prefix
     raise _("No Class found for explorer tree node id '%{number}'") % {:number => treenodeid} if modelname.nil?
+
     kls = modelname.constantize
     return treenodeid if kls == Hash
 
-    unless kls.where(:id => from_cid(rec_id)).exists?
+    unless kls.where(:id => rec_id).exists?
       @replace_trees = [@sb[:active_accord]] # refresh trees
       self.x_node = "root"
       unless @report_deleted

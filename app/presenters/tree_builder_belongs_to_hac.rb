@@ -5,63 +5,39 @@ class TreeBuilderBelongsToHac < TreeBuilder
   has_kids_for ExtManagementSystem, [:x_get_provider_kids]
   has_kids_for ResourcePool, [:x_get_resource_pool_kids]
 
-  def override(node, object, _pid, options)
-    if [ExtManagementSystem, EmsCluster, Datacenter, EmsFolder, ResourcePool, Host].any? { |klass| object.kind_of?(klass) }
-      node[:select] = if @assign_to
-                        options.key?(:selected) && options[:selected].include?("ResourcePool_#{object[:id]}")
-                      else
-                        options.key?(:selected) && options[:selected].include?("#{object.class.name}_#{object[:id]}")
-                      end
-    end
-    node[:hideCheckbox] = true if object.kind_of?(Host) && object.ems_cluster_id.present?
-    node[:selectable] = false
-    node[:checkable] = options[:checkable_checkboxes] if options.key?(:checkable_checkboxes)
+  def override(node, object)
+    node.checked = @selected_nodes&.include?("#{object.class.name}_#{object[:id]}")
+    node.hide_checkbox = true if object.kind_of?(Host) && object.ems_cluster_id.present?
+    node.selectable = false
+    node.checkable = @edit.present?
   end
 
-  def initialize(name, type, sandbox, build, params)
+  def initialize(name, sandbox, build, **params)
     @edit = params[:edit]
     @group = params[:group]
-    @selected = params[:selected]
-    @assign_to = params[:assign_to]
+    @selected_nodes = params[:selected_nodes]
     # need to remove tree info
     TreeState.new(sandbox).remove_tree(name)
-    super(name, type, sandbox, build)
+    super(name, sandbox, build)
   end
 
   private
 
-  def tree_init_options(_tree_name)
-    {:full_ids             => true,
-     :add_root             => false,
-     :lazy                 => false,
-     :checkable_checkboxes => @edit.present? || @assign_to.present?,
-     :selected             => @selected}
+  def tree_init_options
+    {
+      :full_ids   => true,
+      :checkboxes => true,
+      :oncheck    => @edit ? "miqOnCheckGeneric" : nil,
+      :check_url  => "/ops/rbac_group_field_changed/#{group_id}___"
+    }
   end
 
-  def set_locals_for_render
-    locals = super
-
-    oncheck, check_url = if @assign_to
-                           ["miqOnCheckGeneric", "/miq_policy/alert_profile_assign_changed/"]
-                         elsif @edit
-                           ["miqOnCheckUserFilters", "/ops/rbac_group_field_changed/#{group_id}___"]
-                         else
-                           [nil, "/ops/rbac_group_field_changed/#{group_id}___"]
-                         end
-
-    locals.merge!(:oncheck           => oncheck,
-                  :check_url         => check_url,
-                  :highlight_changes => @assign_to ? false : true,
-                  :checkboxes        => true,
-                  :onclick           => false)
+  def group_id
+    @group.present? && @group.id.present? ? @group.id : 'new'
   end
 
-  def root_options
-    {}
-  end
-
-  def x_get_tree_roots(count_only, _options)
-    count_only_or_objects(count_only, ExtManagementSystem.all)
+  def x_get_tree_roots
+    count_only_or_objects(false, ExtManagementSystem.assignable)
   end
 
   def x_get_provider_kids(parent, count_only)
@@ -75,15 +51,17 @@ class TreeBuilderBelongsToHac < TreeBuilder
   end
 
   def x_get_tree_datacenter_kids(parent, count_only)
-    kids = []
-    parent.folders.each do |child|
-      kids.concat([child]) if child.kind_of?(EmsFolder) && child.name == 'datastore'
-      next unless child.kind_of?(EmsFolder) && child.name == "host"
-      kids.concat(child.folders_only)
-      kids.concat(child.clusters)
-      kids.concat(child.hosts)
+    children = parent.folders.each_with_object([]) do |child, arr|
+      next unless child.kind_of?(EmsFolder)
+
+      case child.name
+      when 'datastore'
+        arr.push(child)
+      when 'host'
+        [:folders_only, :clusters, :hosts].each { |m| arr.concat(child.send(m)) }
+      end
     end
-    count_only_or_objects(count_only, kids)
+    count_only_or_objects(count_only, children)
   end
 
   def x_get_tree_cluster_kids(parent, count_only)

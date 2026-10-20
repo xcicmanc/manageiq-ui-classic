@@ -1,0 +1,21 @@
+@use '@carbon/react/scss/theme';
+
+.tag-category.list-inline {
+  background-color: theme.$background-brand;
+  padding: 3px 10px 10px 15px !important;
+  color: theme.$background;
+  margin-left: 5px;
+  margin-right: 10px;
+  margin-bottom: 5px;
+  font-size: 14px;
+  line-height: 24px;
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap;
+  float: left;
+}
+
+.category-label {
+  padding-right: 15px;
+}

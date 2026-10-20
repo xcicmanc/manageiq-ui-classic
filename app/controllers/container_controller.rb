@@ -1,5 +1,6 @@
 class ContainerController < ApplicationController
-  include ContainersCommonMixin
+  include Mixins::ContainersCommonMixin
+  include Mixins::BreadcrumbsMixin
 
   before_action :check_privileges
   before_action :get_session_data
@@ -13,9 +14,23 @@ class ContainerController < ApplicationController
   private
 
   def textual_group_list
-    [%i(properties relationships smart_management), %i(env limits)]
+    [%i[properties relationships smart_management], %i[env limits]]
   end
   helper_method :textual_group_list
 
+  def breadcrumbs_options
+    {
+      :breadcrumbs => [
+        {:title => _("Compute")},
+        {:title => _("Containers")},
+        {:title => _("Containers"), :url => controller_url},
+      ],
+    }
+  end
+
   menu_section :cnt
+
+  feature_for_actions "#{controller_name}_show_list", *ADV_SEARCH_ACTIONS
+  feature_for_actions "#{controller_name}_timeline", :tl_chooser
+  feature_for_actions "#{controller_name}_perf", :perf_top_chart
 end

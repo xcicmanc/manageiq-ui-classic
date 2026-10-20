@@ -1,35 +1,66 @@
 class ContainerDashboardService < DashboardService
-  include UiServiceMixin
   include ContainerServiceMixin
+  include Mixins::CheckedIdMixin
+  include TextualMixins::TextualRefreshStatus
+
   CPU_USAGE_PRECISION = 2 # 2 decimal points
 
   def initialize(provider_id, controller)
     @provider_id = provider_id
-    @ems = ManageIQ::Providers::ContainerManager.find(@provider_id) unless @provider_id.blank?
+    @ems = find_record_with_rbac(ManageIQ::Providers::ContainerManager, @provider_id) if @provider_id.present?
     @resource = @ems || ManageIQ::Providers::ContainerManager.all
     @controller = controller
   end
 
   def all_data
     {
-      :providers_link  => get_url_to_entity(:ems_container),
-      :status          => status,
-      :providers       => providers,
-      :alerts          => alerts,
-      :heatmaps        => heatmaps,
-      :ems_utilization => ems_utilization,
-      :network_metrics => network_metrics,
-      :pod_metrics     => pod_metrics,
-      :image_metrics   => image_metrics
+      :status    => status,
+      :providers => providers,
+    }.compact
+  end
+
+  def all_heatmaps_data
+    {
+      :heatmaps => heatmaps
+    }.compact
+  end
+
+  def ems_utilization_data
+    {
+      :ems_utilization => ems_utilization
+    }.compact
+  end
+
+  def network_metrics_data
+    {
+      :network_metrics => network_metrics
+    }.compact
+  end
+
+  def pod_metrics_data
+    {
+      :pod_metrics => pod_metrics
+    }.compact
+  end
+
+  def image_metrics_data
+    {
+      :image_metrics => image_metrics
+    }.compact
+  end
+
+  def refresh_status_data
+    {
+      :last_refresh => @ems.present? ? refresh_status(@ems) : []
     }.compact
   end
 
   def status
-    if @ems.present?
-      routes_count = @ems.respond_to?(:container_routes) ? @ems.container_routes.count : 0 # ems might not have routes
-    else
-      routes_count = ContainerRoute.count
-    end
+    routes_count = if @ems.present?
+                     @ems.respond_to?(:container_routes) ? @ems.container_routes.count : 0 # ems might not have routes
+                   else
+                     ContainerRoute.count
+                   end
 
     {
       :nodes      => {
@@ -84,10 +115,10 @@ class ContainerDashboardService < DashboardService
   end
 
   def providers
-    provider_classes_to_ui_types = ManageIQ::Providers::ContainerManager.subclasses.each_with_object({}) { |subclass, h|
+    provider_classes_to_ui_types = ManageIQ::Providers::ContainerManager.subclasses.each_with_object({}) do |subclass, h|
       name = subclass.name.split('::')[2]
       h[subclass.name] = name.to_sym
-    }
+    end
     providers = @ems.present? ? {@ems.type => 1} : ManageIQ::Providers::ContainerManager.group(:type).count
 
     result = {}
@@ -95,51 +126,20 @@ class ContainerDashboardService < DashboardService
       ui_type = provider_classes_to_ui_types[provider]
       (result[ui_type] ||= build_provider_status(ui_type))[:count] += count
     end
-    result.values
-  end
-
-  def alerts
-    providers = @ems.present? ? [@ems] : ManageIQ::Providers::ContainerManager.includes(:authentications)
-
-    has_alerts = providers.any? do |prov|
-      prov.monitoring_manager.present?
-    end
-
-    relation = MiqAlertStatus.where(:ems_id => providers.pluck(:id))
-    alerts_status = relation.present? && has_alerts ? relation.where(:resolved => [false, nil]).group(:severity).count.values_at('error', 'warning') : [nil, nil]
-
-    errors = alerts_status[0] || 0
-    warnings = alerts_status[1] || 0
-
-    errors_struct = errors > 0 ? {:iconClass => "pficon pficon-error-circle-o", :count => errors} : nil
-    warnings_struct = warnings > 0 ? {:iconClass => "pficon pficon-warning-triangle-o", :count => warnings} : nil
-    notifications = if (errors + warnings) > 0
-                      [errors_struct, warnings_struct].compact
-                    else
-                      [{:iconClass => "pficon-large pficon-ok"}]
-                    end
-
-    {
-      :count         => (errors + warnings) > 0 ? (errors + warnings) : nil,
-      :href          => @controller.url_for_only_path(:action => 'show', :controller => :alerts_overview),
-      :notifications => notifications,
-      :dataAvailable => has_alerts
-    }
+    all_providers_info = @ems.present? ? nil : {:count => ManageIQ::Providers::ContainerManager.count, :href => '/ems_container/show_list'}
+    return result.values, all_providers_info
   end
 
   def build_provider_status(provider_type)
-    provider_status_icon = if @ems.present?
-                             if @ems.enabled?
-                               icons[:StatusOn][:icon]
-                             else
-                               icons[:StatusPaused][:icon]
-                             end
-                           end
+    if @ems.present?
+      provider_status_icon = QuadiconHelper.provider_status("Valid", @ems.enabled?)[:fonticon]
+      provider_fileicon = @ems.decorate.try(:fileicon)
+    end
 
     {
       :count      => 0,
       :typeName   => _(provider_type.to_s),
-      :iconImage  => icons[provider_type][:icon],
+      :iconImage  => provider_fileicon ? ActionController::Base.helpers.image_path(provider_fileicon) : nil,
       :statusIcon => provider_status_icon
     }
   end
@@ -148,8 +148,7 @@ class ContainerDashboardService < DashboardService
     if @ems.present?
       @controller.polymorphic_url(@ems, :display => entity.to_s.pluralize)
     else
-      @controller.url_for_only_path(:action     => 'show_list',
-                          :controller => entity)
+      @controller.url_for_only_path(:action => 'show_list', :controller => entity)
     end
   end
 
@@ -157,7 +156,7 @@ class ContainerDashboardService < DashboardService
     node_ids = @ems.present? ? @ems.container_nodes : ContainerNode.active
     metrics = Metric::Helper.latest_metrics(ContainerNode.name, REALTIME_TIME_RANGE.minutes.ago.utc, node_ids)
     metrics = metrics.includes(:resource)
-    metrics = metrics.includes(:resource => [:ext_management_system]) unless @ems.present?
+    metrics = metrics.includes(:resource => [:ext_management_system]) if @ems.blank?
     heatmaps_data(metrics)
   end
 
@@ -166,7 +165,7 @@ class ContainerDashboardService < DashboardService
     node_ids = @ems.present? ? @ems.container_nodes : ContainerNode.active
     metrics = MetricRollup.latest_rollups(ContainerNode.name, node_ids)
     metrics = metrics.where('timestamp > ?', 1.day.ago.utc).includes(:resource)
-    metrics = metrics.includes(:resource => [:ext_management_system]) unless @ems.present?
+    metrics = metrics.includes(:resource => [:ext_management_system]) if @ems.blank?
 
     data = heatmaps_data(metrics)
     data if data[:nodeCpuUsage]
@@ -184,6 +183,7 @@ class ContainerDashboardService < DashboardService
         :id       => m.resource.id,
         :node     => m.resource.name,
         :provider => provider_name,
+        :unit     => _("Cores"),
         :total    => m.derived_vm_numvcpus.present? ? m.derived_vm_numvcpus.round : nil,
         :percent  => m.cpu_usage_rate_average.present? ? (m.cpu_usage_rate_average / 100.0).round(CPU_USAGE_PRECISION) : nil # pf accepts fractions 90% = 0.90
       }
@@ -192,6 +192,7 @@ class ContainerDashboardService < DashboardService
         :id       => m.resource.id,
         :node     => m.resource.name,
         :provider => m.resource.ext_management_system.name,
+        :unit     => _("GB"),
         :total    => m.derived_memory_available.present? ? m.derived_memory_available.round : nil,
         :percent  => m.mem_usage_absolute_average.present? ? (m.mem_usage_absolute_average / 100.0).round(CPU_USAGE_PRECISION) : nil # pf accepts fractions 90% = 0.90
       }
@@ -199,7 +200,8 @@ class ContainerDashboardService < DashboardService
 
     {
       :nodeCpuUsage    => node_cpu_usage.presence,
-      :nodeMemoryUsage => node_memory_usage.presence
+      :nodeMemoryUsage => node_memory_usage.presence,
+      :title           => _("Node Utilization")
     }
   end
 
@@ -224,30 +226,37 @@ class ContainerDashboardService < DashboardService
       end
     end
 
-    {
-      :interval_name => "hourly",
-      :xy_data       => trend_data(hourly_image_metrics)
-    }
+    if hourly_image_metrics.size > 1
+      {
+        :dataAvailable => true,
+        :interval_name => "hourly",
+        :xy_data       => trend_data(hourly_image_metrics)
+      }
+    end
   end
 
   def daily_image_metrics
     daily_image_metrics = Hash.new(0)
     daily_metrics.each do |m|
-      day = m.timestamp.strftime("%Y-%m-%d")
-      daily_image_metrics[day] +=
-        m.stat_container_image_registration_rate if m.stat_container_image_registration_rate.present?
+      day = m.timestamp.beginning_of_day.utc
+      daily_image_metrics[day] += m.stat_container_image_registration_rate if m.stat_container_image_registration_rate.present?
     end
 
     if daily_image_metrics.size > 1
       {
+        :dataAvailable => true,
         :interval_name => "daily",
         :xy_data       => trend_data(daily_image_metrics)
       }
     end
   end
 
+  def empty_metrics_data
+    {:dataAvailable => false}
+  end
+
   def image_metrics
-    daily_image_metrics || hourly_image_metrics
+    daily_image_metrics || hourly_image_metrics || empty_metrics_data
   end
 
   # ems has no realtime metrics but its nodes do.

@@ -38,21 +38,9 @@ describe 'routes for MiqRequestController' do
     end
   end
 
-  describe '#prov_button' do
-    it 'routes with POST' do
-      expect(post("/#{controller_name}/prov_button")).to route_to("#{controller_name}#prov_button")
-    end
-  end
-
   describe '#prov_copy' do
     it 'routes with GET' do
       expect(get("/#{controller_name}/prov_copy")).to route_to("#{controller_name}#prov_copy")
-    end
-  end
-
-  describe '#prov_change_options' do
-    it 'routes with POST' do
-      expect(post("/#{controller_name}/prov_change_options")).to route_to("#{controller_name}#prov_change_options")
     end
   end
 
@@ -78,12 +66,6 @@ describe 'routes for MiqRequestController' do
     end
   end
 
-  describe '#prov_show_option' do
-    it 'routes with POST' do
-      expect(post("/#{controller_name}/prov_show_option")).to route_to("#{controller_name}#prov_show_option")
-    end
-  end
-
   describe '#request_copy' do
     it 'routes with POST' do
       expect(post("/#{controller_name}/request_copy")).to route_to("#{controller_name}#request_copy")
@@ -93,18 +75,6 @@ describe 'routes for MiqRequestController' do
   describe '#request_edit' do
     it 'routes with POST' do
       expect(post("/#{controller_name}/request_edit")).to route_to("#{controller_name}#request_edit")
-    end
-  end
-
-  describe '#retrieve_email' do
-    it 'routes with POST' do
-      expect(post("/#{controller_name}/retrieve_email")).to route_to("#{controller_name}#retrieve_email")
-    end
-  end
-
-  describe '#upload' do
-    it 'routes with POST' do
-      expect(post("/#{controller_name}/upload")).to route_to("#{controller_name}#upload")
     end
   end
 

@@ -1,7 +1,7 @@
 class ApplicationHelper::Toolbar::SavedReportsCenter < ApplicationHelper::Toolbar::Basic
   button_group('saved_report_reloading', [
     button(
-      :reload,
+      :miq_report_saved_reports_reload,
       'fa fa-refresh fa-lg',
       N_('Refresh selected Reports'),
       nil,
@@ -11,21 +11,10 @@ class ApplicationHelper::Toolbar::SavedReportsCenter < ApplicationHelper::Toolba
   button_group('saved_report_vmdb', [
     select(
       :saved_report_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
-        button(
-          :report_only,
-          'fa fa-file-text-o fa-lg',
-          t = N_('Show full screen Report'),
-          t,
-          :enabled => false,
-          :onwhen  => "1",
-          :url     => "/report_only",
-          :popup   => true,
-          :confirm => N_("This will show the entire report (all rows) in your browser.  Do you want to proceed?"),
-          :klass   => ApplicationHelper::Button::ReportOnly),
         button(
           :saved_report_delete,
           'pficon pficon-delete fa-lg',

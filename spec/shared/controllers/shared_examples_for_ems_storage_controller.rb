@@ -1,16 +1,15 @@
 require_relative 'shared_storage_manager_context'
 
 shared_examples :shared_examples_for_ems_storage_controller do |providers|
-  include CompressedIds
   render_views
-  before :each do
-    stub_user(:features => :all)
-    setup_zone
-  end
 
   providers.each do |t|
     context "for #{t}" do
       include_context :shared_storage_manager_context, t
+      before do
+        stub_user(:features => :all)
+        setup_zone
+      end
 
       describe "#show_list" do
         it "renders index" do
@@ -36,12 +35,9 @@ shared_examples :shared_examples_for_ems_storage_controller do |providers|
           get :show, :params => {:id => @ems.id}
           expect(response.status).to eq(200)
           expect(response.body).to_not be_empty
-          expect(assigns(:breadcrumbs)).to eq([{:name => "Storage Managers",
-                                                :url  => "/ems_storage/show_list?page=&refresh=y"},
-                                               {:name => "Test Cloud Manager Cinder Manager (Summary)",
+          expect(assigns(:breadcrumbs)).to eq([{:name => "Test Cloud Manager Cinder Manager (Dashboard)",
                                                 :url  => "/ems_storage/show/#{@ems.id}"}])
-
-          is_expected.to render_template(:partial => "layouts/listnav/_ems_storage")
+          is_expected.to render_template(:partial => "ems_storage/_show_block_storage_dashboard")
         end
       end
 
@@ -52,15 +48,15 @@ shared_examples :shared_examples_for_ems_storage_controller do |providers|
         end
 
         it 'edit network provider tags' do
-          post :button, :params => {:miq_grid_checks => to_cid(@ems.id), :pressed => "ems_storage_tag"}
+          post :button, :params => {:miq_grid_checks => @ems.id, :pressed => "ems_storage_tag"}
           expect(response.status).to eq(200)
         end
 
         it 'manage storage provider policies' do
           allow(controller).to receive(:protect_build_tree).and_return(nil)
-          controller.instance_variable_set(:@protect_tree, OpenStruct.new(:name => "name"))
+          controller.instance_variable_set(:@protect_tree, OpenStruct.new(:name => "name", :locals_for_render => {}))
 
-          post :button, :params => {:miq_grid_checks => to_cid(@ems.id), :pressed => "ems_storage_protect"}
+          post :button, :params => {:miq_grid_checks => @ems.id, :pressed => "ems_storage_protect"}
           expect(response.status).to eq(200)
 
           get :protect

@@ -7,11 +7,11 @@ module ConfigurationJobHelper::TextualSummary
   #
 
   def textual_group_properties
-    TextualGroup.new(_("Properties"), %i(name description type status status_reason))
+    TextualGroup.new(_("Properties"), %i[name description type status status_reason])
   end
 
   def textual_group_relationships
-    TextualGroup.new(_("Relationships"), %i(provider service parameters status))
+    TextualGroup.new(_("Relationships"), %i[provider service parameters status])
   end
 
   #
@@ -37,20 +37,20 @@ module ConfigurationJobHelper::TextualSummary
     else
       h[:value] = service.name
       h[:title] = _("Show this Service")
-      h[:link]  = url_for_only_path(:controller => 'service', :action => 'show', :id => to_cid(service.id))
+      h[:link]  = url_for_only_path(:controller => 'service', :action => 'show', :id => service.id)
     end
     h
   end
 
   def textual_provider
-    h = {:label => _("Provider"), :image => "svg/vendor-ansible.svg"}
+    h = {:label => _("Provider"), :image => @record.ext_management_system.try(:decorate).try(:fileicon)}
     provider = @record.ext_management_system
     if provider.nil?
       h[:value] = _("None")
     else
       h[:value] = provider.name
       h[:title] = _("Show this Parent Provider")
-      h[:link]  = url_for_only_path(:controller => 'automation_manager', :action => 'explorer', :accordion => "automation_manager_providers", :id => "at-#{to_cid(provider.id)}")
+      h[:link]  = url_for_only_path(:controller => 'ems_automation', :action => 'show', :id => provider.id)
     end
     h
   end

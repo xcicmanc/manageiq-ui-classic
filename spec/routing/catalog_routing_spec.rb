@@ -31,25 +31,14 @@ describe 'routes for CatalogController' do
     button_create
     button_update
     explorer
-    get_ae_tree_edit_key
     group_create
-    group_form_field_changed
     group_reorder_field_changed
     group_update
-    identify_catalog
-    orchestration_template_add
-    orchestration_template_copy
-    orchestration_template_edit
-    ot_copy_submit
-    ot_edit_submit
-    ot_form_field_changed
     ot_tags_edit
-    process_sts
     prov_field_changed
     reload
     resolve
     resource_delete
-    service_dialog_from_ot_submit
     servicetemplate_edit
     sort_ds_grid
     sort_host_grid
@@ -58,14 +47,10 @@ describe 'routes for CatalogController' do
     sort_vc_grid
     sort_vm_grid
     st_catalog_edit
-    st_catalog_form_field_changed
-    st_delete
     st_edit
     st_form_field_changed
     st_tags_edit
     st_upload_image
-    svc_catalog_provision
-    tag_edit_form_field_changed
     tree_autoload
     tree_select
     x_button

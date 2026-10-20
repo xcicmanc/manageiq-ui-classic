@@ -9,10 +9,10 @@ class ApplicationHelper::Toolbar::DiagnosticsRegionCenter < ApplicationHelper::T
       nil,
       :klass => ApplicationHelper::Button::ReloadServerTree),
   ])
-  button_group('ldap_domain_vmdb', [
+  button_group('server_role_management', [
     select(
       :support_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -28,6 +28,22 @@ class ApplicationHelper::Toolbar::DiagnosticsRegionCenter < ApplicationHelper::T
                           {:server_name => @record.name, :server_id => @record.id}
                       end,
           :klass => ApplicationHelper::Button::DeleteServer
+        ),
+        button(
+          :delete_server,
+          'pficon pficon-delete fa-lg',
+          N_('Delete selected Servers'),
+          :enabled => false,
+          :onwhen  => "1+",
+          :data    => {'function'      => 'sendDataWithRx',
+                       'function-data' => {:api_url        => 'servers',
+                                           :component_name => 'RemoveGenericItemModal',
+                                           :controller     => 'provider_dialogs',
+                                           :display_field  => 'name',
+                                           :modal_text     => N_("Are you sure you want to delete the selected Servers?"),
+                                           :modal_title    => N_("Delete Servers"),
+                                           :redirect_url   => '/ops/explorer/'}},
+          :klass   => ApplicationHelper::Button::ServersDeleteServer
         ),
         button(
           :role_start,

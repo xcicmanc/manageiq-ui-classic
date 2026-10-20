@@ -1,7 +1,5 @@
-require 'shared/presenters/tree_node/common'
-
 describe TreeNode::AvailabilityZone do
-  subject { described_class.new(object, nil, {}) }
+  subject { described_class.new(object, nil, nil) }
 
   %i(
     availability_zone_amazon
@@ -11,9 +9,8 @@ describe TreeNode::AvailabilityZone do
     availability_zone_openstack_null
     availability_zone_vmware
   ).each do |factory|
-    klass = FactoryGirl.factory_by_name(factory).instance_variable_get(:@class_name)
-    context(klass) do
-      let(:object) { FactoryGirl.create(factory) }
+    context(factory.to_s) do
+      let(:object) { FactoryBot.create(factory) }
 
       include_examples 'TreeNode::Node#key prefix', 'az-'
       include_examples 'TreeNode::Node#icon', 'pficon pficon-zone'

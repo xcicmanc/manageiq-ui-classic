@@ -1,0 +1,21 @@
+= render :partial => 'layouts/flash_msg'
+- breakdown_present = @record.chargeback_rate_details.any? { |d| d.sub_metric.present? }
+%h3= _('Basic Info')
+.form-horizontal
+  .form-group
+    %label.col-md-2.control-label
+      = _('Description')
+    .col-md-8
+      %p.form-control-static
+        = h(@record.description)
+  .form-group
+    %label.col-md-2.control-label
+      = _('Type')
+    .col-md-8
+      %p.form-control-static
+        = h(_(@record.rate_type))
+%hr
+%h3= _('Rate Details')
+- rate_summary(@record.chargeback_rate_details, breakdown_present)
+= react('ChargebackRate', {:initialData => @initial_data, :hasOptions => breakdown_present})
+%br

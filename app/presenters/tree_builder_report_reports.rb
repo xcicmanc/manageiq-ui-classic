@@ -1,23 +1,18 @@
 class TreeBuilderReportReports < TreeBuilderReportReportsClass
   REPORTS_IN_TREE = true
+
+  include ReportHelper
+
   private
 
-  def initialize(name, type, sandbox, build = true)
+  def initialize(name, sandbox, build = true, **_params)
     @rpt_menu  = sandbox[:rpt_menu]
-    @grp_title = sandbox[:grp_title]
-    super(name, type, sandbox, build = true)
+    @grp_title = reports_group_title
+    super(name, sandbox, build)
   end
 
-  def tree_init_options(tree_name)
-    {
-      :leaf     => 'full_ids',
-      :full_ids => true
-    }
-  end
-
-  def set_locals_for_render
-    locals = super
-    locals.merge!(:autoload => true)
+  def tree_init_options
+    {:full_ids => true, :lazy => true}
   end
 
   def root_options
@@ -28,11 +23,9 @@ class TreeBuilderReportReports < TreeBuilderReportReportsClass
   end
 
   # Get root node and all children report folders. (will call get_tree_custom_kids to get report details)
-  def x_get_tree_roots(count_only, options)
-    return @rpt_menu.size if count_only
+  def x_get_tree_roots
     @rpt_menu.each_with_index.each_with_object({}) do |(r, node_id), a|
-      # load next level of folders when building the tree
-      @tree_state.x_tree(options[:tree])[:open_nodes].push("xx-#{node_id}")
+      open_node("xx-#{node_id}")
 
       root_node = folder_hash(node_id.to_s, r[0], @grp_title == r[0])
       child_nodes = @rpt_menu[node_id][1].each_with_index.each.map do |child_r, child_id|
@@ -45,7 +38,7 @@ class TreeBuilderReportReports < TreeBuilderReportReportsClass
     end
   end
 
-  def x_get_tree_custom_kids(object, count_only, _options)
+  def x_get_tree_custom_kids(object, count_only)
     nodes = object[:full_id] ? object[:full_id].split('-') : object[:id].to_s.split('-')
     parent_id = nodes[-2].split('_').first.to_i
     node_id = nodes.last.to_i

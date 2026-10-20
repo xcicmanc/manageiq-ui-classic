@@ -1,17 +1,15 @@
 require_relative 'shared_network_manager_context'
 
 shared_examples :shared_examples_for_security_group_controller do |providers|
-  include CompressedIds
-
   render_views
-  before :each do
-    stub_user(:features => :all)
-    setup_zone
-  end
 
   providers.each do |t|
     context "for #{t}" do
       include_context :shared_network_manager_context, t
+      before do
+        stub_user(:features => :all)
+        setup_zone
+      end
 
       describe "#show_list" do
         it "renders index" do
@@ -41,8 +39,6 @@ shared_examples :shared_examples_for_security_group_controller do |providers|
                                                 :url  => "/security_group/show_list?page=&refresh=y"},
                                                {:name => "Security Group (Summary)",
                                                 :url  => "/security_group/show/#{@security_group.id}"}])
-
-          is_expected.to render_template(:partial => "layouts/listnav/_security_group")
         end
 
         it "show associated instances" do
@@ -56,7 +52,7 @@ shared_examples :shared_examples_for_security_group_controller do |providers|
 
       describe "#test_toolbars" do
         it 'edit security group tags' do
-          post :button, :params => {:miq_grid_checks => to_cid(@security_group.id), :pressed => "security_group_tag"}
+          post :button, :params => {:miq_grid_checks => @security_group.id, :pressed => "security_group_tag"}
           expect(response.status).to eq(200)
         end
       end

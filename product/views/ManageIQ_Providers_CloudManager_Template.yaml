@@ -39,7 +39,6 @@ include:
 
 # Included tables and columns for query performance
 include_for_find:
-  :compliances: {}
   :operating_system: {}
   :hardware: {}
   :tags: {}
@@ -60,7 +59,7 @@ col_order:
 # Column titles, in order
 headers:
 - Name
-- Provider
+- Cloud Provider
 - Type
 - Compliant
 - Allocated Size

@@ -2,11 +2,13 @@ class UtilizationController < ApplicationController
   before_action :check_privileges
   before_action :get_session_data
 
-  menu_section(:opt)
+  menu_section(:vi)
 
   include OptimizeHelper
+  include Mixins::BreadcrumbsMixin
 
   def index
+    assert_privileges('utilization')
     @explorer = true
     @right_cell_text = _("Utilization Summary")
     @sb[:active_tab] = "summary"
@@ -30,6 +32,7 @@ class UtilizationController < ApplicationController
 
   # Process changes to capacity charts
   def chart_chooser
+    assert_privileges('utilization')
     unless params[:task_id] # Only do this first time thru
       @sb[:options][:chart_date] = params[:miq_date_1] if params[:miq_date_1]
       @sb[:options][:chart_date] = params[:miq_date_2] if params[:miq_date_2]
@@ -47,7 +50,7 @@ class UtilizationController < ApplicationController
         @sb[:options][:time_profile] = params[:details_time_profile].blank? ? nil : params[:details_time_profile].to_i if params.key?(:details_time_profile)
         @sb[:options][:time_profile] = params[:report_time_profile].blank? ? nil : params[:report_time_profile].to_i if params.key?(:report_time_profile)
         @sb[:options][:time_profile] = params[:summ_time_profile].blank? ? nil : params[:summ_time_profile].to_i if params.key?(:summ_time_profile)
-        tp = TimeProfile.find(@sb[:options][:time_profile]) unless @sb[:options][:time_profile].blank?
+        tp = TimeProfile.find(@sb[:options][:time_profile]) if @sb[:options][:time_profile].present?
         @sb[:options][:time_profile_tz] = @sb[:options][:time_profile].blank? ? nil : tp.tz
         @sb[:options][:time_profile_days] = @sb[:options][:time_profile].blank? ? nil : tp.days
       end
@@ -62,30 +65,24 @@ class UtilizationController < ApplicationController
 
   # Send the current utilization report data in text, CSV, or PDF
   def report_download
+    assert_privileges('utilization')
     report = MiqReport.new(:title     => @sb[:title],
-                           :cols      => cols = %w(section item value),
+                           :cols      => cols = %w[section item value],
                            :col_order => cols,
                            :headers   => [_("Section"), _("Item"), _("Value")],
                            :sortby    => ["section"],
                            :extras    => {},
                            :group     => "y")
     report.db = "MetricRollup"
-    report.table = MiqReportable.hashes2table(summ_hashes, :only => report.cols)
+    report.table = ManageIQ::Reporting::Formatter::Converter.hashes2table(summ_hashes, :only => report.cols)
     filename = report.title
     disable_client_cache
-    case params[:typ]
-    when "txt"
-      send_data(report.to_text,
-                :filename => "#{filename}.txt")
-    when "csv"
-      send_data(report.to_csv,
-                :filename => "#{filename}.csv")
-    when "pdf"
-      render_pdf(report)
-    end
+    download_file(params[:typ], report, filename)
   end
 
   def tree_select
+    assert_accordion_and_tree_privileges(x_active_tree)
+
     if params[:id] # First time thru async method, grab id parm info
       @refresh = (x_node == "")
       self.x_node = params[:id]
@@ -98,13 +95,14 @@ class UtilizationController < ApplicationController
   end
 
   def change_tab
+    assert_privileges('utilization')
     @sb[:active_tab] = params[:tab_id]
 
-    # build timeline data when coming back to Summary tab for bottlenecks
+    # build timeline data when coming back to Summary tab
     render :update do |page|
       page << javascript_prologue
       page << javascript_reload_toolbars
-      page << Charting.js_load_statement
+      page << ManageIQ::Reporting::Charting.js_load_statement
       page << "miqSparkle(false);"
     end
   end
@@ -113,13 +111,13 @@ class UtilizationController < ApplicationController
 
   def features
     [
-      {:role     => "utilization",
-       :role_any => true,
-       :name     => :utilization,
-       :title    => _("Utilization")}
-    ].map do |hsh|
-      ApplicationController::Feature.new_with_hash(hsh)
-    end
+      {
+        :role     => "utilization",
+        :role_any => true,
+        :name     => :utilization,
+        :title    => _("Utilization")
+      }
+    ].map { |hsh| ApplicationController::Feature.new_with_hash(hsh) }
   end
 
   def get_session_data
@@ -163,10 +161,10 @@ class UtilizationController < ApplicationController
       @sb[:options][:record_id] = @record.id
     end
     trenddate = edate - @sb[:options][:days].to_i.days + 1.hour # Get trend starting date
-    sdate = sdate > trenddate ? sdate : trenddate                   # Use trend date, unless earlier than first date
-    if @sb[:options][:chart_date]                            # Clear chosen chart date if out of trend range
+    sdate = sdate > trenddate ? sdate : trenddate               # Use trend date, unless earlier than first date
+    if @sb[:options][:chart_date]                               # Clear chosen chart date if out of trend range
       cdate = create_time_in_tz(@sb[:options][:chart_date], tz) # Get chart date at midnight in time zone
-      if (cdate < sdate || cdate > edate) || # Reset if chart date is before start date or after end date
+      if (cdate < sdate || cdate > edate) ||                    # Reset if chart date is before start date or after end date
          (@sb[:options][:time_profile] && !@sb[:options][:time_profile_days].include?(cdate.wday))
         @sb[:options][:chart_date] = nil
       end
@@ -195,7 +193,8 @@ class UtilizationController < ApplicationController
     @sb[:options][:chart_type] = :summary
   end
 
-  def replace_right_cell(_nodetype) # replace_trees can be an array of tree symbols to be replaced
+  # replace_trees can be an array of tree symbols to be replaced
+  def replace_right_cell(_nodetype)
     # Get the tags for this node for the Classification pulldown
     @sb[:tags] = nil unless params[:miq_date_1] || params[:miq_date_2] # Clear tags unless just changing date
     unless @nodetype == "h" || @nodetype == "s" || params[:miq_date_1] || params[:miq_date_2] # Get the tags for the pulldown, unless host, storage, or just changing the date
@@ -220,9 +219,9 @@ class UtilizationController < ApplicationController
     presenter[:clear_selection] = x_node == ''
 
     presenter.reload_toolbars(:view => v_tb)
-    presenter.set_visibility(@sb[:active_tab] == 'report', :toolbar)
 
     presenter.update(:main_div, r[:partial => 'utilization_tabs'])
+    presenter.update(:breadcrumbs, r[:partial => 'layouts/breadcrumbs'])
     presenter[:right_cell_text] = @right_cell_text
     presenter[:build_calendar] = {
       :date_from => @sb[:options][:sdate],
@@ -236,10 +235,19 @@ class UtilizationController < ApplicationController
   # Create an array of hashes from the Utilization summary report tab information
   def summ_hashes
     a = []
-    @sb[:summary][:info].each { |r| a.push("section" => _("Basic Info"), "item" => r[0], "value" => r[1]) } if @sb[:summary][:info]
-    @sb[:summary][:cpu].each { |r| a.push("section" => _("CPU"), "item" => r[0], "value" => r[1]) } if @sb[:summary][:cpu]
-    @sb[:summary][:memory].each { |r| a.push("section" => _("Memory"), "item" => r[0], "value" => r[1]) } if @sb[:summary][:memory]
-    @sb[:summary][:storage].each { |r| a.push("section" => _("Disk"), "item" => r[0], "value" => r[1]) } if @sb[:summary][:storage]
+    @sb[:summary][:info]&.each { |r| a.push("section" => _("Basic Info"), "item" => r[0], "value" => r[1]) }
+    @sb[:summary][:cpu]&.each { |r| a.push("section" => _("CPU"), "item" => r[0], "value" => r[1]) }
+    @sb[:summary][:memory]&.each { |r| a.push("section" => _("Memory"), "item" => r[0], "value" => r[1]) }
+    @sb[:summary][:storage]&.each { |r| a.push("section" => _("Disk"), "item" => r[0], "value" => r[1]) }
     a
+  end
+
+  def breadcrumbs_options
+    {
+      :breadcrumbs => [
+        {:title => _("Overview")},
+        {:title => _("Utilization")},
+      ],
+    }
   end
 end

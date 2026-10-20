@@ -17,105 +17,26 @@ describe Menu::DefaultMenu do
 
   context "infrastructure_menu_section" do
     before do
-      @ems_openstack = FactoryGirl.create(:ems_openstack_infra)
-      @ems_vmware = FactoryGirl.create(:ems_vmware)
+      @ems_openstack = FactoryBot.create(:ems_openstack_infra)
+      @ems_vmware = FactoryBot.create(:ems_vmware)
     end
 
-    it "shows correct title for Hosts submenu item when openstack only records exist" do
-      FactoryGirl.create(:host_openstack_infra, :ems_id => @ems_openstack.id)
-      menu = Menu::DefaultMenu.infrastructure_menu_section.items.map(&:name)
-      result = ["Providers", "Clusters", "Nodes", "Virtual Machines", "Resource Pools",
-                "Datastores", "PXE", "Networking", "Requests", "Topology"]
-      expect(menu).to eq(result)
-    end
-
-    it "shows correct title for Hosts submenu item when non-openstack only records exist" do
-      FactoryGirl.create(:host_vmware, :ems_id => @ems_vmware.id)
+    it "shows correct titles for Hosts & Clusters" do
       menu = Menu::DefaultMenu.infrastructure_menu_section.items.map(&:name)
       result = ["Providers", "Clusters", "Hosts", "Virtual Machines", "Resource Pools",
-                "Datastores", "PXE", "Networking", "Requests", "Topology"]
-      expect(menu).to eq(result)
-    end
-
-    it "shows correct title for Hosts submenu item when both openstack & non-openstack only records exist" do
-      FactoryGirl.create(:host_openstack_infra, :ems_id => @ems_openstack.id)
-      FactoryGirl.create(:host_vmware, :ems_id => @ems_vmware.id)
-
-      menu = Menu::DefaultMenu.infrastructure_menu_section.items.map(&:name)
-      result = ["Providers", "Clusters", "Hosts / Nodes", "Virtual Machines", "Resource Pools",
-                "Datastores", "PXE", "Networking", "Requests", "Topology"]
-      expect(menu).to eq(result)
-    end
-
-    it "shows correct title for Clusters submenu item when openstack only records exist" do
-      FactoryGirl.create(:ems_cluster_openstack, :ems_id => @ems_openstack.id)
-
-      menu = Menu::DefaultMenu.infrastructure_menu_section.items.map(&:name)
-      result = ["Providers", "Deployment Roles", "Hosts", "Virtual Machines", "Resource Pools",
-                "Datastores", "PXE", "Networking", "Requests", "Topology"]
-      expect(menu).to eq(result)
-    end
-
-    it "shows correct title for Clusters submenu item when non-openstack only records exist" do
-      FactoryGirl.create(:ems_cluster_openstack, :ems_id => @ems_vmware.id)
-
-      menu = Menu::DefaultMenu.infrastructure_menu_section.items.map(&:name)
-      result = ["Providers", "Clusters", "Hosts", "Virtual Machines", "Resource Pools",
-                "Datastores", "PXE", "Networking", "Requests", "Topology"]
-      expect(menu).to eq(result)
-    end
-
-    it "shows correct title for Clusters submenu item when both openstack & non-openstack only records exist" do
-      FactoryGirl.create(:ems_cluster_openstack, :ems_id => @ems_openstack.id)
-      FactoryGirl.create(:ems_cluster_openstack, :ems_id => @ems_vmware.id)
-
-      menu = Menu::DefaultMenu.infrastructure_menu_section.items.map(&:name)
-      result = ["Providers", "Clusters / Deployment Roles", "Hosts", "Virtual Machines", "Resource Pools",
-                "Datastores", "PXE", "Networking", "Requests", "Topology"]
+                "Datastores", "PXE", "Networking"]
       expect(menu).to eq(result)
     end
   end
 
-  describe "#storage_menu_section" do
+  context "storage_menu_section" do
     let(:menu) { Menu::DefaultMenu }
 
-    context "when the configuration storage product setting is set to true" do
-      it "still does not contain the NetApp item" do
-        stub_settings(:product => {:storage => true})
-        expect(menu.storage_menu_section.items.map(&:name)).to include(
-          "Block Storage",
-          "Object Storage",
-        )
-      end
-    end
+    it "shows correct content for Storage submenu" do
+      menu = Menu::DefaultMenu.storage_menu_section.items.map(&:name)
+      result = ["Managers", "Volumes", "Volume Snapshots", "Volume Backups", "Volume Types", "Volume Mappings",
+                "Host Initiators", "Host Initiator Groups", "Storages", "Storage Resources", "Storage Services", "Object Store Containers", "Object Store Objects"]
 
-    context "when the configuration storage product setting is not true" do
-      it "does not contain the NetApp item" do
-        stub_settings(:product => {:storage => "juliet" })
-        expect(menu.storage_menu_section.items.map(&:name)).to include(
-          "Block Storage",
-          "Object Storage",
-        )
-      end
-    end
-  end
-
-  context "block_storage_menu_section" do
-    let(:menu) { Menu::DefaultMenu }
-
-    it "shows correct content for Block Storage submenu" do
-      menu = Menu::DefaultMenu.block_storage_menu_section.items.map(&:name)
-      result = ["Managers", "Volumes", "Volume Snapshots", "Volume Backups"]
-      expect(menu).to eq(result)
-    end
-  end
-
-  context "object_storage_menu_section" do
-    let(:menu) { Menu::DefaultMenu }
-
-    it "shows correct content for Object Storage submenu" do
-      menu = Menu::DefaultMenu.object_storage_menu_section.items.map(&:name)
-      result = ["Managers", "Object Store Containers", "Object Store Objects"]
       expect(menu).to eq(result)
     end
   end
@@ -149,6 +70,59 @@ describe Menu::DefaultMenu do
           "Log",
           "Requests"
         )
+
+        expect(menu.automate_menu_section.items.map(&:rbac_feature)). to match_array([{:feature => "miq_ae_domain_view"},
+                                                                             {:feature => "miq_ae_class_simulation"},
+                                                                             {:feature => "miq_ae_customization_explorer", :any => true},
+                                                                             {:feature => "generic_object_definition"},
+                                                                             {:feature => "miq_ae_class_import_export"},
+                                                                             {:feature => "miq_ae_class_log"},
+                                                                             {:feature => "ae_miq_request_show_list"}])
+      end
+    end
+  end
+
+  describe "visibility" do
+    before do
+      @user = login_as(FactoryBot.create(:user_admin))
+    end
+
+    describe "by role" do
+      it "when entitled" do
+        expect(Menu::DefaultMenu.services_menu_section).to be_visible
+      end
+
+      it "when not entitled" do
+        allow(@user).to receive(:role_allows_any?).and_return(false)
+
+        expect(Menu::DefaultMenu.services_menu_section).to_not be_visible
+      end
+    end
+
+    describe "by Vmdb::PermissionStores" do
+      it "when everything is permitted" do
+        allow(Vmdb::PermissionStores).to receive(:instance).and_return(
+          Vmdb::PermissionStores.new([])
+        )
+
+        expect(Menu::DefaultMenu.services_menu_section).to be_visible
+      end
+
+      it "when section is not permitted" do
+        allow(Vmdb::PermissionStores).to receive(:instance).and_return(
+          Vmdb::PermissionStores.new(["ui-menu:svc"])
+        )
+
+        expect(Menu::DefaultMenu.services_menu_section).to_not be_visible
+      end
+
+      it "when item is not permitted" do
+        allow(Vmdb::PermissionStores).to receive(:instance).and_return(
+          Vmdb::PermissionStores.new(["ui-menu:services"])
+        )
+
+        expect(Menu::DefaultMenu.services_menu_section).to be_visible
+        expect(Menu::DefaultMenu.services_menu_section.items.detect { |i| i.id == "services" }).to_not be_visible
       end
     end
   end

@@ -1,69 +1,48 @@
 class TreeBuilderDatastores < TreeBuilder
   has_kids_for Hash, [:x_get_tree_hash_kids]
+  has_kids_for Storage, [:x_get_tree_storage_kids]
 
-  def initialize(name, type, sandbox, build = true, root = nil)
-    @root = root
-    @data = Storage.all.inject({}) { |h, st| h[st.id] = st; h }
-    super(name, type, sandbox, build)
+  def initialize(name, sandbox, build = true, **params)
+    @storages = Storage.in_my_region.includes(:hosts).select(:id, :name, :location)
+    @root = params[:root]
+    super(name, sandbox, build)
   end
 
   private
 
-  def tree_init_options(_tree_name)
-    {:full_ids => false,
-     :add_root => false,
-     :lazy     => false}
-  end
+  def override(node, object)
+    if object.kind_of?(Storage)
+      node.checked = @root[object.id][:capture]
 
-  def set_locals_for_render
-    locals = super
-    locals.merge!(:checkboxes        => true,
-                  :onselect          => "miqOnCheckCUFilters",
-                  :highlight_changes => true,
-                  :check_url         => "/ops/cu_collection_field_changed/")
-  end
-
-  def root_options
-    {}
-  end
-
-  def x_get_tree_roots(count_only = false, _options)
-    nodes = @root.map do |node|
-      children = []
-      if @data[node[:id]].hosts.present?
-        children = @data[node[:id]].hosts.sort_by { |host| host.name.try(:downcase) }.map do |kid|
-          {:name => kid.name}
-        end
+      node.tooltip = "#{object.name} [#{object.location}]"
+      node.text = ViewHelper.capture do
+        ViewHelper.concat_tag(:strong, object.name)
+        ViewHelper.concat(' [')
+        ViewHelper.concat(object.location)
+        ViewHelper.concat(']')
       end
-
-      text = ViewHelper.capture do
-        ViewHelper.concat_tag(:strong, node[:name])
-        ViewHelper.concat ' ['
-        ViewHelper.concat node[:location]
-        ViewHelper.concat ']'
-      end
-
-      { :id         => node[:id].to_s,
-        :text       => text,
-        :icon       => 'fa fa-database',
-        :tip        => "#{node[:name]} [#{node[:location]}]",
-        :select     => node[:capture] == true,
-        :selectable => false,
-        :nodes      => children }
+    else
+      node.hide_checkbox = true
     end
-    count_only_or_objects(count_only, nodes)
+
+    node.selectable = false
   end
 
-  def x_get_tree_hash_kids(parent, count_only)
-    nodes = parent[:nodes].map do |node|
-      { :id           => node[:name],
-        :text         => node[:name],
-        :icon         => 'pficon pficon-screen',
-        :tip          => node[:name],
-        :hideCheckbox => true,
-        :selectable   => false,
-        :nodes        => [] }
-    end
+  def tree_init_options
+    {
+      :full_ids   => false,
+      :checkboxes => true,
+      :oncheck    => "miqOnCheckGeneric",
+      :check_url  => "/ops/cu_collection_field_changed/"
+    }
+  end
+
+  def x_get_tree_roots
+    count_only_or_objects(false, @storages)
+  end
+
+  def x_get_tree_storage_kids(parent, count_only)
+    nodes = parent.hosts.sort_by { |host| host.name.try(:downcase) }
     count_only_or_objects(count_only, nodes)
   end
 end

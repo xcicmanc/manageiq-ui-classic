@@ -24,6 +24,7 @@ cols:
 - last_compliance_status
 - allocated_disk_storage
 - last_scan_on
+- normalized_state
 
 # Included tables (joined, has_one, has_many) and columns
 include:
@@ -39,13 +40,13 @@ include:
 
 # Included tables and columns for query performance
 include_for_find:
-  :compliances: {}
   :operating_system: {}
   :tags: {}
 
 # Order of columns (from all tables)
 col_order:
 - name
+- normalized_state
 - availability_zone.name
 - flavor.name
 - ipaddresses
@@ -57,6 +58,7 @@ col_order:
 # Column titles, in order
 headers:
 - Name
+- Power State
 - Availability Zone
 - Flavor
 - IP Addresses

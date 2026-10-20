@@ -1,16 +1,8 @@
 class TreeBuilderReportRoles < TreeBuilder
   private
 
-  def tree_init_options(_tree_name)
-    {
-      :leaf     => 'Roles',
-      :full_ids => true
-    }
-  end
-
-  def set_locals_for_render
-    locals = super
-    locals.merge!(:autoload => true)
+  def tree_init_options
+    {:full_ids => true, :lazy => true}
   end
 
   def root_options
@@ -27,9 +19,9 @@ class TreeBuilderReportRoles < TreeBuilder
   end
 
   # Get root nodes count/array for explorer tree
-  def x_get_tree_roots(count_only, _options)
+  def x_get_tree_roots
     user  = User.current_user
     roles = user.super_admin_user? ? MiqGroup.non_tenant_groups_in_my_region : [user.current_group]
-    count_only_or_objects(count_only, roles, 'name')
+    count_only_or_objects(false, roles, 'name')
   end
 end

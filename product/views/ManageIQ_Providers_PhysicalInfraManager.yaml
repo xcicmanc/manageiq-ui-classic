@@ -18,7 +18,6 @@ db: EmsPhysicalInfra
 cols:
 - name
 - hostname
-- ipaddress
 - emstype_description
 - port
 - total_physical_servers
@@ -26,6 +25,7 @@ cols:
 - total_vms
 - total_miq_templates
 - region_description
+- authentication_status
 # Included tables (joined, has_one, has_many) and columns
 include:
   zone:
@@ -39,7 +39,6 @@ include_for_find:
 col_order:
 - name
 - hostname
-- ipaddress
 - emstype_description
 - zone.name
 - total_physical_servers
@@ -47,11 +46,11 @@ col_order:
 - total_vms
 - total_miq_templates
 - region_description
+- authentication_status
 # Column titles, in order
 headers:
 - Name
 - Hostname
-- Discovered IP Address
 - Type
 - EVM Zone
 - Physical Servers
@@ -59,6 +58,7 @@ headers:
 - VMs
 - Templates
 - Region
+- Authentication Status
 # Condition(s) string for the SQL query
 conditions:
 # Order string for the SQL query

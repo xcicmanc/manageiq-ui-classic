@@ -1,0 +1,92 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Filter Dropdown form should handle cancel 1`] = `
+<div>
+  <div
+    class="select_filter"
+  >
+    <fieldset
+      class="miq-fieldset"
+    >
+      <div
+        class="miq-fieldset-content"
+      >
+        <div
+          class="cds--form-item"
+        >
+          <div
+            class="cds--select"
+          >
+            <div
+              class="cds--select-input__wrapper"
+            >
+              <select
+                aria-label="Choose a Filter"
+                class="cds--select-input"
+                id="select_filter_dropdown"
+                title="Choose a Filter"
+              >
+                <option
+                  class="cds--select-option"
+                  disabled=""
+                  hidden=""
+                  selected=""
+                  value="placeholder-item"
+                >
+                  Choose a Filter
+                </option>
+                <optgroup
+                  class="cds--select-optgroup"
+                  label="Global Filters"
+                >
+                  <option
+                    class="cds--select-option"
+                    value="0"
+                  >
+                    ALL (Default)
+                  </option>
+                  <option
+                    class="cds--select-option"
+                    value="1"
+                  >
+                    ALL (Default)
+                  </option>
+                  <option
+                    class="cds--select-option"
+                    value="2"
+                  >
+                    ALL (Default)
+                  </option>
+                </optgroup>
+              </select>
+              <svg
+                aria-hidden="true"
+                class="cds--select__arrow"
+                fill="currentColor"
+                focusable="false"
+                height="16"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 16 16"
+                width="16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <button
+          class="default_button cds--btn cds--btn--sm cds--layout--size-sm cds--btn--primary"
+          id="set_default"
+          title="Select a filter to set it as my default"
+          type="submit"
+        >
+          Set Default
+        </button>
+      </div>
+    </fieldset>
+  </div>
+</div>
+`;

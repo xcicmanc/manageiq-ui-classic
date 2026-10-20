@@ -1,0 +1,491 @@
+:root {
+  --green: #2d7623;
+  --red: #cc0000;
+  --yellow: #ec7a08;
+}
+
+.tenant-quota-data-table {
+  .miq-data-table {
+    margin-bottom: 32px;
+  }
+
+  .cds--btn-set {
+    margin-bottom: 48px;
+  }
+
+  .cds--data-table thead tr :first-child{
+    padding-right: 2rem;
+  }
+  .cds--toggle__label span.cds--toggle__label-text {
+    display: none;
+  }
+
+  .cds--form-item {
+    .cds--front-line, .cds--label {
+      display: none;
+    }
+
+    .cds--toggle__label {
+      margin-bottom: 0px;
+
+      .cds--toggle__switch {
+        margin-top: 0px;
+      }
+    }
+  }
+}
+
+.timeline-data-table {
+  margin-top: 70px;
+  margin-bottom: 20px;
+}
+
+.miq-data-table {
+  margin-top: 20px;
+  margin-bottom: 20px;
+
+
+  thead tr th {
+    &.cds--table-column-checkbox {
+      min-width: 45px;
+      vertical-align: middle;
+      .cds--checkbox--inline {
+        .cds--checkbox-label {
+          margin-bottom: 0;
+        }
+      }
+    }
+
+    .cds--table-header-label {
+      line-height: 20px;
+      white-space: nowrap;
+    }
+  }
+
+  tbody tr {
+    &.clickable-row {
+      cursor: pointer;
+    }
+
+    .cell {
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+
+      &.vertical_align_top {
+        vertical-align: top;
+        align-items: flex-start;
+      }
+
+      &.truncate_cell {
+        max-width: 700px;
+        min-width: 150px;
+      }
+
+      .array_list {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+
+        .list_row {
+          padding: 0.5rem 0;
+        }
+      }
+
+      .image {
+        width: 20px;
+        height: 20px;
+        margin-right: 8px;
+        margin-top: 2px;
+      }
+
+      .icon {
+        min-width: 30px;
+        max-height: 30px;
+        height: 30px;
+        max-height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        margin-top: -2px;
+
+        &.carbon-icons-style {
+          width: 20px;
+          height: 20px;
+          min-width: 20px;
+          max-height: 20px;
+          margin: 2px 8px 2px 0;
+        }
+
+        &.styled_icon {
+          min-width: 20px;
+          height: 20px;
+          justify-content: center;
+          margin-right: 5px;
+          margin-top: 2px;
+          font-size: 14px;
+        }
+
+        &.styled_icon_margin {
+          margin-top: 9px;
+        }
+      }
+
+      .icon.fa-ruby {
+        color: var(--red) !important;
+      }
+
+      span {
+        display: flex;
+        align-items: center;
+      }
+
+      button {
+        padding: 0;
+        margin: -3px 0 0 0;
+
+        span {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0;
+          padding: 0 8px;
+          min-width: 100px;
+        }
+      }
+    }
+
+    td {
+      vertical-align: top;
+      padding-top: 10px;
+    }
+
+    td.no_text {
+      width: 50px;
+    }
+
+    td .cds--front-line {
+      width: 100%;
+      display: inline-block;
+      overflow: hidden;
+      white-space: nowrap;
+      margin-top: 5px;
+
+      &.white_space_normal {
+        white-space: normal !important;
+        margin-bottom: 10px;
+      }
+
+      &.truncate_longer_text {
+        max-height: 300px;
+        display: -webkit-box;
+        max-width: 200px;
+        -webkit-line-clamp: 15;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+    }
+  }
+}
+
+.credential-mapper-data-table {
+  tbody tr td {
+    .cds--front-line {
+      margin-top: 0%;
+    }
+
+    vertical-align: middle;
+    padding-top: 0%;
+    padding-bottom: 0%;
+  }
+}
+
+#iso_datastore_details_div {
+  tbody tr {
+    .cell {
+      &.truncate_cell {
+        max-width: 1000px;
+      }
+    }
+  }
+}
+
+.chargeback-rate table tbody tr td {
+  vertical-align: top !important;
+}
+
+.time-profile-reports {
+  padding-bottom: 20px;
+}
+
+.report-data-table {
+  table tr td {
+    padding: 0 !important;
+
+    .cell {
+      min-height: 47px;
+      padding-left: 10px;
+    }
+  }
+}
+
+.prov-vm-grid-data-table {
+  table {
+    tr {
+      td, th {
+        font-size: 0.75rem;
+      }
+    }
+  }
+}
+
+.requests-table {
+  .miq-data-table {
+    .cds--data-table--sticky-header thead, .cds--data-table--sticky-header tbody, .cds--data-table--sticky-header tr, .cds--data-table--sticky-header th, .cds--data-table--sticky-header td {
+      display: revert;
+    }
+
+    .clickable-row {
+      td:nth-child(3) {
+        .cds--front-line {
+          white-space: pre;
+        }
+      }
+      td {
+        vertical-align: inherit;
+      }
+
+      vertical-align: top;
+    }
+
+    thead tr th {  
+      vertical-align: middle;
+
+      .cds--table-header-label {
+        min-width: fit-content;
+      }
+    }
+  }
+}
+
+.provision-instance-container {
+  display: flex;
+  flex-direction: column;
+  margin-top: 20px;
+
+  .provision-instance-list {
+    height: calc(100vh - 200px);
+    overflow: auto;
+
+    .miq-data-table {
+      margin-top: 0;
+    }
+  }
+  .provision-instance-actions {
+
+    #pre_prov_form_buttons_div {
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
+
+}
+
+table.miq_preview {
+  tbody tr {
+    td.group {
+      background: lightgray;
+      font-weight: bold;
+      &:hover {
+        background: lightgray;
+      }
+    }
+
+    td.group_spacer {
+      background: #FFF;
+      &:hover {
+        background: #FFF;
+      }
+    }
+  }
+}
+
+.settings-company-tags-list, .settings-company-categories-list {
+  margin-bottom: 20px;
+
+  table thead tr th:last-child{
+    width: 135px;
+  }
+}
+
+.header-button {
+  width: 100px !important;
+}
+
+.action-cell-holder {
+  max-width: 150px !important;
+}
+
+.reconfigure-form {
+  .reconfigure-sub-form {
+    display: flex;
+    gap: 20px;
+  }
+  .reconfigure-form-table {
+    margin-bottom: 2rem;
+
+    .form-section-title {
+      display: flex;
+
+      h3 { 
+        flex-grow: 1;
+      }
+      .reconfigure-add-button {
+        min-width: 170px;
+      }
+    }
+    .miq-data-table .cell {
+      .cds--form-item {
+        margin-top: -5px;
+        margin-bottom: 0;
+      }
+      .cds--toggle .cds--toggle__label {
+        span.cds--toggle__label-text {
+          display: none;
+        }
+        .cds--toggle__switch {
+          margin-top: 3px;
+        }
+      }
+      .cds--btn--ghost {
+        outline: 0;
+        min-height: auto;
+        margin-top: 3px;
+
+        &:hover, &:active, &:focus {
+          background-color: transparent !important;
+          box-shadow: none !important;
+        }
+        span {
+          min-width: auto;
+          padding-left: 0px;
+          outline: 0;
+        }
+      }
+    }
+  }
+}
+.catalogs_form {
+
+  input[type="text"] {
+    width: 220px;
+  }
+
+  .no-padding{
+    padding: 0;
+  }
+
+  .long_text {
+    width: 100% !important;
+  }
+
+  .entry_point_selector {
+    padding: 3px;
+
+    .entry_point_text, .entry_point_button {
+      border-right: 0;
+    }
+
+    span.input-group-addon{
+      visibility: hidden;
+    }
+  }
+  .workflow_modal_wrapper {
+    min-height: 26px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .workflows-entry-point-modal-body {
+    height: 20rem;
+
+    .search-wrapper {
+      margin-bottom: 1rem;
+    }
+
+    .miq-data-table {
+      margin-top: 0px;
+
+      tbody tr.disabled-row {
+        opacity: 0.5 !important;
+        cursor: not-allowed !important;
+        color: #8d8d8d !important;
+        background-color: #f4f4f4 !important;
+
+        &:hover {
+          background-color: #f4f4f4 !important;
+        }
+
+        td {
+          color: #8d8d8d !important;
+        }
+      }
+    }
+  }
+}
+
+.request-workflow-status {
+  .carbon-icons-style {
+    margin-right: 5px;
+  }
+
+  .carbon--CheckmarkOutline {
+    color: var(--green);
+  }
+
+  .carbon--MisuseOutline {
+    color: var(--red);
+  }
+
+  .carbon--PlayOutline {
+    color: var(--yellow)
+  }
+
+  .carbon--RetryFailed {
+    color: var(--red);
+  }
+}
+
+#workflows_table {
+  td.no_text {
+    width: 50px;
+    padding-left: 24px;
+  }
+}
+
+.drift-history-table {
+  .drift-history-checkbox-cell {
+    width: 50px;
+    
+    .cds--checkbox-wrapper {
+      padding-left: 5px;
+      vertical-align: middle;
+    }
+    
+    .cds--checkbox-label {
+      margin-bottom: 0;
+    }
+  }
+
+  .cds--data-table-content {
+    th {
+      vertical-align: middle;
+    }
+
+    td {
+      vertical-align: middle;
+    }
+  }
+}
+

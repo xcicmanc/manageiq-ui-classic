@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::PxeImageCenter < ApplicationHelper::Toolbar::B
   button_group('pxe_image_vmdb', [
     select(
       :pxe_image_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -11,6 +11,21 @@ class ApplicationHelper::Toolbar::PxeImageCenter < ApplicationHelper::Toolbar::B
           'pficon pficon-edit fa-lg',
           t = N_('Edit this PXE Image'),
           t),
+      ]
+    ),
+  ])
+  button_group('pxe_image_policy', [
+    select(
+      :pxe_image_policy_choice,
+      nil,
+      t = N_('Policy'),
+      t,
+      :items => [
+        button(
+          :pxe_image_tag,
+          'pficon pficon-edit fa-lg',
+          N_('Edit Tags for this Pxe Image'),
+          N_('Edit Tags')),
       ]
     ),
   ])

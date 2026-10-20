@@ -4,35 +4,27 @@ class TreeBuilderInfraNetworking < TreeBuilder
   has_kids_for Switch, [:x_get_tree_switch_kids]
   has_kids_for EmsFolder, [:x_get_tree_folder_kids]
 
-  private
-
-  def tree_init_options(_)
-    {
-      :leaf     => "Switch",
-      :open_all => true,
-      :full_ids => true
-    }
+  def override(node, object)
+    node.selectable = false if object.kind_of?(Lan)
   end
 
-  def set_locals_for_render
-    locals = super
-    locals[:autoload] = true
-    locals
+  private
+
+  def tree_init_options
+    {:open_all => true}
   end
 
   def root_options
     {
       :text    => t = _("All Distributed Switches"),
-      :tooltip => t
+      :tooltip => t,
     }
   end
 
-  def x_get_tree_roots(count_only, _options)
-    objects = Rbac.filtered(ManageIQ::Providers::Vmware::InfraManager.order("lower(name)"))
-    objects.each do |item|
-      item[:load_children => true]
-    end
-    count_only_or_objects(count_only, objects)
+  def x_get_tree_roots
+    model   = ManageIQ::Providers::Vmware::InfraManager
+    objects = Rbac.filtered(model.order(model.arel_table[:name].lower))
+    count_only_or_objects(false, objects)
   end
 
   def x_get_tree_provider_kids(object, count_only)
@@ -44,22 +36,20 @@ class TreeBuilderInfraNetworking < TreeBuilder
   def x_get_tree_cluster_kids(object, count_only)
     hosts = object.hosts
     switch_ids = hosts.collect { |host| host.switches.pluck(:id) }
-    count_only_or_objects(count_only, Rbac.filtered(Switch, :named_scope => [:shareable, [:with_id, switch_ids.flatten.uniq]]))
+
+    objects = Rbac.filtered(Switch, :named_scope => [:shareable, [:with_id, switch_ids.flatten.uniq]])
+    count_only_or_objects(count_only, objects)
   end
 
   def x_get_tree_host_kids(object, count_only)
     count_only_or_objects(count_only,
-                          Rbac.filtered(object.switches.where(:shared =>'true')).sort,
+                          Rbac.filtered(object.switches.where(:shared => 'true')).sort,
                           "name")
   end
 
   def x_get_tree_switch_kids(object, count_only)
-    objects = count_only_or_objects(count_only,
-                                    object.lans.sort,
-                                    "name")
-    objects.each do |item|
-      item[:load_children => true]
-      item[:selectable => false]
-    end
+    count_only_or_objects(count_only,
+                          object.lans.sort,
+                          "name")
   end
 end

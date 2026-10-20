@@ -1,12 +1,12 @@
 module TextualMixins::VmCommon
   def textual_group_diagnostics
-    TextualGroup.new(_("Diagnostics"), %i(processes event_logs))
+    TextualGroup.new(_("Diagnostics"), %i[processes event_logs])
   end
 
   def textual_group_vmsafe
     TextualGroup.new(
       _("VMsafe"),
-      %i(vmsafe_enable vmsafe_agent_address vmsafe_agent_port vmsafe_fail_open vmsafe_immutable_vm vmsafe_timeout)
+      %i[vmsafe_enable vmsafe_agent_address vmsafe_agent_port vmsafe_fail_open vmsafe_immutable_vm vmsafe_timeout]
     )
   end
 
@@ -19,13 +19,13 @@ module TextualMixins::VmCommon
   end
 
   def textual_group_power_management
-    TextualGroup.new(_("Power Management"), %i(power_state boot_time state_changed_on))
+    TextualGroup.new(_("Power Management"), %i[power_state boot_time state_changed_on])
   end
 
   def textual_group_configuration
     TextualGroup.new(
       _("Configuration"),
-      %i(guest_applications init_processes win32_services kernel_drivers filesystem_drivers filesystems registry_items)
+      %i[guest_applications init_processes win32_services kernel_drivers filesystem_drivers filesystems registry_items]
     )
   end
 
@@ -63,7 +63,7 @@ module TextualMixins::VmCommon
     label = os =~ /linux/ ? n_("Package", "Packages", num) : n_("Application", "Applications", num)
 
     h = {:label => label, :icon => "ff ff-software-package", :value => num}
-    if num > 0
+    if num.positive?
       h[:title] = _("Show the %{label} installed on this VM") % {:label => label}
       h[:explorer] = true
       h[:link]  = url_for_only_path(:controller => controller.controller_name, :action => 'guest_applications', :id => @record)
@@ -74,7 +74,7 @@ module TextualMixins::VmCommon
   def textual_users
     num = @record.number_of(:users)
     h = {:label => _("Users"), :icon => "pficon pficon-user", :value => num}
-    if num > 0
+    if num.positive?
       h[:title] = n_("Show the User defined on this VM", "Show the Users defined on this VM", num)
       h[:explorer] = true
       h[:link]  = url_for_only_path(:action => 'users', :id => @record, :db => controller.controller_name)
@@ -85,7 +85,7 @@ module TextualMixins::VmCommon
   def textual_groups
     num = @record.number_of(:groups)
     h = {:label => _("Groups"), :icon => "ff ff-group", :value => num}
-    if num > 0
+    if num.positive?
       h[:title] = n_("Show the Group defined on this VM", "Show the Groups defined on this VM", num)
       h[:explorer] = true
       h[:link]  = url_for_only_path(:action => 'groups', :id => @record, :db => controller.controller_name)
@@ -97,7 +97,7 @@ module TextualMixins::VmCommon
     return nil if os_linux_or_unknown?
     num = @record.number_of(:win32_services)
     h = {:label => _("Win32 Services"), :icon => "fa fa-cog", :value => num}
-    if num > 0
+    if num.positive?
       h[:title] = n_("Show the Win32 Service installed on this VM", "Show the Win32 Services installed on this VM", num)
       h[:explorer] = true
       h[:link]  = url_for_only_path(:controller => controller.controller_name, :action => 'win32_services', :id => @record)
@@ -110,7 +110,7 @@ module TextualMixins::VmCommon
     num = @record.number_of(:kernel_drivers)
     # TODO: Why is this image different than graphical?
     h = {:label => _("Kernel Drivers"), :icon => "fa fa-cog", :value => num}
-    if num > 0
+    if num.positive?
       h[:title] = n_("Show the Kernel Driver installed on this VM", "Show the Kernel Drivers installed on this VM", num)
       h[:explorer] = true
       h[:link]  = url_for_only_path(:controller => controller.controller_name, :action => 'kernel_drivers', :id => @record)
@@ -123,7 +123,7 @@ module TextualMixins::VmCommon
     num = @record.number_of(:filesystem_drivers)
     # TODO: Why is this image different than graphical?
     h = {:label => _("File System Drivers"), :icon => "fa fa-cog", :value => num}
-    if num > 0
+    if num.positive?
       h[:title] = n_("Show the File System Driver installed on this VM",
                      "Show the File System Drivers installed on this VM", num)
       h[:explorer] = true
@@ -137,7 +137,7 @@ module TextualMixins::VmCommon
     num = @record.number_of(:registry_items)
     # TODO: Why is this label different from the link title text?
     h = {:label => _("Registry Entries"), :icon => "pficon pficon-registry", :value => num}
-    if num > 0
+    if num.positive?
       h[:title] = n_("Show the Registry Item installed on this VM", "Show the Registry Items installed on this VM", num)
       h[:explorer] = true
       h[:link]  = url_for_only_path(:controller => controller.controller_name, :action => 'registry_items', :id => @record)
@@ -148,7 +148,7 @@ module TextualMixins::VmCommon
   def textual_snapshots
     num = @record.number_of(:snapshots)
     h = {:label => _("Snapshots"), :icon => "fa fa-camera", :value => (num.zero? ? _("None") : num)}
-    if role_allows?(:feature => "vm_snapshot_show_list") && @record.supports_snapshots?
+    if role_allows?(:feature => "vm_snapshot_show_list") && @record.supports?(:snapshots)
       h[:title] = _("Show the snapshot info for this VM")
       h[:explorer] = true
       h[:link] = url_for_only_path(:action => 'show', :id => @record, :display => 'snapshot_info')
@@ -169,7 +169,7 @@ module TextualMixins::VmCommon
     return nil if @record.kind_of?(ManageIQ::Providers::CloudManager::Template)
     num = @record.operating_system.nil? ? 0 : @record.operating_system.number_of(:event_logs)
     h = {:label => _("Event Logs"), :icon => "fa fa-file-text-o", :value => (num.zero? ? _("Not Available") : _("Available"))}
-    if num > 0
+    if num.positive?
       h[:title] = n_("Show Event Log on this VM", "Show Event Logs on this VM", num)
       h[:explorer] = true
       h[:link] = url_for_only_path(:controller => controller.controller_name, :action => 'event_logs', :id => @record)
@@ -232,7 +232,7 @@ module TextualMixins::VmCommon
   def textual_ems_custom_attributes
     attrs = @record.ems_custom_attributes
     return nil if attrs.blank?
-    attrs.sort_by(&:name).collect { |a| {:label => a.name, :value => a.value} }
+    attrs.sort_by { |a| a.name.to_s }.collect { |a| {:label => a.name, :value => a.value} }
   end
 
   def textual_compliance_history

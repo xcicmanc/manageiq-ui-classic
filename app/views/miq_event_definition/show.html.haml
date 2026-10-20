@@ -1,0 +1,6 @@
+#main_div
+  = render :partial => "layouts/flash_msg"
+  = miq_summary_event_definition_info(@record, @policy)
+
+  - record_policies = @record.miq_policies.sort_by { |p| p.description.downcase }
+  = miq_summary_event_definition_policies(record_policies)

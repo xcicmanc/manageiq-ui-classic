@@ -4,11 +4,11 @@
     = _('Chart Settings')
   .form-horizontal
     .form-group
-      %label.col-md-2.control-label
+      %label.col-md-2.control-label.report-col
         = _('Choose a chart type')
       .col-md-8
         = select_tag('chosen_graph',
-          options_for_select([_("<No chart>")] + Charting.chart_names_for_select, @edit[:new][:graph_type]),
+          options_for_select([_("<No chart>")] + ManageIQ::Reporting::Charting.chart_names_for_select, @edit[:new][:graph_type]),
           :multiple              => false,
           :class                 => "selectpicker")
         :javascript
@@ -16,7 +16,7 @@
           miqSelectPickerEvent('chosen_graph', '#{url}', {beforeSend: true, complete: true});
     - unless @edit[:new][:graph_type].blank?
       .form-group
-        %label.col-md-2.control-label
+        %label.col-md-2.control-label.report-col
           = _('Chart mode')
         .col-md-8
           - if chart_mode_values_allowed?
@@ -32,7 +32,7 @@
             = hidden_field_tag('chart_mode', 'counts')
       .form-group
         - if @edit[:new][:chart_mode] == 'values'
-          %label.col-md-2.control-label
+          %label.col-md-2.control-label.report-col
             = _('Data column')
           .col-md-8
             = select_tag('chart_column',
@@ -43,18 +43,18 @@
               miqInitSelectPicker();
               miqSelectPickerEvent('chart_column', '#{url}', {beforeSend: true, complete: true});
       .form-group
-        %label.col-md-2.control-label
+        %label.col-md-2.control-label.report-col
           = _('Top values to show')
         .col-md-8
           = select_tag('chosen_count',
-            options_for_select(3..ReportController::Reports::Editor::GRAPH_MAX_COUNT, @edit[:new][:graph_count].to_i),
+            options_for_select(3..ReportController::Reports::Editor.chart_top_values, @edit[:new][:graph_count].to_i),
             :multiple              => false,
             :class                 => "selectpicker")
           :javascript
             miqInitSelectPicker();
             miqSelectPickerEvent('chosen_count', '#{url}', {beforeSend: true, complete: true});
       .form-group
-        %label.col-md-2.control-label
+        %label.col-md-2.control-label.report-col
           = _("Sum 'Other' values")
         .col-md-8
           = check_box_tag("chosen_other", "1", @edit[:new][:graph_other],
@@ -62,5 +62,8 @@
           "data-miq_sparkle_off"      => true,
           "data-miq_observe_checkbox" => {:url => url}.to_json)
   - unless @edit[:new][:graph_type].blank?
-    = _('* Some charts my not produce desired results with a single sort field')
+    = _('* Some charts may not produce desired results with a single sort field')
+  %br
+  - if %w[Donut Pie].include?(@edit[:new][:graph_type])
+    = _('* Pie and Donut charts are not recommended for small percentages because the labels may overlap.')
   %hr

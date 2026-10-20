@@ -26,6 +26,7 @@ cols:
 - display
 #- provision_cost
 - created_at
+- template_valid?
 
 # Included tables (joined, has_one, has_many) and columns
 include:
@@ -35,44 +36,44 @@ include:
   service_template_catalog:
     columns:
     - name
-  tenant:
-    columns:
-    - name
 
 # Included tables and columns for query performance
 include_for_find:
-  :picture:
-    :binary_blob: {}
+  :picture: {}
 
 # Order of columns (from all tables)
 col_order:
 - name
 - description
-- tenant.name
 - type_display
 - prov_type
 - display
 - service_template_catalog.name
 #- provision_cost
 - created_at
+- template_valid?
 
 # Column titles, in order
 headers:
 - Name
 - Description
-- Tenant
 - Type
 - Item Type
 - Display in Catalog
 - Catalog
 #- Cost
 - Created On
+- Valid
 
 col_formats:
 -
 -
 -
 - :boolean_yes_no
+
+col_options:
+  tenant.name:
+    :display_method: user_super_admin?
 
 # Condition(s) string for the SQL query
 conditions:

@@ -2,8 +2,8 @@ describe ApplicationHelper::Button::VmRetire do
   describe '#visible?' do
     context "when record is retireable" do
       before do
-        @record = FactoryGirl.create(:vm_vmware)
-        allow(@record).to receive(:supports_retire?).and_return(true)
+        @record = FactoryBot.create(:vm_vmware)
+        stub_supports(@record.class, :retire)
       end
 
       it_behaves_like "will not be skipped for this record"
@@ -11,8 +11,8 @@ describe ApplicationHelper::Button::VmRetire do
 
     context "when record is not retiretable" do
       before do
-        @record = FactoryGirl.create(:vm_vmware)
-        allow(@record).to receive(:supports_retire?).and_return(false)
+        @record = FactoryBot.create(:vm_vmware)
+        stub_supports_not(@record.class, :retire)
       end
 
       it_behaves_like "will be skipped for this record"
@@ -22,7 +22,7 @@ describe ApplicationHelper::Button::VmRetire do
   describe '#disabled?' do
     context "button should not be disabled" do
       before do
-        @record = FactoryGirl.create(:vm_vmware)
+        @record = FactoryBot.create(:vm_vmware)
         allow(@record).to receive(:retired).and_return(true)
       end
 

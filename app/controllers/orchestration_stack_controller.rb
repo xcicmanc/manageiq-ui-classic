@@ -6,59 +6,68 @@ class OrchestrationStackController < ApplicationController
 
   include Mixins::GenericSessionMixin
   include Mixins::GenericShowMixin
+  include Mixins::BreadcrumbsMixin
 
   def self.table_name
     @table_name ||= "orchestration_stack"
   end
 
   def index
-    redirect_to :action => 'show_list'
+    redirect_to(:action => 'show_list')
   end
 
   def self.display_methods
-    %w(instances children security_groups stack_orchestration_template)
+    %w[instances children security_groups stack_orchestration_template custom_button_events]
   end
 
   def display_stack_orchestration_template
-    drop_breadcrumb(:name => "%{name} (Orchestration Template)" % {:name => @record.name},
+    drop_breadcrumb(:name => "%{name} (Orchestration Template)" % {:name => @record.orchestration_template.name},
                     :url  => show_link(@record, :display => @display))
+  end
+
+  def display_children
+    show_association('children', _('Children'), :children, OrchestrationStack)
   end
 
   def show_list
     process_show_list(
-      :named_scope => [[:without_type, 'ManageIQ::Providers::AnsibleTower::AutomationManager::Job']]
+      :named_scope => [[:without_type, 'ManageIQ::Providers::ExternalAutomationManager::OrchestrationStack']]
     )
   end
 
   def cloud_networks
-    show_association('cloud_networks', _('Cloud Networks'), 'cloud_network', :cloud_networks, CloudNetwork)
+    assert_privileges('orchestration_stack_show')
+    show_association('cloud_networks', _('Cloud Networks'), :cloud_networks, CloudNetwork)
   end
 
   def outputs
-    show_association('outputs', _('Outputs'), 'output', :outputs, OrchestrationStackOutput)
+    assert_privileges('orchestration_stack_show')
+    show_association('outputs', _('Outputs'), :outputs, OrchestrationStackOutput)
   end
 
   def parameters
-    show_association('parameters', _('Parameters'), 'parameter', :parameters, OrchestrationStackParameter)
+    assert_privileges('orchestration_stack_show')
+    show_association('parameters', _('Parameters'), :parameters, OrchestrationStackParameter)
   end
 
   def resources
-    show_association('resources', _('Resources'), 'resource', :resources, OrchestrationStackResource)
+    assert_privileges('orchestration_stack_show')
+    show_association('resources', _('Resources'), :resources, OrchestrationStackResource)
   end
 
   # handle buttons pressed on the button bar
   def button
-    @edit = session[:edit]                          # Restore @edit for adv search box
+    @edit = session[:edit] # Restore @edit for adv search box
 
-    params[:display] = @display if ["instances"].include?(@display)  # Were we displaying vms/hosts/storages
-    params[:page] = @current_page if @current_page.nil?   # Save current page for list refresh
+    params[:display] = @display if ["instances"].include?(@display) # Were we displaying vms/hosts/storages
+    params[:page] = @current_page if @current_page.nil? # Save current page for list refresh
 
     if params[:pressed] == "custom_button"
       custom_buttons
       return
     end
 
-    if params[:pressed].starts_with?("instance_")        # Handle buttons from sub-items screen
+    if params[:pressed].starts_with?("instance_") # Handle buttons from sub-items screen
       pfx = pfx_for_vm_button_pressed(params[:pressed])
       process_vm_buttons(pfx)
 
@@ -73,7 +82,7 @@ class OrchestrationStackController < ApplicationController
               "#{pfx}_migrate", "#{pfx}_publish"].include?(params[:pressed])
         @refresh_div = "main_div"
         @refresh_partial = "layouts/gtl"
-        show                                                        # Handle VMs buttons
+        show # Handle VMs buttons
       end
     elsif params[:pressed] == "make_ot_orderable"
       make_ot_orderable
@@ -85,7 +94,7 @@ class OrchestrationStackController < ApplicationController
       orchestration_templates_view
       return
     else
-      params[:page] = @current_page if @current_page.nil?                     # Save current page for list refresh
+      params[:page] = @current_page if @current_page.nil? # Save current page for list refresh
       @refresh_div = "main_div" # Default div for button.rjs to refresh
       case params[:pressed]
       when "orchestration_stack_delete"
@@ -94,13 +103,14 @@ class OrchestrationStackController < ApplicationController
         orchestration_stack_retire
       when "orchestration_stack_retire_now"
         orchestration_stack_retire_now
+        return
       when "orchestration_stack_tag"
         tag(OrchestrationStack)
       when params[:pressed] == "custom_button"
         custom_buttons
         return
       end
-      return if %w(orchestration_stack_retire orchestration_stack_tag).include?(params[:pressed]) &&
+      return if %w[orchestration_stack_retire orchestration_stack_tag].include?(params[:pressed]) &&
                 @flash_array.nil? # Tag screen showing, so return
     end
 
@@ -111,16 +121,15 @@ class OrchestrationStackController < ApplicationController
     elsif params[:pressed].ends_with?("_edit") || ["#{pfx}_miq_request_new", "#{pfx}_clone",
                                                    "#{pfx}_migrate", "#{pfx}_publish"].include?(params[:pressed])
       render_or_redirect_partial(pfx)
+    elsif @refresh_div == "main_div" && @lastaction == "show_list"
+      replace_gtl_main_div
     else
-      if @refresh_div == "main_div" && @lastaction == "show_list"
-        replace_gtl_main_div
-      else
-        render_flash
-      end
+      render_flash unless performed?
     end
   end
 
   def stacks_ot_info
+    assert_privileges('orchestration_template_copy')
     ot = find_record_with_rbac(OrchestrationStack, params[:id]).orchestration_template
     render :json => {
       :template_id          => ot.id,
@@ -132,6 +141,7 @@ class OrchestrationStackController < ApplicationController
   end
 
   def stacks_ot_copy
+    assert_privileges('orchestration_template_copy')
     case params[:button]
     when "cancel"
       stacks_ot_copy_cancel
@@ -140,17 +150,31 @@ class OrchestrationStackController < ApplicationController
     end
   end
 
+  def download_data
+    assert_privileges('orchestration_stack_show_list')
+    super
+  end
+
+  def download_summary_pdf
+    assert_privileges('orchestration_stack_show')
+    super
+  end
+
   private
 
+  def record_class
+    params[:display] == 'instances' ? VmOrTemplate : OrchestrationStack
+  end
+
   def textual_group_list
-    [%i(properties lifecycle relationships), %i(tags)]
+    [%i[properties lifecycle relationships], %i[tags]]
   end
   helper_method :textual_group_list
 
   def make_ot_orderable
     stack = find_record_with_rbac(OrchestrationStack, params[:id])
     template = stack.orchestration_template
-    if template.orderable?
+    if template.supports?(:order)
       add_flash(_("Orchestration template \"%{name}\" is already orderable") % {:name => template.name}, :error)
       render_flash
     else
@@ -174,7 +198,7 @@ class OrchestrationStackController < ApplicationController
 
   def orchestration_template_copy
     @record = find_record_with_rbac(OrchestrationStack, params[:id])
-    if @record.orchestration_template.orderable?
+    if @record.orchestration_template.supports?(:order)
       add_flash(_("Orchestration template \"%{name}\" is already orderable") %
         {:name => @record.orchestration_template.name}, :error)
       render_flash
@@ -213,7 +237,7 @@ class OrchestrationStackController < ApplicationController
         :description => params[:templateDescription],
         :type        => original_template.type,
         :content     => params[:templateContent],
-        :draft       => params[:templateDraft] == "true",
+        :draft       => params[:templateDraft] == "true"
       )
       begin
         ot.save_as_orderable!
@@ -222,25 +246,39 @@ class OrchestrationStackController < ApplicationController
           {:error_message => bang.message}, :error)
         render_flash
       else
-        add_flash(_("Orchestration Template \"%{name}\" was saved") % {:name => ot.name})
-        session[:flash_msgs] = @flash_array.dup
-        javascript_redirect :controller => 'catalog',
+        flash_to_session(_("Orchestration Template \"%{name}\" was saved") % {:name => ot.name})
+        javascript_redirect(:controller => 'catalog',
                             :action     => 'ot_show',
-                            :id         => ot.id
+                            :id         => ot.id)
       end
     end
   end
 
   def orchestration_templates_view
     template = find_record_with_rbac(OrchestrationStack, params[:id]).orchestration_template
-    javascript_redirect :controller => 'catalog', :action => 'ot_show', :id => template.id
+    javascript_redirect(:controller => 'catalog', :action => 'ot_show', :id => template.id)
   end
 
   def title
     _("Stack")
   end
 
-  menu_section :clo
+  def breadcrumbs_options
+    {
+      :breadcrumbs => [
+        {:title => _("Compute")},
+        {:title => _("Clouds")},
+        {:title => _("Stacks"), :url => controller_url},
+      ],
+      :record_info => (
+        unless @retireitems.nil? || @retireitems.length != 1
+          @retireitems[0]
+        end
+      ),
+    }
+  end
 
+  menu_section :clo
+  feature_for_actions "#{controller_name}_show_list", *ADV_SEARCH_ACTIONS
   has_custom_buttons
 end

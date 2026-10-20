@@ -1,16 +1,11 @@
 class TreeBuilderCatalogItems < TreeBuilderCatalogsClass
   has_kids_for ServiceTemplateCatalog, [:x_get_tree_stc_kids]
-  has_kids_for ServiceTemplate, [:x_get_tree_st_kids, :type]
+  has_kids_for ServiceTemplate, %i[x_get_tree_st_kids]
 
   private
 
-  def tree_init_options(_tree_name)
-    {:full_ids => true, :leaf => 'ServiceTemplateCatalog'}
-  end
-
-  def set_locals_for_render
-    locals = super
-    locals.merge!(:autoload => 'true')
+  def tree_init_options
+    {:full_ids => true, :lazy => true}
   end
 
   def root_options
@@ -22,38 +17,32 @@ class TreeBuilderCatalogItems < TreeBuilderCatalogsClass
 
   def x_get_tree_stc_kids(object, count_only)
     templates = if object.id.nil?
-                  ServiceTemplate.where(:service_template_catalog_id => nil)
+                  Rbac.filtered(ServiceTemplate, :named_scope => %i[public_service_templates without_service_template_catalog_id])
                 else
-                  object.service_templates
+                  Rbac.filtered(object.service_templates, :named_scope => :public_service_templates)
                 end
     count_only_or_objects_filtered(count_only, templates, 'name')
   end
 
-  # Handle custom tree nodes (object is a Hash)
-  def x_get_tree_custom_kids(object, count_only, _options)
-    # build node showing any button groups or buttons under selected CatalogItem
+  def x_get_tree_st_kids(object, count_only)
     @resolve ||= {}
-    @resolve[:target_classes] = {}
-    CustomButton.button_classes.each { |db| @resolve[:target_classes][db] = ui_lookup(:model => db) }
-    @sb[:target_classes] = @resolve[:target_classes].invert
-    @resolve[:target_classes] = Array(@resolve[:target_classes].invert).sort
-    st = ServiceTemplate.find_by_id(object[:id])
-    items = st.custom_button_sets + st.custom_buttons
+    items = object.custom_button_sets + object.custom_buttons
     objects = []
-    if st.options && st.options[:button_order]
-      st.options[:button_order].each do |item_id|
+
+    if object.options && object.options[:button_order]
+      object.options[:button_order].each do |item_id|
         items.each do |g|
           rec_id = "#{g.kind_of?(CustomButton) ? 'cb' : 'cbg'}-#{g.id}"
           objects.push(g) if item_id == rec_id
         end
       end
     end
+
     count_only_or_objects(count_only, objects)
   end
 
-  def x_get_tree_st_kids(object, count_only, type)
-    count = type == :svvcat ? 0 : object.custom_button_sets.count + object.custom_buttons.count
-    objects = count > 0 ? [{:id => object.id.to_s, :text => 'Actions', :icon => 'pficon pficon-folder-close', :tip => 'Actions'}] : []
-    count_only_or_objects(count_only, objects)
+  def x_get_tree_roots
+    # FIXME: adding gettext here would break the tree_select for languages other than English
+    super.unshift(ServiceTemplateCatalog.new(:name => 'Unassigned', :description => 'Unassigned Catalogs'))
   end
 end

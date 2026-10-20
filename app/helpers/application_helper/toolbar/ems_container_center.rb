@@ -7,7 +7,7 @@ class ApplicationHelper::Toolbar::EmsContainerCenter < ApplicationHelper::Toolba
       nil),
     select(
       :ems_container_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -16,30 +16,22 @@ class ApplicationHelper::Toolbar::EmsContainerCenter < ApplicationHelper::Toolba
           'fa fa-refresh fa-lg',
           N_('Refresh items and relationships related to this Containers Provider'),
           N_('Refresh items and relationships'),
-          :confirm => N_("Refresh items and relationships related to this Containers Provider?")),
+          :confirm => N_("Refresh items and relationships related to this Containers Provider?"),
+          :klass   => ApplicationHelper::Button::EmsRefresh),
+        button(
+          :ems_container_capture_metrics,
+          'pficon pficon-import fa-lg',
+          N_('Capture metrics related to this Containers Provider'),
+          N_('Capture metrics'),
+          :confirm => N_("Capture metrics related to this Containers Provider?"),
+          :klass   => ApplicationHelper::Button::EmsCaptureMetrics,
+        ),
         separator,
         button(
           :ems_container_edit,
           'pficon pficon-edit fa-lg',
           t = N_('Edit this Containers Provider'),
           t,),
-        button(
-          :ems_container_resume,
-          'pficon pficon-trend-up fa-lg',
-          t = N_('Resume this Containers Provider'),
-          t,
-          :confirm   => N_("Resume this Containers Provider?"),
-          :enabled   => proc { !@record.enabled? },
-          :url_parms => "main_div"),
-        button(
-          :ems_container_pause,
-          'pficon pficon-trend-down fa-lg',
-          t = N_('Pause this Containers Provider'),
-          t,
-          :confirm   => N_("Warning: While this provider is paused no data will be collected from it. " \
-                         "This may cause gaps in inventory, metrics and events!"),
-          :enabled   => proc { @record.enabled? },
-          :url_parms => "main_div"),
         button(
           :ems_container_delete,
           'pficon pficon-delete fa-lg',
@@ -53,7 +45,7 @@ class ApplicationHelper::Toolbar::EmsContainerCenter < ApplicationHelper::Toolba
   button_group('ems_container_monitoring', [
     select(
       :ems_container_monitoring_choice,
-      'ff ff-monitoring fa-lg',
+      nil,
       t = N_('Monitoring'),
       t,
       :items => [
@@ -74,14 +66,6 @@ class ApplicationHelper::Toolbar::EmsContainerCenter < ApplicationHelper::Toolba
           :options   => {:feature => :performance, :entity => N_('Provider')},
           :url_parms => "?display=performance"),
         button(
-          :ems_container_ad_hoc_metrics,
-          'fa fa-tachometer fa-1xplus',
-          N_('Show Ad hoc Metrics for this Provider'),
-          N_('Ad hoc Metrics'),
-          :klass     => ApplicationHelper::Button::GenericFeatureButton,
-          :options   => {:feature => :ad_hoc_metrics},
-          :url_parms => "?display=ad_hoc_metrics"),
-        button(
           :ems_container_launch_external_logging,
           'ff ff-monitoring fa-lg',
           N_('Open a new browser window with the External Logging Presentation UI. ' \
@@ -96,7 +80,7 @@ class ApplicationHelper::Toolbar::EmsContainerCenter < ApplicationHelper::Toolba
   button_group('ems_container_policy', [
     select(
       :ems_container_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :items => [
@@ -122,7 +106,7 @@ class ApplicationHelper::Toolbar::EmsContainerCenter < ApplicationHelper::Toolba
   button_group('ems_container_authentication', [
     select(
       :ems_container_authentication_choice,
-      'fa fa-lock fa-lg',
+      nil,
       t = N_('Authentication'),
       t,
       :items => [

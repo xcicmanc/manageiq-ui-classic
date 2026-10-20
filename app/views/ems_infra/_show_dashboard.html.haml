@@ -1,17 +1,17 @@
+= render :partial => "layouts/flash_msg"
 .container-fluid.container-tiles-pf.ems-infra-dashboard
   .row.row-tile-pf
-    = render :partial => "aggregate-status-card"
+    = react('AggregateStatusCard', :providerId => @record.id.to_s, :providerType => 'ems_infra')
   .row.row-tile-pf
     .col-xs-12.col-sm-12.col-md-6
-      = render :partial => "utilization-trend-chart"
+      = react('UtilizationChartGraph', :providerId => @record.id.to_s, :title => _('Global Utilization'), :cpuConfig => 'cpuUsageConfig',
+       :memoryConfig => 'memoryUsageConfig', :dashboard => 'ems_infra_dashboard')
     .col-xs-12.col-sm-12.col-md-6
-      = render :partial => "heatmap"
+      = react('HeatChart', :providerId => @record.id.to_s,
+        :apiUrl => 'ems_infra_dashboard/cluster_metrics_data', :dataPoint1 => 'clusterCpuUsage', :dataPoint2 => 'clusterMemoryUsage', :title => _('Cluster Utilization'))
   .row.row-tile-pf
     .col-xs-12.col-sm-12.col-md-6
-      = render :partial => "recent-hosts-line-chart"
+      = react('RecentHostGraph', :providerId => @record.id.to_s)
     .col-xs-12.col-sm-12.col-md-6
-      = render :partial => "recent-vms-line-chart"
-
-  :javascript
-    ManageIQ.angular.app.value('providerId', '#{@record.id}');
-    miq_bootstrap('.ems-infra-dashboard');
+      = react('RecentVmGraph', :providerId => @record.id.to_s, :title => _('Recent VMs and Templates'), :config => 'recentVmsConfig',
+       :apiUrl => 'ems_infra_dashboard/recent_vms_data', :dataPoint => 'recentResources')

@@ -1,9 +1,8 @@
 #pxe_image_type_details_div
   -# if PXE Server is selected %>
   - if @pxe_image_type
-    - if @edit
-      = render :partial => "pxe_image_type_form"
+    - if @in_a_form
+      = react 'PxeImageForm', :recordId => @pxe_image_type.try(:id).try(:to_s)
 
     - else
-      = render :partial => "shared/summary/textual",
-        :locals  => {:title => _("Basic Information"), :items => textual_sysimg_type_basicinfo}
+      = react 'GenericGroupWrapper', expand_generic_group(TextualGroup.new(_('Basic Information'), textual_sysimg_type_basicinfo), @record)

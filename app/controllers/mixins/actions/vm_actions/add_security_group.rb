@@ -6,12 +6,12 @@ module Mixins
           assert_privileges("instance_add_security_group")
           recs = checked_or_params
           @record = find_record_with_rbac(VmCloud, recs.first)
-          if @record.supports_add_security_group? && @record.ext_management_system.present?
+          if @record.supports?(:add_security_group) && @record.ext_management_system.present?
             if @explorer
               add_security_group
               @refresh_partial = "vm_common/add_security_group"
             else
-              javascript_redirect :controller => 'vm', :action => 'add_security_group', :rec_id => @record.id, :escape => false
+              javascript_redirect(:controller => 'vm', :action => 'add_security_group', :rec_id => @record.id, :escape => false)
             end
           else
             add_flash(_("Unable to add Security Group to Instance \"%{name}\": %{details}") % {

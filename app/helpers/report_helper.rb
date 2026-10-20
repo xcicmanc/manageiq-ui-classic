@@ -1,24 +1,29 @@
 module ReportHelper
-  include_concern 'Editor'
+  include Editor
+  include ReportInformationHelper
+  include ReportDashboardWidgetHelper
+  include ReportScheduleHelper
+  include ReportTabsHelper
+  include DataTableHelper
 
   STYLE_CLASSES = {
-    :miq_rpt_red_text    => _("Red Text"),
-    :miq_rpt_red_bg      => _("Red Background"),
-    :miq_rpt_yellow_text => _("Yellow Text"),
-    :miq_rpt_yellow_bg   => _("Yellow Background"),
-    :miq_rpt_green_text  => _("Green Text"),
-    :miq_rpt_green_bg    => _("Green Background"),
-    :miq_rpt_blue_text   => _("Blue Text"),
-    :miq_rpt_blue_bg     => _("Blue Background"),
-    :miq_rpt_maroon_text => _("Light Blue Text"),
-    :miq_rpt_maroon_bg   => _("Light Blue Background"),
-    :miq_rpt_purple_text => _("Purple Text"),
-    :miq_rpt_purple_bg   => _("Purple Background"),
-    :miq_rpt_gray_text   => _("Gray Text"),
-    :miq_rpt_gray_bg     => _("Gray Background")
-  }
+    :miq_rpt_red_text    => N_("Red Text"),
+    :miq_rpt_red_bg      => N_("Red Background"),
+    :miq_rpt_yellow_text => N_("Yellow Text"),
+    :miq_rpt_yellow_bg   => N_("Yellow Background"),
+    :miq_rpt_green_text  => N_("Green Text"),
+    :miq_rpt_green_bg    => N_("Green Background"),
+    :miq_rpt_blue_text   => N_("Blue Text"),
+    :miq_rpt_blue_bg     => N_("Blue Background"),
+    :miq_rpt_maroon_text => N_("Light Blue Text"),
+    :miq_rpt_maroon_bg   => N_("Light Blue Background"),
+    :miq_rpt_purple_text => N_("Purple Text"),
+    :miq_rpt_purple_bg   => N_("Purple Background"),
+    :miq_rpt_gray_text   => N_("Gray Text"),
+    :miq_rpt_gray_bg     => N_("Gray Background")
+  }.freeze
 
-  NOTHING_STRING = "<<< #{_('Nothing')} >>>".freeze
+  NOTHING_STRING = N_("<<<Nothing>>>").freeze
 
   def visibility_options(widget)
     typ = widget.visibility.keys.first
@@ -26,7 +31,8 @@ module ReportHelper
     if values.first == "_ALL_"
       _("To All Users")
     else
-      _("By %{typ}: %{values}") % {:typ => typ.to_s.titleize, :values => values.join(',')}
+      display_values = widget.visibility_values.sort.join(', ')
+      _("By %{typ}: %{values}") % {:typ => typ.to_s.titleize, :values => display_values}
     end
   end
 
@@ -78,7 +84,7 @@ module ReportHelper
     case @edit[:new][:perf_interval]
     when 'hourly'
       end_array += [
-        ['Today', '0'],
+        %w[Today 0],
         ['Yesterday', 1.day.to_s]
       ]
       5.times { |i| end_array.push(["#{i + 2} days ago", (i + 2).days.to_s]) }
@@ -86,7 +92,7 @@ module ReportHelper
       5.times { |i| end_array.push(["#{pluralize(i + 2, 'month')} ago", (i + 1).months.to_s]) }
     when 'daily'
       end_array += [
-        ['Yesterday', '0'] # Start with yesterday, since we only allow full 24 hour days in daily trending
+        %w[Yesterday 0] # Start with yesterday, since we only allow full 24 hour days in daily trending
       ]
       5.times { |i| end_array.push(["#{i + 2} days ago", (i + 1).days.to_s]) }
       3.times { |i| end_array.push(["#{pluralize((i + 1), 'week')} ago", ((i + 1).weeks - 1.day).to_s]) }
@@ -99,5 +105,67 @@ module ReportHelper
   # simple charts w/o summary.
   def chart_mode_values_allowed?
     @edit[:new][:group] != 'Counts'
+  end
+
+  def default_reports_menu
+    # Retrieve the default reports' groups and their corresponding reports
+    # -> Array [rpt_group, report_name]
+    records = MiqReport.where(:rpt_type => 'Default', :template_type => 'report').order(:rpt_type, :name).pluck(:rpt_group, :name)
+    # Split up the reports' groups into two levels at the '-' character and group them by the first level
+    # -> Hash(rpt_group_1, [rpt_group_2, report_name])
+    grouped = records.map { |grp, items| [grp.split(/ *- */), items].flatten }.group_by(&:first)
+    # Map to the final structure, logically a hash of hashes recursively converted to an array
+    # -> Hash(rpt_group_1, Hash(rpt_group_2, report_name))
+    grouped.map do |grp, items|
+      # Group the items by the secondary group
+      # -> Hash(rpt_group_2, report_name)
+      [grp, items.group_by(&:second).map { |subgroup, subitems| [subgroup, subitems.map(&:third)] }]
+    end
+  end
+
+  def get_reports_menu(hide_custom = false, group = current_group)
+    reports = group.try(:settings).try(:[], :report_menus) || default_reports_menu
+    unless hide_custom
+      # Select all custom reports
+      query = {:template_type => 'report', :rpt_type => 'Custom'}
+      # If the current_user is not a report admin, restrict this to the current group only
+      query[:miq_group_id] = current_group.try(:id) unless current_user.report_admin_user?
+      # Add the custom reports in the required format in their own menu item
+      reports.push([reports_group_title, [[_("Custom"), MiqReport.where(query).order(:name).pluck(:name)]]])
+    end
+    reports
+  end
+
+  def populate_reports_menu(hide_custom = false)
+    # checking to see if group (used to be role) was selected in menu editor tree, or came in from reports/timeline tree calls
+    group = session[:role_choice].present? ? MiqGroup.find_by(:description => session[:role_choice]) : current_group
+    @sb[:rpt_menu] = get_reports_menu(hide_custom, group)
+  end
+
+  def reports_group_title
+    tenant_name = User.current_tenant.name
+    if User.current_user.report_admin_user?
+      _("%{tenant_name} (All Groups)") % {:tenant_name => tenant_name}
+    else
+      _("%{tenant_name} (Group): %{group_description}") %
+        {:tenant_name       => tenant_name,
+         :group_description => User.current_user.current_group.description}
+    end
+  end
+
+  def report_dictionary(text, type)
+    Dictionary.gettext(text, :type => type, :notfound => :titleize)
+  end
+
+  def report_action_onclick(type, accord)
+    {:remote => true, :url => "/report/x_show/#{type}?accord=#{accord}"}
+  end
+
+  private
+
+  def row_data(label, value, style = "")
+    data = {:cells => {:label => label, :value => value}}
+    data[:style] = style if style.present?
+    data
   end
 end

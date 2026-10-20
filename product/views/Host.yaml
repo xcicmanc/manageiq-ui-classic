@@ -20,56 +20,57 @@ db: Host
 # Columns to fetch from the main table
 cols:
 - name
+- hypervisor_hostname
 - ipaddress
 - v_owning_cluster
 - v_total_vms
 - v_total_miq_templates
 - vmm_product
-- vmm_version
-- vmm_buildnumber
+- normalized_state
 - last_compliance_status
-- ipmi_enabled
 - last_scan_on
-- region_description
+- authentication_status
 
 # Included tables (joined, has_one, has_many) and columns
 include:
+  ext_management_system:
+    columns:
+    - name
 
 # Included tables and columns for query performance
 include_for_find:
   :ext_management_system: {}
-  :compliances: {}
   :tags: {}
 
 # Order of columns (from all tables)
 col_order:
 - name
+- ext_management_system.name
+- hypervisor_hostname
 - ipaddress
 - v_owning_cluster
 - v_total_vms
 - v_total_miq_templates
 - vmm_product
-- vmm_version
-- vmm_buildnumber
+- normalized_state
 - last_compliance_status
-- ipmi_enabled
 - last_scan_on
-- region_description
+- authentication_status
 
 # Column titles, in order
 headers:
 - Name
+- Provider
+- Hypervisor Hostname
 - IP Address
 - Cluster
 - Total VMs
 - Total Templates
 - Platform
-- Version
-- Build
+- Power
 - Compliant
-- IPMI Enabled
 - Last Analysis Time
-- Region
+- Authentication Status
 
 # Condition(s) string for the SQL query
 conditions:

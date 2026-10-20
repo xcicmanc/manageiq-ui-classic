@@ -1,0 +1,426 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Automate Simulation Form should render the simulation form correctly 1`] = `
+<div>
+  <div
+    class="automate-simulation-page"
+  >
+    <div
+      class="automate-simulation-form-wrapper"
+    >
+      <form>
+        <p
+          class="automate-object-details"
+          id="object_details"
+          name="object_details"
+          style="font-size: 16px;"
+        >
+          Object Details
+        </p>
+        <div
+          class="cds--list-box__wrapper automate-instance-name"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="instance_name"
+            id="downshift-_r_h_-label"
+          >
+            System/Process
+          </label>
+          <div
+            class="cds--combo-box cds--list-box"
+          >
+            <div
+              class="cds--list-box__field"
+            >
+              <input
+                aria-activedescendant=""
+                aria-autocomplete="list"
+                aria-controls="downshift-_r_h_-menu"
+                aria-expanded="false"
+                aria-haspopup="listbox"
+                aria-labelledby="downshift-_r_h_-label"
+                autocomplete="off"
+                class="cds--text-input"
+                id="instance_name"
+                name="instance_name"
+                placeholder="<Choose>"
+                role="combobox"
+                tabindex="0"
+                title="Request"
+                type="text"
+                value="Request"
+              />
+              <button
+                aria-label="Clear selected item"
+                class="cds--list-box__selection"
+                tabindex="-1"
+                title="Clear selected item"
+                type="button"
+              >
+                <svg
+                  aria-hidden="true"
+                  fill="currentColor"
+                  focusable="false"
+                  height="16"
+                  preserveAspectRatio="xMidYMid meet"
+                  viewBox="0 0 32 32"
+                  width="16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+                  />
+                </svg>
+              </button>
+              <button
+                aria-controls="downshift-_r_h_-menu"
+                aria-expanded="false"
+                aria-label="Open"
+                class="cds--list-box__menu-icon"
+                id="downshift-_r_h_-toggle-button"
+                tabindex="-1"
+                title="Open"
+                type="button"
+              >
+                <svg
+                  aria-hidden="true"
+                  fill="currentColor"
+                  focusable="false"
+                  height="16"
+                  preserveAspectRatio="xMidYMid meet"
+                  viewBox="0 0 16 16"
+                  width="16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+                  />
+                </svg>
+              </button>
+            </div>
+            <ul
+              aria-labelledby="downshift-_r_h_-label"
+              class="cds--list-box__menu"
+              id="downshift-_r_h_-menu"
+              role="listbox"
+            />
+          </div>
+        </div>
+        <div
+          class="cds--form-item automate-object-message cds--text-input-wrapper"
+        >
+          <div
+            class="cds--text-input__label-wrapper"
+          >
+            <label
+              class="cds--label"
+              dir="auto"
+              for="object_message"
+            >
+              <span
+                aria-hidden="true"
+                class="ddorg__carbon-component-mapper_is-required isRequired-0-2-1"
+              >
+                *
+              </span>
+              Message
+            </label>
+          </div>
+          <div
+            class="cds--text-input__field-outer-wrapper"
+          >
+            <div
+              class="cds--text-input__field-wrapper"
+            >
+              <input
+                class="cds--text-input"
+                id="object_message"
+                name="object_message"
+                type="text"
+                value="create"
+              />
+              <span
+                aria-atomic="true"
+                aria-live="assertive"
+                class="cds--text-input__counter-alert"
+                role="alert"
+              />
+            </div>
+          </div>
+        </div>
+        <div
+          class="cds--form-item automate-object-request cds--text-input-wrapper"
+        >
+          <div
+            class="cds--text-input__label-wrapper"
+          >
+            <label
+              class="cds--label"
+              dir="auto"
+              for="object_request"
+            >
+              <span
+                aria-hidden="true"
+                class="ddorg__carbon-component-mapper_is-required isRequired-0-2-1"
+              >
+                *
+              </span>
+              Request
+            </label>
+          </div>
+          <div
+            class="cds--text-input__field-outer-wrapper"
+          >
+            <div
+              class="cds--text-input__field-wrapper"
+            >
+              <input
+                class="cds--text-input"
+                id="object_request"
+                name="object_request"
+                type="text"
+                value=""
+              />
+              <span
+                aria-atomic="true"
+                aria-live="assertive"
+                class="cds--text-input__counter-alert"
+                role="alert"
+              />
+            </div>
+          </div>
+        </div>
+        <p
+          class="automate-object-attribute"
+          id="object_attribute"
+          name="object_attribute"
+          style="font-size: 16px;"
+        >
+          Object Attribute
+        </p>
+        <div
+          class="cds--list-box__wrapper automate-target-class"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="target_class"
+            id="downshift-_r_k_-label"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-1"
+            >
+              *
+            </span>
+            Type
+          </label>
+          <div
+            class="cds--combo-box cds--list-box"
+          >
+            <div
+              class="cds--list-box__field"
+            >
+              <input
+                aria-activedescendant=""
+                aria-autocomplete="list"
+                aria-controls="downshift-_r_k_-menu"
+                aria-expanded="false"
+                aria-haspopup="listbox"
+                aria-labelledby="downshift-_r_k_-label"
+                autocomplete="off"
+                class="cds--text-input"
+                id="target_class"
+                name="target_class"
+                placeholder="<Choose>"
+                role="combobox"
+                tabindex="0"
+                title="<None>"
+                type="text"
+                value="<None>"
+              />
+              <button
+                aria-label="Clear selected item"
+                class="cds--list-box__selection"
+                tabindex="-1"
+                title="Clear selected item"
+                type="button"
+              >
+                <svg
+                  aria-hidden="true"
+                  fill="currentColor"
+                  focusable="false"
+                  height="16"
+                  preserveAspectRatio="xMidYMid meet"
+                  viewBox="0 0 32 32"
+                  width="16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+                  />
+                </svg>
+              </button>
+              <button
+                aria-controls="downshift-_r_k_-menu"
+                aria-expanded="false"
+                aria-label="Open"
+                class="cds--list-box__menu-icon"
+                id="downshift-_r_k_-toggle-button"
+                tabindex="-1"
+                title="Open"
+                type="button"
+              >
+                <svg
+                  aria-hidden="true"
+                  fill="currentColor"
+                  focusable="false"
+                  height="16"
+                  preserveAspectRatio="xMidYMid meet"
+                  viewBox="0 0 16 16"
+                  width="16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+                  />
+                </svg>
+              </button>
+            </div>
+            <ul
+              aria-labelledby="downshift-_r_k_-label"
+              class="cds--list-box__menu"
+              id="downshift-_r_k_-menu"
+              role="listbox"
+            />
+          </div>
+        </div>
+        <p
+          class="automate-simulation-parameters"
+          id="simulationParameters"
+          name="simulationParameters"
+          style="font-size: 16px;"
+        >
+          Simulation Parameters
+        </p>
+        <div>
+          <div
+            class="cds--form-item cds--checkbox-wrapper automate-readonly"
+          >
+            <input
+              checked=""
+              class="cds--checkbox"
+              id="readonly"
+              name="readonly"
+              type="checkbox"
+            />
+            <label
+              class="cds--checkbox-label"
+              for="readonly"
+              title="Simulation parameters"
+            >
+              <div
+                class="cds--checkbox-label-text"
+                dir="auto"
+              >
+                Execute Methods
+              </div>
+            </label>
+            <div
+              class="cds--checkbox__validation-msg"
+            />
+          </div>
+        </div>
+        <p
+          id="AttributeValuePairs"
+          name="AttributeValuePairs"
+          style="font-size: 16px;"
+        >
+          Attribute/Value Pairs
+        </p>
+        <fieldset
+          class="cds--fieldset formGroup-0-2-6"
+        >
+          <legend
+            class="cds--label"
+          />
+          <div>
+            No items
+            <div
+              class="addContainer-0-2-4"
+            >
+              <button
+                class="add-0-2-3 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--primary"
+                id="add-attrs"
+                type="button"
+              >
+                Add
+                <svg
+                  aria-hidden="true"
+                  class="cds--btn__icon"
+                  fill="currentColor"
+                  focusable="false"
+                  height="32"
+                  preserveAspectRatio="xMidYMid meet"
+                  viewBox="0 0 32 32"
+                  width="32"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M16,4c6.6,0,12,5.4,12,12s-5.4,12-12,12S4,22.6,4,16S9.4,4,16,4 M16,2C8.3,2,2,8.3,2,16s6.3,14,14,14s14-6.3,14-14 S23.7,2,16,2z"
+                  />
+                  <path
+                    d="M24 15 17 15 17 8 15 8 15 15 8 15 8 17 15 17 15 24 17 24 17 17 24 17z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </fieldset>
+        <div
+          class="custom-button-wrapper"
+        >
+          <button
+            class="btnRight cds--btn cds--btn--primary cds--btn--disabled"
+            disabled=""
+            type="submit"
+          >
+            Save
+          </button>
+          <button
+            class="cds--btn cds--btn--secondary"
+            type="button"
+          >
+            Reset
+          </button>
+        </div>
+      </form>
+    </div>
+    <div
+      class="automate-simulation-summary-wrapper"
+    >
+      <div
+        class="simulation-title-text"
+      >
+        Simulation
+      </div>
+      <div
+        class="automate-simulation-summary"
+      >
+        <div
+          class="miq-notification-message-container alert alert-info"
+        >
+          <span
+            class="pficon pficon-info"
+          />
+          <strong>
+            Enter Automation Simulation options on the left and press Submit
+          </strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

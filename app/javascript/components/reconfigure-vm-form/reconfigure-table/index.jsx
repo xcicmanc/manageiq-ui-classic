@@ -1,0 +1,52 @@
+import PropTypes from 'prop-types';
+import { Button } from '@carbon/react';
+import classNames from 'classnames';
+import MiqDataTable from '../../miq-data-table';
+
+const ReconfigureTable = ({
+  label = '',
+  headers,
+  rows,
+  addButtonLabel = '',
+  buttonClick,
+  onCellClick,
+  formType = '',
+  roleAllowed = false,
+}) => {
+  const renderAddButton = () => addButtonLabel && (
+    <Button
+      kind="primary"
+      className={`${formType}-add pull-right reconfigure-add-button`}
+      onClick={() => buttonClick('new', formType, 'add')}
+    >
+      {addButtonLabel}
+    </Button>
+  );
+  return roleAllowed ? (
+    <div className={classNames(`${formType}-table`, 'reconfigure-form-table')}>
+      <div className="form-section-title">
+        <h3>{label}</h3>
+        {renderAddButton()}
+      </div>
+      <MiqDataTable
+        headers={headers}
+        rows={rows}
+        onCellClick={(selectedRow, cellType) => onCellClick(selectedRow, cellType)}
+        mode={`${formType}-table-list`}
+      />
+    </div>
+  ) : null;
+};
+
+ReconfigureTable.propTypes = {
+  label: PropTypes.string,
+  headers: PropTypes.arrayOf(PropTypes.any),
+  rows: PropTypes.arrayOf(PropTypes.any),
+  addButtonLabel: PropTypes.string,
+  formType: PropTypes.string,
+  onCellClick: PropTypes.func,
+  buttonClick: PropTypes.func,
+  roleAllowed: PropTypes.bool,
+};
+
+export default ReconfigureTable;

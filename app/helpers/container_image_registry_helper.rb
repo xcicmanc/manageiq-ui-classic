@@ -1,4 +1,4 @@
-module  ContainerImageRegistryHelper
-  include_concern 'ContainerSummaryHelper'
-  include_concern 'TextualSummary'
+module ContainerImageRegistryHelper
+  include ContainerSummaryHelper
+  include TextualSummary
 end

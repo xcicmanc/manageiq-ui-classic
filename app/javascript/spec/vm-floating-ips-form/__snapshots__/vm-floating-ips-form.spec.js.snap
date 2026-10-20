@@ -1,0 +1,551 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Associate / Disassociate form component should render associate form variant 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class="cds--form-item"
+    >
+      <div
+        class="cds--select"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="floating_ip"
+        >
+          <span
+            aria-hidden="true"
+            class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+          >
+            *
+          </span>
+          Floating IP
+        </label>
+        <div
+          class="cds--select-input__wrapper"
+        >
+          <select
+            class="cds--select-input"
+            id="floating_ip"
+            name="floating_ip"
+            title=""
+          >
+            <option
+              class="cds--select-option"
+              label="<Choose>"
+              value=""
+            >
+              &lt;Choose&gt;
+            </option>
+            <option
+              class="cds--select-option"
+              label="1.2.3.4"
+              value="1"
+            >
+              1.2.3.4
+            </option>
+            <option
+              class="cds--select-option"
+              label="2.3.4.5"
+              value="2"
+            >
+              2.3.4.5
+            </option>
+            <option
+              class="cds--select-option"
+              label="3.4.5.6"
+              value="3"
+            >
+              3.4.5.6
+            </option>
+            <option
+              class="cds--select-option"
+              label="4.5.6.7"
+              value="4"
+            >
+              4.5.6.7
+            </option>
+            <option
+              class="cds--select-option"
+              label="5.6.7.8"
+              value="5"
+            >
+              5.6.7.8
+            </option>
+          </select>
+          <svg
+            aria-hidden="true"
+            class="cds--select__arrow"
+            fill="currentColor"
+            focusable="false"
+            height="16"
+            preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 16 16"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Save
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`Associate / Disassociate form component should render disassociate form variant 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class="cds--form-item"
+    >
+      <div
+        class="cds--select"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="floating_ip"
+        >
+          <span
+            aria-hidden="true"
+            class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+          >
+            *
+          </span>
+          Floating IP
+        </label>
+        <div
+          class="cds--select-input__wrapper"
+        >
+          <select
+            class="cds--select-input"
+            id="floating_ip"
+            name="floating_ip"
+            title=""
+          >
+            <option
+              class="cds--select-option"
+              label="<Choose>"
+              value=""
+            >
+              &lt;Choose&gt;
+            </option>
+            <option
+              class="cds--select-option"
+              label="1.2.3.4"
+              value="1"
+            >
+              1.2.3.4
+            </option>
+            <option
+              class="cds--select-option"
+              label="2.3.4.5"
+              value="2"
+            >
+              2.3.4.5
+            </option>
+            <option
+              class="cds--select-option"
+              label="3.4.5.6"
+              value="3"
+            >
+              3.4.5.6
+            </option>
+            <option
+              class="cds--select-option"
+              label="4.5.6.7"
+              value="4"
+            >
+              4.5.6.7
+            </option>
+            <option
+              class="cds--select-option"
+              label="5.6.7.8"
+              value="5"
+            >
+              5.6.7.8
+            </option>
+          </select>
+          <svg
+            aria-hidden="true"
+            class="cds--select__arrow"
+            fill="currentColor"
+            focusable="false"
+            height="16"
+            preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 16 16"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Save
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`Associate / Disassociate form component should render form 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class="cds--form-item"
+    >
+      <div
+        class="cds--select"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="floating_ip"
+        >
+          <span
+            aria-hidden="true"
+            class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+          >
+            *
+          </span>
+          Floating IP
+        </label>
+        <div
+          class="cds--select-input__wrapper"
+        >
+          <select
+            class="cds--select-input"
+            id="floating_ip"
+            name="floating_ip"
+            title=""
+          >
+            <option
+              class="cds--select-option"
+              label="<Choose>"
+              value=""
+            >
+              &lt;Choose&gt;
+            </option>
+          </select>
+          <svg
+            aria-hidden="true"
+            class="cds--select__arrow"
+            fill="currentColor"
+            focusable="false"
+            height="16"
+            preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 16 16"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Save
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`Associate / Disassociate form component should submit Associate API call 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class="cds--form-item"
+    >
+      <div
+        class="cds--select"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="floating_ip"
+        >
+          <span
+            aria-hidden="true"
+            class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+          >
+            *
+          </span>
+          Floating IP
+        </label>
+        <div
+          class="cds--select-input__wrapper"
+        >
+          <select
+            class="cds--select-input"
+            id="floating_ip"
+            name="floating_ip"
+            title=""
+          >
+            <option
+              class="cds--select-option"
+              label="<Choose>"
+              value=""
+            >
+              &lt;Choose&gt;
+            </option>
+            <option
+              class="cds--select-option"
+              label="1.2.3.4"
+              value="1"
+            >
+              1.2.3.4
+            </option>
+            <option
+              class="cds--select-option"
+              label="2.3.4.5"
+              value="2"
+            >
+              2.3.4.5
+            </option>
+            <option
+              class="cds--select-option"
+              label="3.4.5.6"
+              value="3"
+            >
+              3.4.5.6
+            </option>
+            <option
+              class="cds--select-option"
+              label="4.5.6.7"
+              value="4"
+            >
+              4.5.6.7
+            </option>
+            <option
+              class="cds--select-option"
+              label="5.6.7.8"
+              value="5"
+            >
+              5.6.7.8
+            </option>
+          </select>
+          <svg
+            aria-hidden="true"
+            class="cds--select__arrow"
+            fill="currentColor"
+            focusable="false"
+            height="16"
+            preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 16 16"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Save
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`Associate / Disassociate form component should submit Disassociate API call 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class="cds--form-item"
+    >
+      <div
+        class="cds--select"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="floating_ip"
+        >
+          <span
+            aria-hidden="true"
+            class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+          >
+            *
+          </span>
+          Floating IP
+        </label>
+        <div
+          class="cds--select-input__wrapper"
+        >
+          <select
+            class="cds--select-input"
+            id="floating_ip"
+            name="floating_ip"
+            title=""
+          >
+            <option
+              class="cds--select-option"
+              label="<Choose>"
+              value=""
+            >
+              &lt;Choose&gt;
+            </option>
+            <option
+              class="cds--select-option"
+              label="1.2.3.4"
+              value="1"
+            >
+              1.2.3.4
+            </option>
+            <option
+              class="cds--select-option"
+              label="2.3.4.5"
+              value="2"
+            >
+              2.3.4.5
+            </option>
+            <option
+              class="cds--select-option"
+              label="3.4.5.6"
+              value="3"
+            >
+              3.4.5.6
+            </option>
+            <option
+              class="cds--select-option"
+              label="4.5.6.7"
+              value="4"
+            >
+              4.5.6.7
+            </option>
+            <option
+              class="cds--select-option"
+              label="5.6.7.8"
+              value="5"
+            >
+              5.6.7.8
+            </option>
+          </select>
+          <svg
+            aria-hidden="true"
+            class="cds--select__arrow"
+            fill="currentColor"
+            focusable="false"
+            height="16"
+            preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 16 16"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Save
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;

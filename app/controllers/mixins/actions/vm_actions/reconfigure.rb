@@ -13,9 +13,19 @@ module Mixins
 
           @reconfigitems = find_records_with_rbac(Vm, reconfigure_ids)
           build_targets_hash(@reconfigitems)
-          @force_no_grid_xml   = true
+          @force_no_grid_xml = true
           @view, @pages = get_view(Vm, :view_suffix => "VmReconfigureRequest", :selected_ids => reconfigure_ids) # Get the records (into a view) and the paginator
           get_reconfig_limits(reconfigure_ids)
+
+          if @reconfigitems.size == 1
+            vm = @reconfigitems.first
+            # NOTE: available_vlans is ovirt specific vlan lookup
+            @vlan_options = vm.try(:available_vlans) || get_vlan_options(vm.host)
+
+            @avail_adapter_names = vm.try(:available_adapter_names) || []
+            @iso_options = get_iso_options(vm)
+          end
+
           unless @explorer
             render :action => "show"
           end
@@ -29,18 +39,16 @@ module Mixins
         end
 
         def reconfigure_form_fields
-          request_data = ''
           @request_id, request_data = params[:id].split(/\s*,\s*/, 2)
           reconfigure_ids = request_data.split(/\s*,\s*/)
           request_hash = build_reconfigure_hash(reconfigure_ids)
           render :json => request_hash
         end
 
-        # Reconfigure selected VMs
-        def reconfigurevms
-          assert_privileges(params[:pressed])
-          # check to see if coming from show_list or drilled into vms from another CI
-          rec_cls = "vm"
+        # reconfiguration for VMs only
+        def vm_reconfigure
+          assert_privileges('vm_reconfigure_all', :any => true)
+
           # if coming in to edit from miq_request list view
           recs = checked_or_params
           if !session[:checked_items].nil? && (@lastaction == "set_checked_items" || params[:pressed] == "miq_request_edit")
@@ -48,48 +56,41 @@ module Mixins
             request_id = params[:id]
           end
 
-          if recs.length < 1
+          if recs.empty?
             add_flash(_("One or more %{model} must be selected to Reconfigure") %
               {:model => Dictionary.gettext(db.to_s, :type => :model, :notfound => :titleize, :plural => true)}, :error)
-            javascript_flash(:scroll_top => true)
+            javascript_flash
             return
           else
 
             if VmOrTemplate.includes_template?(recs)
               add_flash(_("Reconfigure does not apply because you selected at least one VM Template"), :error)
-              javascript_flash(:scroll_top => true)
+              javascript_flash
               return
             end
             unless VmOrTemplate.reconfigurable?(recs)
               add_flash(_("Reconfigure does not apply because you selected at least one un-reconfigurable VM"), :error)
-              javascript_flash(:scroll_top => true)
+              javascript_flash
               return
             end
             reconfigure_ids = recs.collect(&:to_i)
           end
+
           if @explorer
             reconfigure(reconfigure_ids)
-            session[:changed] = true  # need to enable submit button when screen loads
+            session[:changed] = true # need to enable submit button when screen loads
             @refresh_partial = "vm_common/reconfigure"
           else
-            if role_allows?(:feature => "vm_reconfigure")
-              javascript_redirect :controller => rec_cls.to_s, :action => 'reconfigure', :req_id => request_id, :rec_ids => reconfigure_ids, :escape => false # redirect to build the ownership screen
-            else
-              head :ok
-            end
+            # redirect to build the ownership screen
+            javascript_redirect(:controller => 'vm', :action => 'reconfigure', :req_id => request_id, :rec_ids => reconfigure_ids, :escape => false)
           end
         end
-
-        alias_method :image_reconfigure, :reconfigurevms
-        alias_method :instance_reconfigure, :reconfigurevms
-        alias_method :vm_reconfigure, :reconfigurevms
-        alias_method :miq_template_reconfigure, :reconfigurevms
 
         def get_reconfig_limits(reconfigure_ids)
           @reconfig_limits = VmReconfigureRequest.request_limits(:src_ids => reconfigure_ids)
           mem1, fmt1 = reconfigure_calculations(@reconfig_limits[:min__vm_memory])
           mem2, fmt2 = reconfigure_calculations(@reconfig_limits[:max__vm_memory])
-          @reconfig_memory_note = "Between #{mem1}#{fmt1} and #{mem2}#{fmt2}"
+          @reconfig_memory_note = _("Between %{min} and %{max}") % {:min => "#{mem1}#{fmt1}", :max => "#{mem2}#{fmt2}"}
 
           @socket_options = []
           @reconfig_limits[:max__number_of_sockets].times do |tidx|
@@ -113,33 +114,35 @@ module Mixins
           else
             @req = MiqRequest.find_by(:id => @request_id)
             @reconfig_values[:src_ids] = @req.options[:src_ids]
-            @reconfig_values[:memory], @reconfig_values[:memory_type] = @req.options[:vm_memory] ? reconfigure_calculations(@req.options[:vm_memory]) : ['','']
+            @reconfig_values[:memory], @reconfig_values[:memory_type] = @req.options[:vm_memory] ? reconfigure_calculations(@req.options[:vm_memory]) : ['', '']
             @reconfig_values[:cores_per_socket_count] = @req.options[:cores_per_socket] ? @req.options[:cores_per_socket].to_s : ''
             @reconfig_values[:socket_count] = @req.options[:number_of_sockets] ? @req.options[:number_of_sockets].to_s : ''
             # check if there is only one VM that supports disk reconfiguration
 
             @reconfig_values[:disk_add] = @req.options[:disk_add]
-            @reconfig_values[:disk_remove] = @req.options[:disk_remove]
+            @reconfig_values[:disk_resize] = @req.options[:disk_resize]
+            @reconfig_values[:cdrom_connect] = @req.options[:cdrom_connect]
+            @reconfig_values[:cdrom_disconnect] = @req.options[:cdrom_disconnect]
             vmdisks = []
-            if @req.options[:disk_add]
-              @req.options[:disk_add].each do |disk|
-                adsize, adunit = reconfigure_calculations(disk[:disk_size_in_mb])
-                vmdisks << {:hdFilename          => disk[:disk_name],
-                            :hdType              => disk[:thin_provisioned] ? 'thin' : 'thick',
-                            :hdMode              => disk[:persistent] ? 'persistent' : 'nonpersistent',
-                            :hdSize              => adsize.to_s,
-                            :hdUnit              => adunit,
-                            :new_controller_type => disk[:new_controller_type].to_s,
-                            :cb_dependent        => disk[:dependent],
-                            :cb_bootable         => disk[:bootable],
-                            :add_remove          => 'add'}
-              end
+            vmcdroms = []
+            @req.options[:disk_add]&.each do |disk|
+              adsize, adunit = reconfigure_calculations(disk[:disk_size_in_mb])
+              vmdisks << {:hdFilename          => disk[:disk_name],
+                          :hdType              => disk[:thin_provisioned] ? 'thin' : 'thick',
+                          :hdMode              => disk[:persistent] ? 'persistent' : 'nonpersistent',
+                          :hdSize              => adsize.to_s,
+                          :hdUnit              => adunit,
+                          :new_controller_type => disk[:new_controller_type].to_s,
+                          :cb_dependent        => disk[:dependent],
+                          :cb_bootable         => disk[:bootable],
+                          :add_remove          => 'add'}
             end
 
             reconfig_item = Vm.find(reconfigure_ids)
             if reconfig_item
               reconfig_item.first.hardware.disks.each do |disk|
                 next if disk.device_type != 'disk'
+
                 removing = ''
                 delbacking = false
                 if disk.filename && @req.options[:disk_remove]
@@ -161,23 +164,72 @@ module Mixins
                           :add_remove     => removing}
                 vmdisks << vmdisk
               end
+              cdroms = reconfig_item.first.hardware.cdroms
+              if cdroms.present?
+                vmcdroms = build_request_cdroms_list(cdroms)
+              end
             end
             @reconfig_values[:disks] = vmdisks
+            @reconfig_values[:cdroms] = vmcdroms
           end
 
-          @reconfig_values[:cb_memory] = !!(@req && @req.options[:vm_memory])       # default for checkbox is false for new request
-          @reconfig_values[:cb_cpu] =  !!(@req && ( @req.options[:number_of_sockets] || @req.options[:cores_per_socket]))     # default for checkbox is false for new request
+          @reconfig_values[:cb_memory] = !!(@req && @req.options[:vm_memory]) # default for checkbox is false for new request
+          @reconfig_values[:cb_cpu] = !!(@req && (@req.options[:number_of_sockets] || @req.options[:cores_per_socket])) # default for checkbox is false for new request
           @reconfig_values
+        end
+
+        def build_request_cdroms_list(cdroms)
+          vmcdroms = []
+          connect_disconnect = ''
+          cdroms.map do |cd|
+            id = cd.id
+            device_name = cd.device_name
+            type = cd.device_type
+            filename = cd.filename
+            storage_id = cd.storage_id
+            if cd.filename && @req.options[:cdrom_disconnect]&.find { |d_cd| d_cd[:device_name] == cd.device_name }
+              filename = ''
+              connect_disconnect = 'disconnect'
+            end
+            conn_cd = @req.options[:cdrom_connect]&.find { |c_cd| c_cd[:device_name] == cd.device_name }
+            if cd.filename && conn_cd
+              filename = conn_cd[:filename]
+              connect_disconnect = 'connect'
+            end
+            vmcdroms << {:id => id, :device_name => device_name, :filename => filename, :type => type, :storage_id => storage_id, :connect_disconnect => connect_disconnect}
+          end
+          vmcdroms
         end
 
         def reconfigure_calculations(mbsize)
           humansize = mbsize
           fmt = "MB"
-          if mbsize.to_i > 1024 && mbsize.to_i % 1024 == 0
+          if mbsize.to_i > 1024 && (mbsize.to_i % 1024).zero?
             humansize = mbsize.to_i / 1024
             fmt = "GB"
           end
           return humansize.to_s, fmt
+        end
+
+        # determine available switches for this host...
+        def get_vlan_options(host)
+          return [] if host.blank?
+
+          switch_ids = Rbac.filtered(host.switches).pluck(:id)
+          Rbac.filtered(Lan.where(:switch_id => switch_ids).order(:name)).pluck(:name)
+        end
+
+        def get_iso_options(vm)
+          iso_options = []
+          return iso_options unless vm&.host&.storages
+
+          datastore_ids = vm.host.storages.pluck(:id)
+          # determine available iso files for the datastores
+          Rbac.filtered(StorageFile.where("storage_id IN (?) and ext_name = 'iso'", datastore_ids)).each do |sf|
+            iso_options << [sf.name, sf.name + ',' + sf.storage_id.to_s]
+          end
+
+          iso_options
         end
 
         def get_reconfig_info(reconfigure_ids)
@@ -195,8 +247,9 @@ module Mixins
 
           # if only one vm that supports disk reconfiguration is selected, get the disks information
           vmdisks = []
-          @reconfigureitems.first.hardware.disks.each do |disk|
+          @reconfigureitems.first.hardware.disks.order(:filename).each do |disk|
             next if disk.device_type != 'disk'
+
             dsize, dunit = reconfigure_calculations(disk.size / (1024 * 1024))
             vmdisks << {:hdFilename  => disk.filename,
                         :hdType      => disk.disk_type,
@@ -207,19 +260,79 @@ module Mixins
                         :cb_bootable => disk.bootable}
           end
 
+          # reconfiguring network adapters is only supported when one vm was selected
+          network_adapters = []
+          vmcdroms = []
+          if @reconfigureitems.size == 1
+            vm = @reconfigureitems.first
+
+            if vm.supports?(:reconfigure_network_adapters)
+              network_adapters = build_network_adapters_list(vm)
+            end
+
+            if vm.supports?(:reconfigure_cdroms)
+              # CD-ROMS
+              vmcdroms = build_vmcdrom_list(vm)
+            end
+          end
+
           {:objectIds              => reconfigure_ids,
            :memory                 => memory,
            :memory_type            => memory_type,
            :socket_count           => socket_count.to_s,
            :cores_per_socket_count => cores_per_socket.to_s,
-           :disks                  => vmdisks}
+           :disks                  => vmdisks,
+           :network_adapters       => network_adapters,
+           :cdroms                 => vmcdroms,
+           :vm_vendor              => @reconfigureitems.first.vendor,
+           :vm_type                => @reconfigureitems.first.class.name,
+           :orchestration_stack_id => @reconfigureitems.first.try(:orchestration_stack_id),
+           :disk_default_type      => @reconfigureitems.first.try(:disk_default_type) || 'thin'}
         end
 
-        def supports_reconfigure_disks?
-          @reconfigitems && @reconfigitems.size == 1 && @reconfigitems.first.supports_reconfigure_disks?
+        def build_network_adapters_list(vm)
+          network_adapters = []
+          vm.hardware.guest_devices.order(:device_name => 'asc').each do |guest_device|
+            lan = Lan.find_by(:id => guest_device.lan_id)
+            network_adapters << {:name => guest_device.device_name, :vlan => lan.name, :mac => guest_device.address, :add_remove => ''} unless lan.nil?
+          end
+
+          if vm.kind_of?(ManageIQ::Providers::Vmware::CloudManager::Vm)
+            vm.network_ports.order(:name).each do |port|
+              network_adapters << { :name => port.name, :network => port.cloud_subnets.try(:first).try(:name) || _('None'), :mac => port.mac_address, :add_remove => '' }
+            end
+          end
+          network_adapters
+        end
+
+        def filename_string(name)
+          # an empty cdrom filename can be in the form of a string containing a pair of square brackets
+          name.blank? || name == '[]' ? '' : name.to_s
+        end
+
+        def build_vmcdrom_list(vm)
+          vmcdroms = []
+          cdroms = vm.hardware.cdroms
+          if cdroms.present?
+            cdroms.map do |cd|
+              id = cd.id
+              device_name = cd.device_name
+              type = cd.device_type
+              filename = filename_string(cd.filename)
+              storage_id = cd.storage_id || ''
+              vmcdroms << {:id => id, :device_name => device_name, :filename => filename, :type => type, :storage_id => storage_id}
+            end
+            vmcdroms
+          end
         end
 
         private
+
+        def item_supports?(*features)
+          features << :reconfigure_disks if features.include?(:reconfigure_disksize) # special case
+          item = @reconfigitems.first if @reconfigitems&.size == 1
+          item && features.all? { |feature| item.supports?(feature) }
+        end
 
         # 'true' => true
         # 'false' => false
@@ -228,11 +341,11 @@ module Mixins
         #
         # {"a" => "true", "b" => "false", "c" => "42"}.transform_values! { |v| eval_if_bool_string(v) }
         # => {"a" => true, "b" => false, "c" => "42"}
-        def eval_if_bool_string(s)
-          case s
+        def eval_if_bool_string(str)
+          case str
           when 'true'  then true
           when 'false' then false
-          else              s
+          else              str
           end
         end
 
@@ -243,17 +356,47 @@ module Mixins
             replace_right_cell
           else
             session[:flash_msgs] = @flash_array
-            javascript_redirect previous_breadcrumb_url
+            javascript_redirect(previous_breadcrumb_url)
           end
+        end
+
+        # parameter to accept for vm reconfiguration based on role permissions
+        def reconfigure_param_list
+          list = []
+
+          if role_allows?(:feature => 'vm_reconfigure_disks')
+            list += [
+              %i[vmAddDisks disk_add],
+              %i[vmResizeDisks disk_resize],
+              %i[vmRemoveDisks disk_remove]
+            ]
+          end
+
+          if role_allows?(:feature => 'vm_reconfigure_networks')
+            list += [
+              %i[vmAddNetworkAdapters network_adapter_add],
+              %i[vmRemoveNetworkAdapters network_adapter_remove],
+              %i[vmEditNetworkAdapters network_adapter_edit],
+            ]
+          end
+
+          if role_allows?(:feature => 'vm_reconfigure_drives')
+            list += [
+              %i[vmConnectCDRoms cdrom_connect],
+              %i[vmDisconnectCDRoms cdrom_disconnect]
+            ]
+          end
+
+          list
         end
 
         def reconfigure_handle_submit_button
           options = {:src_ids => params[:objectIds]}
-          if params[:cb_memory] == 'true'
+          if params[:cb_memory] == 'true' && role_allows?(:feature => 'vm_reconfigure_memory')
             options[:vm_memory] = params[:memory_type] == "MB" ? params[:memory] : params[:memory].to_i * 1024
           end
 
-          if params[:cb_cpu] == 'true'
+          if params[:cb_cpu] == 'true' && role_allows?(:feature => 'vm_reconfigure_cpu')
             options[:cores_per_socket]  = params[:cores_per_socket_count].nil? ? 1 : params[:cores_per_socket_count].to_i
             options[:number_of_sockets] = params[:socket_count].nil? ? 1 : params[:socket_count].to_i
             vccores = params[:cores_per_socket_count].to_i.zero? ? 1 : params[:cores_per_socket_count].to_i
@@ -261,19 +404,13 @@ module Mixins
             options[:number_of_cpus] = vccores * vsockets
           end
 
-          # set the disk_add and disk_remove options
-          if params[:vmAddDisks]
-            params[:vmAddDisks].values.each do |p|
-              p.transform_values! { |v| eval_if_bool_string(v) }
-            end
-            options[:disk_add] = params[:vmAddDisks].values
-          end
+          reconfigure_param_list.each do |params_key, options_key|
+            next if params[params_key].blank?
 
-          if params[:vmRemoveDisks]
-            params[:vmRemoveDisks].values.each do |p|
+            params[params_key].each do |_key, p|
               p.transform_values! { |v| eval_if_bool_string(v) }
             end
-            options[:disk_remove] = params[:vmRemoveDisks].values
+            options[options_key] = params[params_key].values.map(&:to_unsafe_h)
           end
 
           if params[:id] && params[:id] != 'new'
@@ -281,18 +418,14 @@ module Mixins
           end
 
           VmReconfigureRequest.make_request(@request_id, options, current_user)
-          flash = _("VM Reconfigure Request was saved")
+
+          flash_to_session(_("VM Reconfigure Request was saved"))
 
           if role_allows?(:feature => "miq_request_show_list", :any => true)
-            javascript_redirect :controller => 'miq_request', :action => 'show_list', :flash_msg => flash
+            javascript_redirect(:controller => 'miq_request', :action => 'show_list')
           else
             url = previous_breadcrumb_url.split('/')
-            javascript_redirect :controller => url[1], :action => url[2], :flash_msg => flash
-          end
-
-          if @flash_array
-            javascript_flash
-            return
+            javascript_redirect(:controller => url[1], :action => url[2])
           end
         end
       end

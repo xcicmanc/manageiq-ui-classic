@@ -1,19 +1,41 @@
 module TextualMixins::TextualRegion
   def textual_region
     return nil if @record.region_number == MiqRegion.my_region_number
+
     h = {:label => _("Region")}
     reg = @record.miq_region
     url = reg.remote_ui_url
-    h[:value] = if url
-                  # TODO: Why is this link different than the others?
-                  link_to(reg.description, url_for_only_path(:host   => url,
-                                                   :action => 'show',
-                                                   :id     => @record),
-                          :title   => _("Connect to this VM in its Region"),
-                          :onclick => "return miqClickAndPop(this);")
-                else
-                  reg.description
-                end
+    h[:value] = reg.description
+    if url
+      # this must be url_for to make sure :host is used
+      h[:link] = url_for(:host   => url,
+                         :action => 'show',
+                         :id     => @record)
+      h[:title] = _("Connect to this VM in its Region")
+      h[:external] = true
+    end
+    h
+  end
+
+  def textual_region_with_button_link
+    return nil if @record.region_number == MiqRegion.my_region_number
+
+    url = @record.miq_region.remote_ui_url
+    h = {:label => _('Remote Region'), :value => _('Connect to VM in its Region')}
+    if url
+      h = {
+        :label  => _('Remote Region'),
+        :button => {
+          :name     => _('Connect to VM in its Region'),
+          :action   => nil,
+          :href     => url_for(:host => url, :action => 'show', :id => @record),
+          :target   => "_blank",
+          :rel      => "noopener noreferrer",
+          :size     => "small",
+          :disabled => false,
+        }
+      }
+    end
     h
   end
 end

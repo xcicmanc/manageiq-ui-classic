@@ -26,6 +26,9 @@ cols:
 - allocated_disk_storage
 - last_scan_on
 - region_description
+- normalized_state
+- product_name
+- os_image_name
 
 # Included tables (joined, has_one, has_many) and columns
 include:
@@ -42,7 +45,6 @@ include:
 # Included tables and columns for query performance
 include_for_find:
   :snapshots: {}
-  :compliances: {}
   :operating_system: {}
   :hardware: {}
   :tags: {}
@@ -50,6 +52,8 @@ include_for_find:
 # Order of columns (from all tables)
 col_order:
 - name
+- normalized_state
+- product_name
 - ext_management_system.name
 - ems_cluster_name
 - host.name
@@ -59,10 +63,13 @@ col_order:
 - allocated_disk_storage
 - last_scan_on
 - region_description
+- os_image_name
 
 # Column titles, in order
 headers:
 - Name
+- Power State
+- Operating System
 - Provider
 - Cluster
 - Host

@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::VmsCenter < ApplicationHelper::Toolbar::Basic
   button_group('vm_vmdb', [
     select(
       :vm_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       N_('Configuration'),
       :enabled => false,
       :onwhen  => "1+",
@@ -61,7 +61,7 @@ class ApplicationHelper::Toolbar::VmsCenter < ApplicationHelper::Toolbar::Basic
   button_group('vm_policy', [
     select(
       :vm_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       N_('Policy'),
       :enabled => false,
       :onwhen  => "1+",
@@ -75,15 +75,16 @@ class ApplicationHelper::Toolbar::VmsCenter < ApplicationHelper::Toolbar::Basic
           :send_checked => true,
           :enabled      => false,
           :onwhen       => "1+"),
-        button(
-          :vm_policy_sim,
-          'fa fa-play-circle-o fa-lg',
-          N_('View Policy Simulation for the selected items'),
-          N_('Policy Simulation'),
-          :url_parms    => "main_div",
-          :send_checked => true,
-          :enabled      => false,
-          :onwhen       => "1+"),
+        # TODO: Add this button back when the page is fixed
+        # button(
+        #   :vm_policy_sim,
+        #   'fa fa-play-circle-o fa-lg',
+        #   N_('View Policy Simulation for the selected items'),
+        #   N_('Policy Simulation'),
+        #   :url_parms    => "main_div",
+        #   :send_checked => true,
+        #   :enabled      => false,
+        #   :onwhen       => "1+"),
         button(
           :vm_tag,
           'pficon pficon-edit fa-lg',
@@ -104,23 +105,6 @@ class ApplicationHelper::Toolbar::VmsCenter < ApplicationHelper::Toolbar::Basic
           :enabled      => false,
           :onwhen       => "1+",
           :klass        => ApplicationHelper::Button::VmCheckCompliance),
-      ]
-    ),
-  ])
-  button_group('vm_lifecycle', [
-    select(
-      :vm_lifecycle_choice,
-      'fa fa-recycle fa-lg',
-      N_('Lifecycle'),
-      :items => [
-        button(
-          :vm_miq_request_new,
-          'pficon pficon-add-circle-o fa-lg',
-          N_('Request to Provision'),
-          N_('Provision'),
-          :url_parms    => "main_div",
-          :send_checked => true,
-          :klass        => ApplicationHelper::Button::ButtonNewDiscover),
       ]
     ),
   ])

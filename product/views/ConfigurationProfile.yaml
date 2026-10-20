@@ -19,7 +19,9 @@ db: ConfigurationProfile
 
 # Columns to fetch from the main table
 cols:
+- name
 - description
+- target_platform
 - total_configured_systems
 - configuration_environment_name
 - my_zone
@@ -31,7 +33,9 @@ cols:
 
 # Order of columns (from all tables)
 col_order:
+- name
 - description
+- target_platform
 - total_configured_systems
 - configuration_environment_name
 - my_zone
@@ -39,7 +43,9 @@ col_order:
 
 # Column titles, in order
 headers:
+- Name
 - Description
+- Target Platform
 - Total Configured Systems
 - Environment
 - Zone

@@ -1,0 +1,16 @@
+@use '@carbon/react' with (
+  // don't break patternfly styling
+  $css--default-type: false,
+  $css--reset: false,
+  $css--body: false,
+  // disable IBM fonts
+  $css--font-face: false,
+);
+
+// Import Carbon Charts styles (use @import for .css files)
+@import '~@carbon/charts/styles.css';
+
+// ignored by patternfly, but sets the right base for carbon rem units
+html {
+  font-size: 100%;
+}

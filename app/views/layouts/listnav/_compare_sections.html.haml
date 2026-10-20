@@ -1,72 +1,24 @@
 - if @explorer
   - style = "width:auto"
 .panel-group{:style => style}
-  - if @lastaction == "drift"
-    = miq_accordion_panel(h(@drift_obj.name), true, "icon") do
-      - if @sb[:compare_db] != "EmsCluster"
-        - if @drift_obj.product_name != "" && @drift_obj.service_pack != ""
-          - height = "100px"
-        - elsif @drift_obj.product_name != "" || @drift_obj.service_pack != ""
-          - height = "105px"
-        - else
-          - height = "110px"
-      - else
-        - height = "100px"
-      %div{:style => "position: relative; width: 152px; height: #{height}; z-index: 0; margin: 0px auto;"}
-        - if %w(MiqTemplate VmOrTemplate Vm).include?(@sb[:compare_db])
-          - if settings(:quadicons, :vm)
-            = render_quadicon(@drift_obj, :mode => :icon, :size => 72, :height => height, :typ => :listnav)
-          - else
-            .flobj
-              %img{:src => image_path("layout/base-single.png")}
-            = flobj_img_small("svg/vendor-#{h(@drift_obj.vendor.downcase)}.svg", "e72")
-          - if @drift_obj.get_policies.length > 0
-            %div{:class => "flobj g72"}
-              %img{:src => image_path('100/shield.png')}
-          .flobj
-            %img{:src => image_path("layout/reflection.png")}
-        - elsif @sb[:compare_db] == "Host"
-          - if settings(:quadicons, :host)
-            .flobj
-              %img{:src => image_path("layout/base.svg")}
-            %div{:class => "flobj c72"}
-              %img{:src => image_path("svg/vendor-#{h(@drift_obj.vmm_vendor_display.downcase)}.svg")}
-            - unless @drift_obj.power_state.blank?
-              %div{:class => "flobj b72"}
-                %img{:src => image_path("svg/currentstate-#{h(@drift_obj.power_state.downcase)}.svg")}
-            %div{:class => "flobj a72"}
-              %p
-                = @drift_obj.vms.count
-          - else
-            .flobj
-              %img{:src => image_path("layout/base-single.png")}
-            = flobj_img_small("svg/vendor-#{h(@host.vmm_vendor_display.downcase)}.svg", "e72")
-          - if @host.number_of(:get_policies) > 0
-            %div{:class => "flobj g72"}
-              %img{:src => image_path('100/shield.png')}
-          .flobj
-            %img{:src => image_path("layout/reflection.png")}
-        - elsif @sb[:compare_db] == "EmsCluster"
-          = render_quadicon(@drift_obj, :mode => :icon, :typ => :listnav)
-      - if @sb[:compare_db] != "EmsCluster"
-        %div{:style => "margin-top: -25px;"}
-          %center{:style => "color:#000;"}
-            = @drift_obj.product_name
-            %br
-            = @drift_obj.service_pack
-
   = miq_accordion_panel(@lastaction == "drift" ? _("Drift Sections") : _("Comparison Sections"), true, "sections") do
     :javascript
-      miqTreeResetState('#{j_str @sections_tree.name}');
+      miqTreeResetState('#{j @sections_tree.name}');
     = render(:partial => 'shared/tree', :locals => {:tree => @sections_tree, :name => @sections_tree.name})
   .spacer
-  = link_to(_('Apply'),
-    {:action => 'sections_field_changed', :check => @lastaction},
-    "data-miq_sparkle_on"  => true,
-    "data-miq_sparkle_off" => true,
-    :remote                => true,
-    "data-method"          => :post,
-    :title                 => _('Apply sections'),
-    :class                 => "btn btn-primary pull-right",
-    :alt                   => _('Apply sections'),
-    :id                    => "sections_commit")
+  %table{:width => "100%"}
+    %tr
+      %td{:align => 'right'}
+        #buttons_on{:style => "display:#{session[:selected_sections].empty? ? "none" : "display"};"}
+          = link_to(_('Apply'),
+            {:action => 'sections_field_changed', :check => @lastaction},
+            "data-miq_sparkle_on"  => true,
+            "data-miq_sparkle_off" => true,
+            :remote                => true,
+            "data-method"          => :post,
+            :title                 => _('Apply sections'),
+            :class                 => "btn btn-primary pull-right",
+            :alt                   => _('Apply sections'),
+            :id                    => "sections_commit")
+        #buttons_off{:style => "display:#{session[:selected_sections].empty? ? "display" : "none"};"}
+          = button_tag(_("Apply"), :class => "btn btn-primary disabled", :title => _('At least one section must be selected'))

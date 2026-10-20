@@ -1,0 +1,1145 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`MultilinkTable renders just fine 1`] = `
+<div>
+  <ul
+    class="cds--accordion miq-structured-list-accordion multilink_table cds--accordion--start"
+  >
+    <li
+      class="cds--accordion__item cds--accordion__item--active"
+    >
+      <button
+        aria-controls="accordion-item-_r_0_"
+        aria-expanded="true"
+        class="cds--accordion__heading"
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          class="cds--accordion__arrow"
+          fill="currentColor"
+          focusable="false"
+          height="16"
+          preserveAspectRatio="xMidYMid meet"
+          viewBox="0 0 16 16"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M11 8 6 13 5.3 12.3 9.6 8 5.3 3.7 6 3z"
+          />
+        </svg>
+        <div
+          class="cds--accordion__title"
+          dir="auto"
+        >
+          Some OpenStack Stuff
+        </div>
+      </button>
+      <div
+        class="cds--accordion__wrapper"
+      >
+        <div
+          class="cds--accordion__content"
+          id="accordion-item-_r_0_"
+        >
+          <div
+            aria-label="Structured list"
+            class="cds--structured-list miq-structured-list multilink_table"
+            role="table"
+          >
+            <div
+              class="cds--structured-list-tbody"
+              role="rowgroup"
+            >
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="0"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td label_header object_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Aodh
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=1&status=running"
+                    to="/host/host_services/18?db=host&host_service_group=1&status=running"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of running Aodh"
+                      >
+                        <i
+                          class="pficon pficon-ok"
+                          title="Show list of running Aodh"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        Running (3)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Failed (0)
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=1&status=all"
+                    to="/host/host_services/18?db=host&host_service_group=1&status=all"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of all Aodh"
+                      >
+                        <i
+                          class="pficon pficon-service"
+                          title="Show list of all Aodh"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        All (3)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="cell icon"
+                      title="Show list of configuration files of Aodh"
+                    >
+                      <i
+                        class="fa fa-file-o"
+                        title="Show list of configuration files of Aodh"
+                      />
+                    </div>
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Configuration (0)
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="1"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td label_header object_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Ceilometer
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=2&status=running"
+                    to="/host/host_services/18?db=host&host_service_group=2&status=running"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of running Ceilometer"
+                      >
+                        <i
+                          class="pficon pficon-ok"
+                          title="Show list of running Ceilometer"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        Running (3)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Failed (0)
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=2&status=all"
+                    to="/host/host_services/18?db=host&host_service_group=2&status=all"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of all Ceilometer"
+                      >
+                        <i
+                          class="pficon pficon-service"
+                          title="Show list of all Ceilometer"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        All (3)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="cell icon"
+                      title="Show list of configuration files of Ceilometer"
+                    >
+                      <i
+                        class="fa fa-file-o"
+                        title="Show list of configuration files of Ceilometer"
+                      />
+                    </div>
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Configuration (0)
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="2"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td label_header object_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Cinder
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=3&status=running"
+                    to="/host/host_services/18?db=host&host_service_group=3&status=running"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of running Cinder"
+                      >
+                        <i
+                          class="pficon pficon-ok"
+                          title="Show list of running Cinder"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        Running (3)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Failed (0)
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=3&status=all"
+                    to="/host/host_services/18?db=host&host_service_group=3&status=all"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of all Cinder"
+                      >
+                        <i
+                          class="pficon pficon-service"
+                          title="Show list of all Cinder"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        All (3)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="cell icon"
+                      title="Show list of configuration files of Cinder"
+                    >
+                      <i
+                        class="fa fa-file-o"
+                        title="Show list of configuration files of Cinder"
+                      />
+                    </div>
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Configuration (0)
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="3"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td label_header object_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Glance
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=4&status=running"
+                    to="/host/host_services/18?db=host&host_service_group=4&status=running"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of running Glance"
+                      >
+                        <i
+                          class="pficon pficon-ok"
+                          title="Show list of running Glance"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        Running (2)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Failed (0)
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=4&status=all"
+                    to="/host/host_services/18?db=host&host_service_group=4&status=all"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of all Glance"
+                      >
+                        <i
+                          class="pficon pficon-service"
+                          title="Show list of all Glance"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        All (2)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="cell icon"
+                      title="Show list of configuration files of Glance"
+                    >
+                      <i
+                        class="fa fa-file-o"
+                        title="Show list of configuration files of Glance"
+                      />
+                    </div>
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Configuration (0)
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="4"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td label_header object_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Gnocchi
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=5&status=running"
+                    to="/host/host_services/18?db=host&host_service_group=5&status=running"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of running Gnocchi"
+                      >
+                        <i
+                          class="pficon pficon-ok"
+                          title="Show list of running Gnocchi"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        Running (2)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Failed (0)
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=5&status=all"
+                    to="/host/host_services/18?db=host&host_service_group=5&status=all"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of all Gnocchi"
+                      >
+                        <i
+                          class="pficon pficon-service"
+                          title="Show list of all Gnocchi"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        All (2)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="cell icon"
+                      title="Show list of configuration files of Gnocchi"
+                    >
+                      <i
+                        class="fa fa-file-o"
+                        title="Show list of configuration files of Gnocchi"
+                      />
+                    </div>
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Configuration (0)
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="5"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td label_header object_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Heat
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=6&status=running"
+                    to="/host/host_services/18?db=host&host_service_group=6&status=running"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of running Heat"
+                      >
+                        <i
+                          class="pficon pficon-ok"
+                          title="Show list of running Heat"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        Running (4)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Failed (0)
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=6&status=all"
+                    to="/host/host_services/18?db=host&host_service_group=6&status=all"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of all Heat"
+                      >
+                        <i
+                          class="pficon pficon-service"
+                          title="Show list of all Heat"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        All (4)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="cell icon"
+                      title="Show list of configuration files of Heat"
+                    >
+                      <i
+                        class="fa fa-file-o"
+                        title="Show list of configuration files of Heat"
+                      />
+                    </div>
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Configuration (0)
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="6"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td label_header object_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Keystone
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Running (0)
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Failed (0)
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=7&status=all"
+                    to="/host/host_services/18?db=host&host_service_group=7&status=all"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of all Keystone"
+                      >
+                        <i
+                          class="pficon pficon-service"
+                          title="Show list of all Keystone"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        All (1)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="cell icon"
+                      title="Show list of configuration files of Keystone"
+                    >
+                      <i
+                        class="fa fa-file-o"
+                        title="Show list of configuration files of Keystone"
+                      />
+                    </div>
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Configuration (0)
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="7"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td label_header object_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Nova
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=8&status=running"
+                    to="/host/host_services/18?db=host&host_service_group=8&status=running"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of running Nova"
+                      >
+                        <i
+                          class="pficon pficon-ok"
+                          title="Show list of running Nova"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        Running (5)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Failed (0)
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=8&status=all"
+                    to="/host/host_services/18?db=host&host_service_group=8&status=all"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of all Nova"
+                      >
+                        <i
+                          class="pficon pficon-service"
+                          title="Show list of all Nova"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        All (10)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="cell icon"
+                      title="Show list of configuration files of Nova"
+                    >
+                      <i
+                        class="fa fa-file-o"
+                        title="Show list of configuration files of Nova"
+                      />
+                    </div>
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Configuration (0)
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="8"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td label_header object_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Swift
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=9&status=running"
+                    to="/host/host_services/18?db=host&host_service_group=9&status=running"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of running Swift"
+                      >
+                        <i
+                          class="pficon pficon-ok"
+                          title="Show list of running Swift"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        Running (14)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Failed (0)
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="/host/host_services/18?db=host&host_service_group=9&status=all"
+                    to="/host/host_services/18?db=host&host_service_group=9&status=all"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="cell icon"
+                        title="Show list of all Swift"
+                      >
+                        <i
+                          class="pficon pficon-service"
+                          title="Show list of all Swift"
+                        />
+                      </div>
+                      <div
+                        class="expand wrap_text"
+                      >
+                        All (14)
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value sub_items"
+                  dir="auto"
+                  role="cell"
+                >
+                  <div
+                    class="content"
+                  >
+                    <div
+                      class="cell icon"
+                      title="Show list of configuration files of Swift"
+                    >
+                      <i
+                        class="fa fa-file-o"
+                        title="Show list of configuration files of Swift"
+                      />
+                    </div>
+                    <div
+                      class="expand wrap_text"
+                    >
+                      Configuration (0)
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </li>
+  </ul>
+</div>
+`;

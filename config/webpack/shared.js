@@ -1,74 +1,232 @@
-// Note: You must restart bin/webpack-dev-server for changes to take effect
-
 /* eslint global-require: 0 */
 /* eslint import/no-dynamic-require: 0 */
 
-const webpack = require('webpack')
-const merge = require('webpack-merge')
-const { basename, dirname, join, relative, resolve } = require('path')
-const { sync } = require('glob')
-const ExtractTextPlugin = require('extract-text-webpack-plugin')
-const ManifestPlugin = require('webpack-manifest-plugin')
-const extname = require('path-complete-extname')
-const { env, settings, output, loadersDir, engines } = require('./configuration.js')
+const webpack = require('webpack');
+const { basename, dirname, join, resolve } = require('path');
+const { globSync } = require('glob');
+const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
+const extname = require('path-complete-extname');
+const DuplicatePackageCheckerPlugin = require('duplicate-package-checker-webpack-plugin');
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+const { SplitChunksPlugin } = require('webpack').optimize;
+const fs = require('fs');
 
-const extensionGlob = `**/*{${settings.extensions.join(',')}}*` // */
-const entryPath = join(settings.source_path, settings.source_entry_path)
-let packPaths = {}
+const { env, settings, i18n, output, engines } = require('./configuration.js');
+const loaders = require('./loaders.js');
+const RailsEnginesPlugin = require('./RailsEnginesPlugin');
+const { generateTsConfigWebpack, needsRegeneration } = require('./generate-tsconfig.js');
+
+// Generate tsconfig.webpack.json before webpack runs
+// This ensures TypeScript checking includes all plugin directories
+const rootDir = resolve(__dirname, '../..');
+const tsconfigWebpackPath = resolve(rootDir, 'tsconfig.webpack.json');
+const pathsJsonPath = resolve(__dirname, './paths.json');
+
+if (needsRegeneration(tsconfigWebpackPath, pathsJsonPath)) {
+  console.log('Generating tsconfig.webpack.json...');
+  try {
+    generateTsConfigWebpack(rootDir, engines);
+  } catch (error) {
+    console.error('Failed to generate tsconfig.webpack.json:', error.message);
+  }
+}
+
+const extensionGlob = `**/*{${settings.extensions.join(',')}}*`; // */
+const entryPath = join(settings.source_path, settings.source_entry_path);
+const moduleDir = engines['manageiq-ui-classic'].node_modules;
+
+const gettextDir = i18n;
+
+const sharedPackages = [
+  '@carbon/react',
+  'jquery',
+  'lodash',
+  'moment',
+  'react',
+  'react-dom',
+];
+
+let packPaths = {};
 
 Object.keys(engines).forEach(function(k) {
-  let root = engines[k]
-  let glob = join(root, entryPath, extensionGlob)
-  packPaths[k] = sync(glob)
-})
+  let root = engines[k].root;
+  let glob = join(root, entryPath, extensionGlob);
+  packPaths[k] = globSync(glob);
+});
+
+const nodeModulesNotShims = (module) => {
+  const inNodeModules = SplitChunksPlugin.checkTest(/node_modules/, module);
+  const inShims = SplitChunksPlugin.checkTest(/shims/, module);
+
+  return inNodeModules && !inShims;
+};
+const notShims = (module) => (!SplitChunksPlugin.checkTest(/shims/, module));
+
+let plugins = [
+  new webpack.DefinePlugin({
+    'process.env.NODE_ENV': JSON.stringify(env.NODE_ENV || 'development'),
+    'process.env.CYPRESS': JSON.stringify(env.CYPRESS),
+  }),
+
+  new WebpackManifestPlugin({
+    publicPath: output.publicPath,
+    writeToFileEmit: true,
+  }),
+
+  // TypeScript type checking in parallel with webpack build
+  // Uses tsconfig.webpack.json which includes all plugin directories
+  new ForkTsCheckerWebpackPlugin({
+    async: process.env.NODE_ENV === 'development',
+    typescript: {
+      configFile: resolve(__dirname, '../../tsconfig.webpack.json'),
+      diagnosticOptions: {
+        semantic: true,
+        syntactic: true,
+      },
+      extensions: {
+        vue: false,
+      },
+      build: false,
+    },
+    issue: {
+      exclude: [
+        { file: '**/node_modules/**' },
+      ],
+    },
+    logger: {
+      infrastructure: 'console',
+      issues: 'console',
+    },
+  }),
+
+  // plugin to output timestamp after compilation (useful for --watch)
+  {
+    apply(compiler) {
+      compiler.hooks.done.tap('done timestamp', () => {
+        // setTimeout to append instead of prepend the date
+        setTimeout(() => console.log('webpack: done', new Date()));
+      });
+    },
+  },
+
+  // plugin to create a marker file when building with CYPRESS=true
+  {
+    apply(compiler) {
+      compiler.hooks.done.tap('cypress marker', () => {
+        const markerPath = resolve(__dirname, '../../tmp/.cypress-build-marker');
+        const tmpDir = resolve(__dirname, '../../tmp');
+        if (env.CYPRESS === 'true') {
+          // Ensure tmp directory exists
+          if (!fs.existsSync(tmpDir)) {
+            fs.mkdirSync(tmpDir, { recursive: true });
+          }
+          // Create marker file
+          fs.writeFileSync(markerPath, new Date().toISOString());
+          console.log('✓ Cypress build marker created');
+        } else if (fs.existsSync(markerPath)) {
+          // Remove marker file if it exists (for non-Cypress builds)
+          fs.unlinkSync(markerPath);
+        }
+      });
+    },
+  },
+];
+
+if (env.WEBPACK_VERBOSE) {
+  plugins.push(new DuplicatePackageCheckerPlugin({
+    verbose: true,
+    showHelp: false,
+  }));
+}
+
+const resolveModule = (...name) => resolve(dirname(__filename), '../../node_modules', ...name);
 
 module.exports = {
-  entry: Object.keys(packPaths).reduce(
-    (map, pluginName) => {
-      packPaths[pluginName].forEach(function(entry) {
-        map[join(pluginName, basename(entry, extname(entry)))] = resolve(entry)
-      })
-      return map
-    }, {}
-  ),
+  entry: {
+    ...Object.keys(packPaths).reduce(
+      (map, pluginName) => {
+        packPaths[pluginName].forEach(function(entry) {
+          map[join(pluginName, basename(entry, extname(entry)))] = resolve(entry);
+        });
+        return map;
+      }, {}
+    ),
+    'shims': [
+      'core-js/stable',
+      'regenerator-runtime/runtime',
+    ],
+  },
 
   output: {
-    filename: '[name].js',
+    filename: '[name]-[chunkhash].js',
     path: output.path,
-    publicPath: output.publicPath
+    publicPath: output.publicPath,
   },
 
   module: {
-    rules: sync(join(loadersDir, '*.js')).map(loader => require(loader))
+    rules: loaders,
   },
 
-  plugins: [
-    new webpack.EnvironmentPlugin(JSON.parse(JSON.stringify(env))),
-    new ExtractTextPlugin(env.NODE_ENV === 'production' ? '[name]-[hash].css' : '[name].css'),
+  plugins,
 
-    // Workaround for angular/angular#11580
-    new webpack.ContextReplacementPlugin(
-      // The (\\|\/) piece accounts for path separators in *nix and Windows
-      /angular(\\|\/)core(\\|\/)@angular/,
-      resolve(__dirname, '../../'), // location of your src
-      {} // a map of your routes
-    ),
-
-    new ManifestPlugin({
-      publicPath: output.publicPath,
-      writeToFileEmit: true
-    })
-  ],
+  optimization: {
+    runtimeChunk: 'single',
+    splitChunks: {
+      minChunks: 1,
+      minSize: 0,
+      cacheGroups: {
+        vendor: {
+          chunks: 'all',
+          name: 'vendor',
+          priority: -10,
+          reuseExistingChunk: true,
+          test: nodeModulesNotShims,
+        },
+        default: {
+          chunks: 'all',
+          minChunks: 2,
+          name: 'vendor',
+          priority: -20,
+          reuseExistingChunk: true,
+          test: notShims,
+        },
+      },
+    },
+  },
 
   resolve: {
+    alias: {
+      ...sharedPackages.reduce((acc, pkg) => ({ ...acc, [pkg]: resolveModule(pkg) }), {}),
+      'bootstrap-select': '@pf3/select', // never use vanilla bootstrap-select
+      '@patternfly/patternfly': resolveModule('NONEXISTENT'),
+      '@patternfly/patternfly-next': resolveModule('NONEXISTENT'),
+      '@@ddf': resolve(dirname(__filename), '../../app/javascript/forms/data-driven-form'),
+      '@@miq-menu': resolve(dirname(__filename), '../../app/javascript/menu'),
+      '@@miq-redux': resolve(dirname(__filename), '../../app/javascript/redux'),
+      '@@miq-types': resolve(dirname(__filename), '../../app/javascript/types'),
+      'gettext_i18n_rails_js': gettextDir,
+      // TODO: remove once webpack is upgraded to v5
+      // Webpack 4 does not support the package.json "exports" field; alias packages
+      // that rely on it to the correct build directly.
+      // downshift v9 "module" field points to an ESM build that uses named imports from
+      // react (CJS) — webpack 4 can't resolve them. Use the CJS build instead.
+      'downshift': resolveModule('downshift/dist/downshift.cjs.cjs'),
+      // @carbon/utilities maps subpaths via exports-field wildcards that webpack 4 ignores.
+      '@carbon/utilities/date-picker': resolveModule('@carbon/utilities/es/date-picker/index.js'),
+    },
     extensions: settings.extensions,
-    modules: [
-      resolve(settings.source_path),
-      'node_modules'
-    ]
+    modules: [],
+    plugins: [
+      new RailsEnginesPlugin('module', 'resolve', engines, moduleDir),
+    ],
   },
 
   resolveLoader: {
-    modules: ['node_modules']
-  }
-}
+    // only read loaders from ui-classic
+    modules: [moduleDir],
+  },
+
+  watchOptions: {
+    ignored: ['**/.*.sw[po]'],
+  },
+};

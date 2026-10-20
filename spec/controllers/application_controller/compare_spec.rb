@@ -1,7 +1,9 @@
+require ManageIQ::UI::Classic::Engine.root.join("spec/helpers/report_helper_spec.rb")
+
 describe ApplicationController do
-  context "#drift_history" do
+  describe "#drift_history" do
     it "resets @display to main" do
-      vm = FactoryGirl.create(:vm_vmware, :name => "My VM")
+      vm = FactoryBot.create(:vm_vmware)
       controller.instance_variable_set(:@display, "vms")
       controller.instance_variable_set(:@sb, {})
       controller.instance_variable_set(:@drift_obj, vm)
@@ -11,6 +13,490 @@ describe ApplicationController do
       expect(controller).to receive(:render)
       controller.send(:drift_history)
       expect(assigns(:display)).to eq("main")
+    end
+  end
+
+  describe '#compare_cancel' do
+    let(:prev_breadcrumb) { {:name => "some name", :url => "some url"} }
+
+    before { controller.instance_variable_set(:@breadcrumbs, [{}, prev_breadcrumb, {}]) }
+
+    it 'calls javascript_prologue and redirect_to' do
+      expect(controller).to receive(:javascript_prologue)
+      expect(controller).to receive(:redirect_to).with(prev_breadcrumb[:url])
+      controller.send(:compare_cancel)
+    end
+  end
+
+  describe "compare_to_pdf" do
+    before do
+      stub_user(:features => :all)
+      EvmSpecHelper.create_guid_miq_server_zone
+    end
+
+    let(:compare) do
+      first_vm = FactoryBot.create(:vm)
+      second_vm = FactoryBot.create(:vm)
+      report = FactoryBot.create(:miq_report, :col_order => [])
+
+      FactoryBot.build(
+        :miq_compare,
+        :report  => report,
+        :options => {
+          :ids     => [first_vm.id, second_vm.id],
+          :include => {
+            :hardware            => {:fetch => false, :fetched => false, :checked => false, :group => "Properties"},
+            :_model_             => {:fetch => true,  :fetched => false, :checked => true,  :group => "Properties"},
+            :"hardware.disks"    => {:fetch => false, :fetched => false, :checked => false, :key => "", :group => "Properties"},
+            :"hardware.cdroms"   => {:fetch => false, :fetched => false, :checked => false, :key => "", :group => "Properties"},
+            :"hardware.floppies" => {:fetch => false, :fetched => false, :checked => false, :key => "", :group => "Properties"},
+            :"hardware.nics"     => {:fetch => false, :fetched => false, :checked => false, :key => "", :group => "Properties"},
+            :"hardware.volumes"  => {:fetch => false, :fetched => false, :checked => false, :key => :name, :group => "Properties"}
+          }
+        }
+      )
+    end
+
+    it 'builds the compare report and renders it' do
+      session[:miq_compare] = Marshal.dump(compare)
+      controller.instance_variable_set(:@sb, :compare_db => 'Vm')
+
+      expect(controller).to receive(:create_compare_report).and_call_original
+      expect(controller).to receive(:render_pdf_internal).and_call_original
+      expect(controller).to receive(:report_print_options).and_call_original
+      expect(controller).to receive(:render)
+
+      controller.send(:compare_to_pdf)
+    end
+  end
+
+  describe '#prepare_data_for_compare_or_drift_report' do
+    it 'does not raise when the base VM is missing a section that another VM has (fields-only block)' do
+      section_name = :"config.hardware"
+      field        = {:name => :memory, :header => "Memory"}
+
+      compare = double(
+        :master_list => [
+          {:name => section_name, :header => "Hardware"},
+          nil,
+          [field]
+        ],
+        :include  => {section_name => {:checked => true}},
+        :ids      => [1, 2],
+        :records  => [{"id" => 1}],
+        :results  => {
+          1 => {section_name => nil},
+          2 => {section_name => {:memory => {:_value_ => "4 GB", :_match_ => false}}}
+        }
+      )
+
+      controller.instance_variable_set(:@compare, compare)
+      controller.instance_variable_set(:@sb, :miq_temp_params => 'all')
+
+      expect { controller.send(:prepare_data_for_compare_or_drift_report, :compare, false) }.not_to raise_error
+    end
+
+    it 'does not raise when the base VM has fewer disks than the VM being compared' do
+      section_name     = :"hardware.disks"
+      disk_in_both     = "sda"
+      disk_only_in_vm2 = "sdb"
+      field            = {:name => :size, :header => "Size"}
+
+      compare = double(
+        :master_list => [
+          {:name => section_name, :header => "Disk"},
+          [disk_in_both, disk_only_in_vm2],
+          [field]
+        ],
+        :include  => {section_name => {:checked => true}},
+        :ids      => [1, 2],
+        :records  => [{"id" => 1}],
+        :results  => {
+          # Base VM only has sda; VM 2 has both sda and sdb
+          1 => {section_name => {disk_in_both => {:size => {:_value_ => "10 GB", :_match_ => true}}, :_match_ => "100"}},
+          2 => {section_name => {disk_in_both => {:size => {:_value_ => "10 GB", :_match_ => true}},
+                                 disk_only_in_vm2 => {:size => {:_value_ => "20 GB", :_match_ => false}}, :_match_ => "50"}}
+        }
+      )
+
+      controller.instance_variable_set(:@compare, compare)
+      controller.instance_variable_set(:@sb, :miq_temp_params => 'all')
+
+      expect { controller.send(:prepare_data_for_compare_or_drift_report, :compare, false) }.not_to raise_error
+    end
+
+    it 'marks a differing value on ids[2] even when ids[1] is missing that disk' do
+      section_name = :"hardware.disks"
+      field        = {:name => :size, :header => "Size"}
+
+      # 3-VM compare: base=1, vm2=2, vm3=3
+      # vm2 is missing sda entirely; vm3 has sda with a different size than base.
+      compare = double(
+        :master_list => [
+          {:name => section_name, :header => "Disk"},
+          ["sda"],
+          [field]
+        ],
+        :include  => {section_name => {:checked => true}},
+        :ids      => [1, 2, 3],
+        :records  => [{"id" => 1}],
+        :results  => {
+          1 => {section_name => {"sda" => {:size => {:_value_ => "10 GB", :_match_ => true}}, :_match_ => "100"}},
+          2 => {section_name => {                                                               :_match_ => "0"}},  # vm2 missing sda
+          3 => {section_name => {"sda" => {:size => {:_value_ => "20 GB", :_match_ => true}},  :_match_ => "50"}}
+        }
+      )
+
+      controller.instance_variable_set(:@compare, compare)
+      controller.instance_variable_set(:@sb, :miq_temp_params => 'all')
+
+      controller.send(:prepare_data_for_compare_or_drift_report, :compare, false)
+      data = controller.instance_variable_get(:@data)
+
+      # data[1] is the attribute value row; col 5 is vm3's value (section, disk, attr, base, vm2, vm3)
+      expect(data[1][5].to_s).to start_with("* "), "expected vm3's size to be marked as different"
+    end
+
+    it 'does not mark (missing) when both base and non-base VMs are missing the same section (fields-only block)' do
+      section_name = :"config.hardware"
+      field        = {:name => :memory, :header => "Memory"}
+
+      compare = double(
+        :master_list => [
+          {:name => section_name, :header => "Hardware"},
+          nil,
+          [field]
+        ],
+        :include  => {section_name => {:checked => true}},
+        :ids      => [1, 2],
+        :records  => [{"id" => 1}],
+        :results  => {
+          1 => {section_name => nil},
+          2 => {section_name => nil}
+        }
+      )
+
+      controller.instance_variable_set(:@compare, compare)
+      controller.instance_variable_set(:@sb, :miq_temp_params => 'all')
+
+      controller.send(:prepare_data_for_compare_or_drift_report, :compare, false)
+      data = controller.instance_variable_get(:@data)
+
+      # Both VMs are missing the section; the non-base value should not be marked as different
+      expect(data[0][3].to_s).not_to start_with("* ")
+      expect(data[0][4].to_s).not_to start_with("* ")
+    end
+
+    it 'does not raise for drift mode when a VM is missing a section (fields-only block)' do
+      section_name = :"config.hardware"
+      field        = {:name => :memory, :header => "Memory"}
+      ts1          = 2.days.ago.freeze
+      ts2          = 1.day.ago.freeze
+
+      compare = double(
+        :master_list => [
+          {:name => section_name, :header => "Hardware"},
+          nil,
+          [field]
+        ],
+        :include  => {section_name => {:checked => true}},
+        :ids      => [ts1, ts2],
+        :records  => [{"id" => 1}],
+        :results  => {
+          ts1 => {section_name => {:memory => {:_value_ => "4 GB", :_match_ => true}}},
+          ts2 => {section_name => nil}
+        }
+      )
+
+      controller.instance_variable_set(:@compare, compare)
+      controller.instance_variable_set(:@sb, :miq_drift_params => 'all')
+
+      expect { controller.send(:prepare_data_for_compare_or_drift_report, :drift, false) }.not_to raise_error
+    end
+
+    it 'does not raise for csv=true when base VM is missing a section (fields-only block)' do
+      section_name = :"config.hardware"
+      field        = {:name => :memory, :header => "Memory"}
+
+      compare = double(
+        :master_list => [
+          {:name => section_name, :header => "Hardware"},
+          nil,
+          [field]
+        ],
+        :include  => {section_name => {:checked => true}},
+        :ids      => [1, 2],
+        :records  => [{"id" => 1}],
+        :results  => {
+          1 => {section_name => nil},
+          2 => {section_name => {:memory => {:_value_ => "4 GB", :_match_ => false}}}
+        }
+      )
+
+      controller.instance_variable_set(:@compare, compare)
+      controller.instance_variable_set(:@sb, :miq_temp_params => 'all')
+
+      expect { controller.send(:prepare_data_for_compare_or_drift_report, :compare, true) }.not_to raise_error
+    end
+
+    it 'does not raise for csv=true when base VM has fewer disks than the VM being compared' do
+      section_name     = :"hardware.disks"
+      disk_only_in_vm2 = "sdb"
+      field            = {:name => :size, :header => "Size"}
+
+      compare = double(
+        :master_list => [
+          {:name => section_name, :header => "Disk"},
+          [disk_only_in_vm2],
+          [field]
+        ],
+        :include  => {section_name => {:checked => true}},
+        :ids      => [1, 2],
+        :records  => [{"id" => 1}],
+        :results  => {
+          1 => {section_name => {:_match_ => "0"}},
+          2 => {section_name => {disk_only_in_vm2 => {:size => {:_value_ => "20 GB", :_match_ => false}}, :_match_ => "50"}}
+        }
+      )
+
+      controller.instance_variable_set(:@compare, compare)
+      controller.instance_variable_set(:@sb, :miq_temp_params => 'all')
+
+      expect { controller.send(:prepare_data_for_compare_or_drift_report, :compare, true) }.not_to raise_error
+    end
+  end
+
+  describe "download_data" do
+    before do
+      stub_user(:features => :all)
+      EvmSpecHelper.create_guid_miq_server_zone
+    end
+
+    # http://lucifer.usersys.redhat.com:3000/container_build/download_data?download_type=pdf#/
+    it 'builds a report from the GTL data' do
+      user = create_user_with_group('User-2', "Group-1", MiqUserRole.find_by(:name => "EvmRole-operator"))
+      report = create_and_generate_report_for_user("Vendor and Guest OS", user)
+
+      session[:view] = report
+      session[:paged_view_search_options] = {}
+      controller.params = {:download_type => 'pdf'}
+
+      expect(controller).to receive(:render).with(
+        hash_including(
+          :template => 'layouts/print/report',
+          :layout   => 'layouts/print',
+          :locals   => hash_including(
+            :report # the report does not match due to a ".dup" call in the controller.
+          )
+        )
+      )
+
+      controller.send(:download_data)
+    end
+  end
+end
+
+describe EmsClusterController do
+  let(:compare_ids) { [1, 2] }
+  let(:drift_ids) { [1.day.ago, 2.days.ago] }
+
+  # view = MiqCompare originally
+  # section = Hash[:name => :_model_]
+  # fields = [{:name => :name, :header => "Name"},
+  #           {:name => 'hosts.size', :header => 'Number of hosts'},
+  #           {:name => 'vms.size', :header => 'Number of vms'}
+  # ]
+  # view.ids: [Time, Time] for drifts
+  # view.ids = [1,2] for compares
+  #
+  # view.results = {view.ids[0] => {:_model_ => {:name => {:_value_ => "Cluster1"}, :"hosts.size" => {:_value_ => 1}, :"vms_size" => {:_value_ => 1} } },
+  #                 view.ids[1] => {:_model_ => {:name => {:_value_ => "Cluster2"}, :"hosts.size" => {:_value_ => 1}, :"vms_size" => {:_value_ => 1} } }
+  # }
+  class self::TestView
+    attr_accessor :ids, :results
+
+    def initialize
+      @ids = []
+      @results = []
+    end
+  end
+
+  let(:view) { self.class::TestView.new }
+
+  let(:section) { {:name => :_model_} }
+
+  let(:values1) do
+    [{:name => :field1, :value => 1},
+     {:name => :field2, :value => 20},
+     {:name => :field3, :value => 30},
+     {:name => :field4, :value => 40},
+     {:name => :field5, :value => 'string 1'},
+     {:name => :field6, :value => 'string 2'}]
+  end
+
+  let(:values2) do
+    [{:name => :field1, :value => 10},
+     {:name => :field2, :value => 20},
+     {:name => :field3, :value => 'xx'},
+     {:name => :field4, :value => nil},
+     {:name => :field5, :value => 'string 1'},
+     {:name => :field6, :value => 'other string'}]
+  end
+
+  before do
+    controller.instance_variable_set(:@compressed, false)
+    controller.instance_variable_set(:@exists_mode, false)
+  end
+
+  # simulation of fields param
+  def fill_fields(rows)
+    rows.each do |row|
+      @fields << {:name => row[:name], :header => row[:name]}
+    end
+  end
+
+  # simulation of view.results param
+  def fill_view_results(clusters)
+    clusters.each_pair do |id, rows|
+      view.results[id] ||= {:_model_ => {:name => {:_value_ => "Cluster#{id}"}}}
+
+      rows.each do |row|
+        view.results[id][:_model_][row[:name].to_sym] = {:_value_ => row[:value]}
+      end
+    end
+  end
+
+  def init_sample_values(ids)
+    @sample_values = {
+      ids[0] => values1,
+      ids[1] => values2
+    }
+  end
+
+  def init_fields_and_results(clusters)
+    fill_fields(clusters[view.ids[0]])
+
+    fill_view_results(clusters)
+  end
+
+  context 'compares' do
+    before do
+      view.ids = compare_ids
+
+      @sample_values = {}
+      init_sample_values(view.ids)
+
+      view.results = {}
+      @fields = []
+      init_fields_and_results(@sample_values)
+    end
+
+    it "sets total fields in section with 'All attributes' button to number of fields" do
+      controller.instance_variable_set(:@sb, :miq_temp_params => 'all')
+
+      all_fields_count = @sample_values[view.ids[0]].size
+
+      expect(controller.send(:comp_section_fields_total, view, section, @fields)).to eq(all_fields_count)
+    end
+
+    it "sets total fields in section with 'Attributes with different values' button to number of fields where clusters differs" do
+      controller.instance_variable_set(:@sb, :miq_temp_params => 'different')
+
+      diff_fields_count = 4 # differences in sample_values
+      expect(controller.send(:comp_section_fields_total, view, section, @fields)).to eq(diff_fields_count)
+    end
+
+    it "sets total fields in section with 'Attributes with same values' button to number of fields with same values among clusters" do
+      controller.instance_variable_set(:@sb, :miq_temp_params => 'same')
+
+      same_fields_count = 2 # same values in sample_values
+      expect(controller.send(:comp_section_fields_total, view, section, @fields)).to eq(same_fields_count)
+    end
+
+    it "returns row without error" do
+      controller.instance_variable_set(:@sb, :miq_temp_params => 'same')
+      controller.instance_variable_set(:@exists_mode, true)
+      row = controller.send(:comp_record_data_compressed, 1, nil, nil, true)
+      expect(row).to eq(:col2=> '<div class=""><i class="compare-diff" title="Missing"></i></div>')
+    end
+
+    it "sets session[:selected_sections] to empty array when last section on screen is unchecked" do
+      session[:selected_sections] = [:_model_]
+      controller.params = {:all_checked => ["xx-group_Properties_xx-group_Properties:_model_"], :id => "xx-group_Properties_xx-group_Properties%3A_model_", :check => "false"}
+      allow(controller).to receive(:render)
+      controller.send(:sections_field_changed)
+      expect(session[:selected_sections]).to eq([])
+    end
+
+    it "sets selected sections in session[:selected_sections]" do
+      session[:selected_sections] = [:_model_]
+      controller.params = {:all_checked => ["xx-group_Properties_xx-group_Properties:_model_", "xx-group_Properties_xx-group_Properties:hardware"], :id => "xx-group_Properties_xx-group_Properties%3Ahardware", :check => "true"}
+      allow(controller).to receive(:render)
+      controller.send(:sections_field_changed)
+      expect(session[:selected_sections]).to eq(["_model_", "hardware"])
+    end
+
+    context 'changes in Comparison Sections' do
+      before do
+        allow(controller).to receive(:render)
+        allow(controller).to receive(:session).and_return(:db_title => 'VMs')
+        controller.instance_variable_set(:@display, 'instances')
+        controller.params = {:check => 'true'}
+      end
+
+      it 'sets @explorer to false' do
+        controller.send(:sections_field_changed)
+        expect(controller.instance_variable_get(:@explorer)).to be(false)
+      end
+
+      it 'calls set_checked_sections according to the params' do
+        expect(controller).to receive(:set_checked_sections)
+        controller.send(:sections_field_changed)
+      end
+
+      context 'explorer screen' do
+        before { controller.instance_variable_set(:@display, nil) }
+
+        it 'sets @explorer to true' do
+          controller.send(:sections_field_changed)
+          expect(controller.instance_variable_get(:@explorer)).to be(true)
+        end
+      end
+    end
+  end
+
+  context 'drifts' do
+    before do
+      view.ids = drift_ids
+
+      @sample_values = {}
+      init_sample_values(view.ids)
+
+      view.results = {}
+      @fields = []
+      init_fields_and_results(@sample_values)
+    end
+
+    it "sets total fields in section with 'All attributes' button to number of fields" do
+      controller.instance_variable_set(:@sb, :miq_drift_params => 'all')
+
+      all_fields_count = @sample_values[view.ids[0]].size
+
+      expect(controller.send(:drift_section_fields_total, view, section, @fields)).to eq(all_fields_count)
+    end
+
+    it "sets total fields in section with 'Attributes with different values' button to number of fields where clusters differs" do
+      controller.instance_variable_set(:@sb, :miq_drift_params => 'different')
+
+      diff_fields_count = 4 # differences in sample_values
+      expect(controller.send(:drift_section_fields_total, view, section, @fields)).to eq(diff_fields_count)
+    end
+
+    it "sets total fields in section with 'Attributes with same values' button to number of fields with same values among clusters" do
+      controller.instance_variable_set(:@sb, :miq_drift_params => 'same')
+
+      same_fields_count = 2 # same values in sample_values
+      expect(controller.send(:drift_section_fields_total, view, section, @fields)).to eq(same_fields_count)
     end
   end
 end

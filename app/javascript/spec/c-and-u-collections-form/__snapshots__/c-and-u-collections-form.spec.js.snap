@@ -1,0 +1,445 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`DiagnosticsCURepairForm Component Should add a record from DiagnosticsCURepair form 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class="header-0-2-2"
+    >
+      <h3>
+        Collection Options
+      </h3>
+    </div>
+    <div
+      class="cds--list-box__wrapper"
+    >
+      <label
+        class="cds--label"
+        dir="auto"
+        for="timezone"
+        id="downshift-_r_8_-label"
+      >
+        Timezone
+      </label>
+      <div
+        class="cds--combo-box cds--list-box"
+      >
+        <div
+          class="cds--list-box__field"
+        >
+          <input
+            aria-activedescendant=""
+            aria-autocomplete="list"
+            aria-controls="downshift-_r_8_-menu"
+            aria-expanded="false"
+            aria-haspopup="listbox"
+            aria-labelledby="downshift-_r_8_-label"
+            autocomplete="off"
+            class="cds--text-input cds--text-input--empty"
+            id="timezone"
+            name="timezone"
+            placeholder="<Choose>"
+            role="combobox"
+            tabindex="0"
+            title=""
+            type="text"
+            value=""
+          />
+          <button
+            aria-controls="downshift-_r_8_-menu"
+            aria-expanded="false"
+            aria-label="Open"
+            class="cds--list-box__menu-icon"
+            id="downshift-_r_8_-toggle-button"
+            tabindex="-1"
+            title="Open"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+              />
+            </svg>
+          </button>
+        </div>
+        <ul
+          aria-labelledby="downshift-_r_8_-label"
+          class="cds--list-box__menu"
+          id="downshift-_r_8_-menu"
+          role="listbox"
+        />
+      </div>
+    </div>
+    <div>
+      <div
+        class="cds--form-item"
+        name="startDate"
+      >
+        <div
+          class="cds--date-picker cds--date-picker--single"
+        >
+          <div
+            class="cds--date-picker-container"
+          >
+            <label
+              class="cds--label"
+              dir="auto"
+              for="startDate"
+            >
+              <span
+                aria-hidden="true"
+                class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+              >
+                *
+              </span>
+              Start Date
+            </label>
+            <div
+              class="cds--date-picker-input__wrapper"
+            >
+              <span>
+                <input
+                  class="cds--date-picker__input cds--date-picker__input--md flatpickr-input"
+                  id="startDate"
+                  pattern="\\d{1,2}\\/\\d{1,2}\\/\\d{4}"
+                  type="text"
+                />
+                <svg
+                  aria-hidden="true"
+                  class="cds--date-picker__icon"
+                  fill="currentColor"
+                  focusable="false"
+                  height="16"
+                  preserveAspectRatio="xMidYMid meet"
+                  role="img"
+                  viewBox="0 0 32 32"
+                  width="16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M26,4h-4V2h-2v2h-8V2h-2v2H6C4.9,4,4,4.9,4,6v20c0,1.1,0.9,2,2,2h20c1.1,0,2-0.9,2-2V6C28,4.9,27.1,4,26,4z M26,26H6V12h20 V26z M26,10H6V6h4v2h2V6h8v2h2V6h4V10z"
+                  />
+                </svg>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div
+        class="cds--form-item"
+        name="endDate"
+      >
+        <div
+          class="cds--date-picker cds--date-picker--single"
+        >
+          <div
+            class="cds--date-picker-container"
+          >
+            <label
+              class="cds--label"
+              dir="auto"
+              for="endDate"
+            >
+              <span
+                aria-hidden="true"
+                class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+              >
+                *
+              </span>
+              End Date
+            </label>
+            <div
+              class="cds--date-picker-input__wrapper"
+            >
+              <span>
+                <input
+                  class="cds--date-picker__input cds--date-picker__input--md flatpickr-input"
+                  id="endDate"
+                  pattern="\\d{1,2}\\/\\d{1,2}\\/\\d{4}"
+                  type="text"
+                />
+                <svg
+                  aria-hidden="true"
+                  class="cds--date-picker__icon"
+                  fill="currentColor"
+                  focusable="false"
+                  height="16"
+                  preserveAspectRatio="xMidYMid meet"
+                  role="img"
+                  viewBox="0 0 32 32"
+                  width="16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M26,4h-4V2h-2v2h-8V2h-2v2H6C4.9,4,4,4.9,4,6v20c0,1.1,0.9,2,2,2h20c1.1,0,2-0.9,2-2V6C28,4.9,27.1,4,26,4z M26,26H6V12h20 V26z M26,10H6V6h4v2h2V6h8v2h2V6h4V10z"
+                  />
+                </svg>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Save
+      </button>
+    </div>
+  </form>
+  Note : Gap Collection is only available for VMware vSphere Infrastructures
+</div>
+`;
+
+exports[`DiagnosticsCURepairForm Component Should render a new DiagnosticsCURepair form 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class="header-0-2-2"
+    >
+      <h3>
+        Collection Options
+      </h3>
+    </div>
+    <div
+      class="cds--list-box__wrapper"
+    >
+      <label
+        class="cds--label"
+        dir="auto"
+        for="timezone"
+        id="downshift-_r_2_-label"
+      >
+        Timezone
+      </label>
+      <div
+        class="cds--combo-box cds--list-box"
+      >
+        <div
+          class="cds--list-box__field"
+        >
+          <input
+            aria-activedescendant=""
+            aria-autocomplete="list"
+            aria-controls="downshift-_r_2_-menu"
+            aria-expanded="false"
+            aria-haspopup="listbox"
+            aria-labelledby="downshift-_r_2_-label"
+            autocomplete="off"
+            class="cds--text-input"
+            id="timezone"
+            name="timezone"
+            placeholder="<Choose>"
+            role="combobox"
+            tabindex="0"
+            title="(GMT+00:00) UTC"
+            type="text"
+            value="(GMT+00:00) UTC"
+          />
+          <button
+            aria-label="Clear selected item"
+            class="cds--list-box__selection"
+            tabindex="-1"
+            title="Clear selected item"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 32 32"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+              />
+            </svg>
+          </button>
+          <button
+            aria-controls="downshift-_r_2_-menu"
+            aria-expanded="false"
+            aria-label="Open"
+            class="cds--list-box__menu-icon"
+            id="downshift-_r_2_-toggle-button"
+            tabindex="-1"
+            title="Open"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+              />
+            </svg>
+          </button>
+        </div>
+        <ul
+          aria-labelledby="downshift-_r_2_-label"
+          class="cds--list-box__menu"
+          id="downshift-_r_2_-menu"
+          role="listbox"
+        />
+      </div>
+    </div>
+    <div>
+      <div
+        class="cds--form-item"
+        name="startDate"
+      >
+        <div
+          class="cds--date-picker cds--date-picker--single"
+        >
+          <div
+            class="cds--date-picker-container"
+          >
+            <label
+              class="cds--label"
+              dir="auto"
+              for="startDate"
+            >
+              <span
+                aria-hidden="true"
+                class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+              >
+                *
+              </span>
+              Start Date
+            </label>
+            <div
+              class="cds--date-picker-input__wrapper"
+            >
+              <span>
+                <input
+                  class="cds--date-picker__input cds--date-picker__input--md flatpickr-input"
+                  id="startDate"
+                  pattern="\\d{1,2}\\/\\d{1,2}\\/\\d{4}"
+                  type="text"
+                />
+                <svg
+                  aria-hidden="true"
+                  class="cds--date-picker__icon"
+                  fill="currentColor"
+                  focusable="false"
+                  height="16"
+                  preserveAspectRatio="xMidYMid meet"
+                  role="img"
+                  viewBox="0 0 32 32"
+                  width="16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M26,4h-4V2h-2v2h-8V2h-2v2H6C4.9,4,4,4.9,4,6v20c0,1.1,0.9,2,2,2h20c1.1,0,2-0.9,2-2V6C28,4.9,27.1,4,26,4z M26,26H6V12h20 V26z M26,10H6V6h4v2h2V6h8v2h2V6h4V10z"
+                  />
+                </svg>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div
+        class="cds--form-item"
+        name="endDate"
+      >
+        <div
+          class="cds--date-picker cds--date-picker--single"
+        >
+          <div
+            class="cds--date-picker-container"
+          >
+            <label
+              class="cds--label"
+              dir="auto"
+              for="endDate"
+            >
+              <span
+                aria-hidden="true"
+                class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+              >
+                *
+              </span>
+              End Date
+            </label>
+            <div
+              class="cds--date-picker-input__wrapper"
+            >
+              <span>
+                <input
+                  class="cds--date-picker__input cds--date-picker__input--md flatpickr-input"
+                  id="endDate"
+                  pattern="\\d{1,2}\\/\\d{1,2}\\/\\d{4}"
+                  type="text"
+                />
+                <svg
+                  aria-hidden="true"
+                  class="cds--date-picker__icon"
+                  fill="currentColor"
+                  focusable="false"
+                  height="16"
+                  preserveAspectRatio="xMidYMid meet"
+                  role="img"
+                  viewBox="0 0 32 32"
+                  width="16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M26,4h-4V2h-2v2h-8V2h-2v2H6C4.9,4,4,4.9,4,6v20c0,1.1,0.9,2,2,2h20c1.1,0,2-0.9,2-2V6C28,4.9,27.1,4,26,4z M26,26H6V12h20 V26z M26,10H6V6h4v2h2V6h8v2h2V6h4V10z"
+                  />
+                </svg>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Save
+      </button>
+    </div>
+  </form>
+  Note : Gap Collection is only available for VMware vSphere Infrastructures
+</div>
+`;

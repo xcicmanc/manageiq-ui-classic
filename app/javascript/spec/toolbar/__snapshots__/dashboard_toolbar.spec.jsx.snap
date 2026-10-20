@@ -1,0 +1,119 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`<DashboardToolbar /> renders ok 1`] = `
+<div>
+  <div
+    class="toolbar-pf-actions miq-toolbar-actions"
+  >
+    <div
+      class="miq-toolbar-group form-group"
+    >
+      <span
+        class="cds--overflow-menu__wrapper"
+      >
+        <span
+          class="cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--top cds--tooltip cds--icon-tooltip"
+        >
+          <div
+            class="cds--tooltip-trigger__wrapper"
+          >
+            <button
+              aria-expanded="false"
+              aria-haspopup="true"
+              aria-labelledby="tooltip-_r_1_"
+              class="cds--overflow-menu cds--btn cds--btn--ghost cds--btn--icon-only"
+              floatingmenu="true"
+              id="dashboard-add-widget-menu"
+              title="Add widget"
+              type="button"
+            >
+              <div
+                class="toolbar-dashboard"
+              >
+                <span>
+                  Add widget
+                </span>
+                <svg
+                  aria-label="Options"
+                  class="cds--overflow-menu__icon"
+                  fill="currentColor"
+                  focusable="false"
+                  height="20"
+                  preserveAspectRatio="xMidYMid meet"
+                  role="img"
+                  viewBox="0 0 32 32"
+                  width="20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M16 22 6 12 7.4 10.6 16 19.2 24.6 10.6 26 12z"
+                  />
+                </svg>
+              </div>
+            </button>
+          </div>
+          <span
+            aria-hidden="true"
+            class="cds--popover"
+            id="tooltip-_r_1_"
+            role="tooltip"
+          >
+            <span
+              class="cds--popover-content cds--tooltip-content"
+            >
+              Options
+            </span>
+            <span
+              class="cds--popover-caret"
+            />
+          </span>
+        </span>
+      </span>
+      <span
+        class="cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--top cds--tooltip cds--icon-tooltip"
+      >
+        <div
+          class="cds--tooltip-trigger__wrapper"
+        >
+          <button
+            aria-labelledby="tooltip-_r_5_"
+            class="cds--btn cds--btn--md cds--layout--size-md cds--btn--ghost cds--btn--icon-only"
+            id="reset-dashboard-button"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              fill="currentColor"
+              focusable="false"
+              height="18"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 32 32"
+              width="18"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M28.88,30a1,1,0,0,1-.88-.5A15.19,15.19,0,0,0,15,22v6a1,1,0,0,1-.62.92,1,1,0,0,1-1.09-.21l-12-12a1,1,0,0,1,0-1.42l12-12a1,1,0,0,1,1.09-.21A1,1,0,0,1,15,4v6.11a17.19,17.19,0,0,1,15,17,16.34,16.34,0,0,1-.13,2,1,1,0,0,1-.79.86ZM14.5,20A17.62,17.62,0,0,1,28,26,15.31,15.31,0,0,0,13.91,12,1,1,0,0,1,13,11V6.41L3.41,16,13,25.59V21a1,1,0,0,1,1-1h.54Z"
+              />
+            </svg>
+          </button>
+        </div>
+        <span
+          aria-hidden="true"
+          class="cds--popover"
+          id="tooltip-_r_5_"
+          role="tooltip"
+        >
+          <span
+            class="cds--popover-content cds--tooltip-content"
+          >
+            Reset Dashboard Widgets to the defaults
+          </span>
+          <span
+            class="cds--popover-caret"
+          />
+        </span>
+      </span>
+    </div>
+  </div>
+</div>
+`;

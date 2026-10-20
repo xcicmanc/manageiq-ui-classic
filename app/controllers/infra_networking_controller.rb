@@ -9,6 +9,7 @@ class InfraNetworkingController < ApplicationController
   include Mixins::ExplorerPresenterMixin
   include Mixins::FindRecord
   include Mixins::CustomButtonDialogFormMixin
+  include Mixins::BreadcrumbsMixin
 
   def self.model
     Switch
@@ -19,8 +20,11 @@ class InfraNetworkingController < ApplicationController
   end
 
   def show_list
-    redirect_to :action => 'explorer', :flash_msg => @flash_array ? @flash_array[0][:message] : nil
+    flash_to_session
+    redirect_to(:action => 'explorer')
   end
+
+  alias_method :index, :show_list
 
   def tagging_explorer_controller?
     @explorer
@@ -33,6 +37,7 @@ class InfraNetworkingController < ApplicationController
     @flash_array = nil
     self.x_active_tree = params[:tree] if params[:tree]
     self.x_node = params[:id]
+    assert_accordion_and_tree_privileges(x_active_tree)
     load_or_clear_adv_search
     apply_node_search_text if x_active_tree == :infra_networking_tree
     replace_right_cell
@@ -47,6 +52,9 @@ class InfraNetworkingController < ApplicationController
 
     self.x_active_accord = params[:id].sub(/_accord$/, '')
     self.x_active_tree   = "#{x_active_accord}_tree"
+
+    assert_accordion_and_tree_privileges(x_active_tree)
+
     get_node_info(x_node)
 
     @search_text = @sb[:infra_networking_search_text]["#{x_active_accord}_search_text"]
@@ -68,25 +76,9 @@ class InfraNetworkingController < ApplicationController
   end
 
   def x_show
+    assert_privileges("infra_networking_view")
     @switch = @record = identify_record(params[:id], Switch)
     generic_x_show
-  end
-
-  def tree_record
-    @record =
-      case x_active_tree
-      when :infra_networking_tree then infra_networking_tree_rec
-      end
-  end
-
-  def infra_networking_tree_rec
-    nodes = x_node.split('-')
-    case nodes.first
-    when "root", 'e' then find_record(ExtManagementSystem, params[:id])
-    when "h"  then find_record(Host, params[:id])
-    when "c"  then find_record(Cluster, params[:id])
-    when "sw" then find_record(Switch, params[:id])
-    end
   end
 
   def show_record(_id = nil)
@@ -102,36 +94,17 @@ class InfraNetworkingController < ApplicationController
       return
     end
 
-    if @record.kind_of?(Switch)
-      rec_cls = @record.class.to_s
-    end
-    return unless %w(download_pdf main).include?(@display)
-    @showtype     = "main"
-    @button_group = "infra_networking_#{rec_cls}"
+    return unless %w[download_pdf main].include?(@display)
+
+    @showtype = "main"
+    @center_toolbar = 'infra_networking'
   end
 
   def explorer
     @explorer = true
     @lastaction = "explorer"
 
-    # if AJAX request, replace right cell, and return
-    if request.xml_http_request?
-      replace_right_cell
-      return
-    end
-
-    if params[:accordion]
-      self.x_active_tree   = "#{params[:accordion]}_tree"
-      self.x_active_accord = params[:accordion]
-    end
-    if params[:button]
-      @miq_after_onload = "miqAjax('/#{controller_name}/x_button?pressed=#{params[:button]}');"
-    end
-
     build_accordions_and_trees
-
-    params.instance_variable_get(:@parameters).merge!(session[:exp_parms]) if session[:exp_parms]
-    session.delete(:exp_parms)
     @in_a_form = false
 
     render :layout => "application"
@@ -149,69 +122,53 @@ class InfraNetworkingController < ApplicationController
     end
   end
 
+  def custom_button_events
+    assert_privileges("infra_networking_view")
+    return unless init_show_variables('switch')
+
+    @lastaction = "custom_button_events"
+    drop_breadcrumb(:name => _("%{name} (Custom Button Events)") % {:name => @record.name},
+                    :url  => "/infra_networking/custom_button_events/#{@record.id}")
+    show_details(CustomButtonEvent, :association => "custom_button_events", :clickable => false)
+  end
+
+  def download_data
+    assert_privileges('infra_networking_view')
+    super
+  end
+
+  def download_summary_pdf
+    assert_privileges('infra_networking_view')
+    super
+  end
+
   private
 
   def textual_group_list
-    [%i(relationships), %i(smart_management)]
+    [%i[relationships], %i[smart_management]]
   end
   helper_method :textual_group_list
-
-  def hosts_list
-    condition         = nil
-    label             = _("%{name} (All %{titles})" % {:name => @switch.name, :titles => title_for_hosts})
-    breadcrumb_suffix = ""
-
-    host_service_group_name = params[:host_service_group_name]
-    if host_service_group_name
-      case params[:status]
-      when 'running'
-        hosts_filter = @switch.host_ids_with_running_service_group(host_service_group_name)
-        label        = _("Hosts with running %{name}") % {:name => host_service_group_name}
-      when 'failed'
-        hosts_filter = @switch.host_ids_with_failed_service_group(host_service_group_name)
-        label        = _("Hosts with failed %{name}") % {:name => host_service_group_name}
-      when 'all'
-        hosts_filter = @switch.host_ids_with_service_group(host_service_group_name)
-        label        = _("All %{titles} with %{name}") % {:titles => title_for_hosts, :name => host_service_group_name}
-      end
-
-      if hosts_filter
-        condition = ["hosts.id IN (#{hosts_filter.to_sql})"]
-        breadcrumb_suffix = "&host_service_group_name=#{host_service_group_name}&status=#{params[:status]}"
-      end
-    end
-
-    return label, condition, breadcrumb_suffix
-  end
 
   def display_node(id, model)
     if @record.nil?
       self.x_node = "root"
       get_node_info("root")
     else
-      show_record(from_cid(id))
-      model_string = ui_lookup(:model => (model ? model : @record.class).to_s)
+      show_record(id)
+      model_string = ui_lookup(:model => (model || @record.class).to_s)
       @right_cell_text = _("%{model} \"%{name}\"") % {:name => @record.name, :model => model_string}
     end
   end
 
   def features
-    [{:role     => "infra_networking",
-      :role_any => true,
-      :name     => :infra_networking,
-      :title    => _("Switches")},
-    ].map do |hsh|
-      ApplicationController::Feature.new_with_hash(hsh)
-    end
-  end
-
-  def build_infra_networking_tree(type, name)
-    tree = case name
-           when :infra_networking_tree
-             TreeBuilderConfigurationManager.new(name, type, @sb)
-           end
-    instance_variable_set :"@#{name}", tree.tree_nodes
-    tree
+    [
+      {
+        :role     => "infra_networking",
+        :role_any => true,
+        :name     => :infra_networking,
+        :title    => _("Switches")
+      }
+    ].map { |hsh| ApplicationController::Feature.new_with_hash(hsh) }
   end
 
   def get_node_info(treenodeid, show_list = true)
@@ -241,24 +198,6 @@ class InfraNetworkingController < ApplicationController
               end
 
     @right_cell_text += @edit[:adv_search_applied][:text] if x_tree && @edit && @edit[:adv_search_applied]
-
-    if @edit && @edit.fetch_path(:adv_search_applied, :qs_exp) # If qs is active, save it in history
-      x_history_add_item(:id     => x_node,
-                         :qs_exp => @edit[:adv_search_applied][:qs_exp],
-                         :text   => @right_cell_text)
-    else
-      x_history_add_item(:id => treenodeid, :text => @right_cell_text) # Add to history pulldown array
-    end
-    options
-  end
-
-  def dvswitches_list(id, model)
-    return dvswitch_node(id, model) if id
-    if x_active_tree == :infra_networking_tree
-      options = {:model => "Switch", :named_scope => :shareable}
-      @right_cell_text = _("All %{title}") % {:title => model_to_name(model)}
-      process_show_list(options) if @show_list
-    end
     options
   end
 
@@ -274,10 +213,10 @@ class InfraNetworkingController < ApplicationController
       self.x_node = "root"
       get_node_info("root")
     else
-      options = {:model => "Switch", :named_scope => :shareable, :selected_ids => @host_record.switches.pluck(:id)}
+      options = {:model => "Switch", :named_scope => :shareable, :parent => @record}
       process_show_list(options) if @show_list
-      @showtype        = 'main'
-      @pages           = nil
+      @showtype = 'main'
+      @pages = nil
       @right_cell_text = _("Switches for %{model} \"%{name}\"") % {:model => model, :name => @host_record.name}
     end
     options
@@ -290,12 +229,10 @@ class InfraNetworkingController < ApplicationController
       self.x_node = "root"
       get_node_info("root")
     else
-      hosts = @cluster_record.hosts
-      switch_ids = hosts.collect { |host| host.switches.pluck(:id) }
-      options = {:model => "Switch", :named_scope => :shareable, :selected_ids => switch_ids.flatten.uniq}
+      options = {:model => "Switch", :named_scope => :shareable, :parent => @record}
       process_show_list(options) if @show_list
-      @showtype        = 'main'
-      @pages           = nil
+      @showtype = 'main'
+      @pages = nil
       @right_cell_text = _("Switches for %{model} \"%{name}\"") % {:model => model, :name => @cluster_record.name}
     end
     options
@@ -308,12 +245,10 @@ class InfraNetworkingController < ApplicationController
       self.x_node = "root"
       get_node_info("root")
     else
-      hosts = Host.where(:ems_id => @provider_record.id)
-      switch_ids = hosts.collect { |host| host.switches.pluck(:id) }
-      options = {:model => "Switch", :named_scope => :shareable, :selected_ids => switch_ids.flatten.uniq}
+      options = {:model => "Switch", :named_scope => :shareable, :parent => @record}
       process_show_list(options) if @show_list
-      @showtype        = 'main'
-      @pages           = nil
+      @showtype = 'main'
+      @pages = nil
       @right_cell_text = _("Switches for %{model} \"%{name}\"") % {:model => model, :name => @provider_record.name}
     end
     options
@@ -328,9 +263,14 @@ class InfraNetworkingController < ApplicationController
 
   def default_node
     return unless x_node == "root"
+
     options = {:model => "Switch", :named_scope => :shareable}
     process_show_list(options) if @show_list
-    @right_cell_text = _("All Switches")
+    @right_cell_text = if @search_text && !@in_a_form
+                         _("All Switches (Names with \"%{search_text}\")") % {:search_text => @search_text}
+                       else
+                         _("All Switches")
+                       end
     options
   end
 
@@ -360,7 +300,7 @@ class InfraNetworkingController < ApplicationController
     end
 
     if action_type == "dialog_form_button_pressed"
-      presenter = set_custom_button_dialog_presenter
+      presenter = set_custom_button_dialog_presenter(options)
       render :json => presenter.for_render
       return
     end
@@ -374,14 +314,12 @@ class InfraNetworkingController < ApplicationController
       type, _id = parse_nodetype_and_id(x_node)
 
       record_showing = type && ["Switch"].include?(TreeBuilder.get_model_for_prefix(type))
-      c_tb = build_toolbar(center_toolbar_filename)
-      h_tb = build_toolbar("x_history_tb") unless @in_a_form
     end
 
     # Build presenter to render the JS command for the tree update
     presenter ||= ExplorerPresenter.new(
       :active_tree => x_active_tree,
-      :delete_node => @delete_node, # Remove a new node from the tree
+      :delete_node => @delete_node # Remove a new node from the tree
     )
 
     if record_showing
@@ -392,19 +330,19 @@ class InfraNetworkingController < ApplicationController
       partial_locals = {:controller =>'infra_networking'}
       if partial == 'layouts/x_gtl'
         partial_locals[:action_url] = @lastaction
-        presenter[:parent_id] = @record.id # Set parent rec id for JS function miqGridSort to build URL
-        presenter[:parent_class] = params[:controller] # Set parent class for URL also
       end
       presenter.update(:main_div, r[:partial => partial, :locals => partial_locals])
     else
       presenter.update(:main_div, r[:partial => 'layouts/x_gtl'])
     end
 
-    replace_search_box(presenter)
+    replace_search_box(presenter, :nameonly => x_active_tree == :infra_networking_tree)
     handle_bottom_cell(presenter)
     rebuild_toolbars(record_showing, presenter)
     presenter[:right_cell_text] = @right_cell_text
     presenter[:osf_node] = x_node # Open, select, and focus on this node
+
+    presenter.update(:breadcrumbs, r[:partial => 'layouts/breadcrumbs'])
 
     render :json => presenter.for_render
   end
@@ -420,33 +358,20 @@ class InfraNetworkingController < ApplicationController
               else
                 @showtype.to_s
               end
-    if @showtype == "item"
-      header = _("%{action} \"%{item_name}\" for Switch \"%{name}\"") % {
-        :name      => name,
-        :item_name => @item.name,
-        :action    => action_type(@sb[:action], 1)
-      }
-      x_history_add_item(:id => x_node, :text => header, :action => @sb[:action], :item => @item.id)
-    else
-      header = _("\"%{action}\" for Switch \"%{name}\"") % {
-        :name   => name,
-        :action => action_type(@sb[:action], 2)
-      }
-      if @display && @display != "main"
-        x_history_add_item(:id => x_node, :text => header, :display => @display)
-      elsif @sb[:action] != "drift_history"
-        x_history_add_item(:id => x_node, :text => header, :action => @sb[:action])
-      end
-    end
+    header = if @showtype == "item"
+               _("%{action} \"%{item_name}\" for Switch \"%{name}\"") % {
+                 :name      => name,
+                 :item_name => @item.name,
+                 :action    => action_type(@sb[:action], 1)
+               }
+             else
+               _("\"%{action}\" for Switch \"%{name}\"") % {
+                 :name   => name,
+                 :action => action_type(@sb[:action], 2)
+               }
+             end
     action = params[:pressed] == "custom_button" ? "dialog_form_button_pressed" : nil
     return partial, action, header
-  end
-
-  def leaf_record
-    get_node_info(x_node)
-    @delete_node = params[:id] if @replace_trees
-    type, _id = parse_nodetype_and_id(x_node)
-    type && %w(Switch).include?(TreeBuilder.get_model_for_prefix(type))
   end
 
   def dvswitch_record?(node = x_node)
@@ -456,6 +381,7 @@ class InfraNetworkingController < ApplicationController
 
   def search_text_type(node)
     return "dvswitch" if dvswitch_record?(node)
+
     node
   end
 
@@ -484,6 +410,7 @@ class InfraNetworkingController < ApplicationController
     else
       presenter.update(:main_div, r[:partial => 'layouts/x_gtl'])
     end
+    replace_search_box(presenter)
   end
 
   def action_type(type, amount)
@@ -495,14 +422,13 @@ class InfraNetworkingController < ApplicationController
     end
   end
 
-  # Build the switch detail gtl view
-  def show_details(db, options = {}) # Pass in the db, parent vm is in @vm
+  # Build the switch detail gtl view. Pass in the db, parent vm is in @vm
+  def show_details(db, options = {})
     association = options[:association]
     conditions  = options[:conditions]
-    # generate the grid/tile/list url to come back here when gtl buttons are pressed
-    @gtl_url       = "/infra_networking/#{@listicon.pluralize}/#{@record.id}?"
-    @showtype      = "details"
-    @display       = "main"
+    clickable   = options[:clickable].nil?
+    @showtype = "details"
+    @display = "main"
     @no_checkboxes = @no_checkboxes.nil? || @no_checkboxes
     @showlinks     = true
 
@@ -510,6 +436,7 @@ class InfraNetworkingController < ApplicationController
                              :parent      => @record,
                              :association => association,
                              :conditions  => conditions,
+                             :clickable   => clickable,
                              :dbname      => "#{@db}item") # Get the records into a view & paginator
 
     if @explorer # In explorer?
@@ -519,6 +446,7 @@ class InfraNetworkingController < ApplicationController
       render :update do |page|
         page << javascript_prologue
         page.replace("flash_msg_div", :partial => "layouts/flash_msg")
+        page << "miqScrollTop();" if @flash_array.present?
         page.replace_html("main_div", :partial => "show") # Replace main div area contents
         page << javascript_reload_toolbars
       end
@@ -545,22 +473,17 @@ class InfraNetworkingController < ApplicationController
     end
   end
 
-  def replace_search_box(presenter)
-    # Replace the searchbox
-    presenter.replace(:adv_searchbox_div,
-                      r[:partial => 'layouts/x_adv_searchbox',
-                        :locals  => {:nameonly => x_active_tree == :infra_networking_tree}])
-
-    presenter[:clear_gtl_list_grid] = @gtl_type && @gtl_type != 'list'
+  def replace_search_box(presenter, locals = {})
+    super(presenter, locals)
   end
 
   def handle_bottom_cell(presenter)
     # Handle bottom cell
     if @pages || @in_a_form
       if @pages && !@in_a_form
-        presenter.hide(:form_buttons_div).show(:pc_div_1)
+        presenter.hide(:form_buttons_div)
       elsif @in_a_form
-        presenter.hide(:pc_div_1).show(:form_buttons_div)
+        presenter.remove_paging.show(:form_buttons_div)
       end
       presenter.show(:paging_div)
     else
@@ -576,17 +499,15 @@ class InfraNetworkingController < ApplicationController
       v_tb = if record_showing
                build_toolbar("x_summary_view_tb")
              else
-               build_toolbar("x_gtl_view_tb")
+               build_toolbar("download_view_tb")
              end
     end
 
-    h_tb = build_toolbar("x_history_tb") unless @in_a_form
-
     cb_tb = build_toolbar(Mixins::CustomButtons::Result.new(@nodetype == 'sw' ? :single : :list))
 
-    presenter.reload_toolbars(:history => h_tb, :center => c_tb, :view => v_tb, :custom => cb_tb)
+    presenter.reload_toolbars(:center => c_tb, :view => v_tb, :custom => cb_tb)
 
-    presenter.set_visibility(h_tb.present? || c_tb.present? || v_tb.present?, :toolbar)
+    presenter.set_visibility(c_tb.present? || v_tb.present?, :toolbar)
 
     presenter[:record_id] = @record.try(:id)
 
@@ -602,7 +523,7 @@ class InfraNetworkingController < ApplicationController
   end
 
   def display_adv_searchbox
-    !(@infra_networking_record || @in_a_form)
+    !(@record || @in_a_form)
   end
 
   def breadcrumb_name(_model)
@@ -614,7 +535,8 @@ class InfraNetworkingController < ApplicationController
   end
 
   def render_tagging_form
-    return if %w(cancel save).include?(params[:button])
+    return if %w[cancel save].include?(params[:button])
+
     @in_a_form = true
     @right_cell_text = _("Edit Tags")
     clear_flash_msg
@@ -631,7 +553,17 @@ class InfraNetworkingController < ApplicationController
     _("Networking")
   end
 
-  menu_section :inf
+  def breadcrumbs_options
+    {
+      :breadcrumbs => [
+        {:title => _("Compute")},
+        {:title => _("Infrastructure")},
+        {:title => _("Networking")},
+      ],
+    }
+  end
 
+  menu_section :inf
+  feature_for_actions "#{controller_name}_show_list", *ADV_SEARCH_ACTIONS
   has_custom_buttons
 end

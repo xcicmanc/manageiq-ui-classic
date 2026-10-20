@@ -1,11 +1,11 @@
 describe TreeBuilderPolicySimulationResults do
   context 'TreeBuilderPolicySimulationResults' do
     before do
-      role = MiqUserRole.find_by_name("EvmRole-operator")
-      @group = FactoryGirl.create(:miq_group, :miq_user_role => role, :description => "Policy Simulation Group")
-      login_as FactoryGirl.create(:user, :userid => 'policy_simulation_results_wilma', :miq_groups => [@group])
+      role = MiqUserRole.find_by(:name => "EvmRole-operator")
+      @group = FactoryBot.create(:miq_group, :miq_user_role => role, :description => "Policy Simulation Group")
+      login_as FactoryBot.create(:user, :userid => 'policy_simulation_results_wilma', :miq_groups => [@group])
       @policy_options = {:out_of_scope => true, :passed => true, :failed => true}
-      @event = FactoryGirl.create(:miq_event_definition, :id => 123)
+      @event = FactoryBot.create(:miq_event_definition, :id => 123)
       @data = {:event_value => 123, :results => [{:id => 76, :name => "DevRHEL002", :result => "allow", :profiles => []},
                                                  {:id       => 69,
                                                   :name     => "DevLin002",
@@ -27,7 +27,7 @@ describe TreeBuilderPolicySimulationResults do
                                                                                                     {:id          => 9,
                                                                                                      :description => "Shutdown Virtual Machine Guest OS",
                                                                                                      :result      => "deny"}]}]}]}]}
-      @rsop_tree = TreeBuilderPolicySimulationResults.new(:rsop_tree, :rsop, {}, true, @data)
+      @rsop_tree = TreeBuilderPolicySimulationResults.new(:rsop_tree, {}, true, :root => @data)
     end
 
     it 'sets root correctly' do
@@ -40,7 +40,7 @@ describe TreeBuilderPolicySimulationResults do
     end
 
     it 'sets vm nodes correctly' do
-      vms = @rsop_tree.send(:x_get_tree_roots, false)
+      vms = @rsop_tree.send(:x_get_tree_roots)
       original_vms = @data[:results].sort_by { |a| a[:name].downcase }
       vms.each_with_index do |vm, i|
         expect(vm[:text]).to eq("<strong>VM:</strong> #{original_vms[i][:name]}")
@@ -50,7 +50,7 @@ describe TreeBuilderPolicySimulationResults do
     end
 
     it 'sets profile nodes correctly' do
-      vms = @rsop_tree.send(:x_get_tree_roots, false)
+      vms = @rsop_tree.send(:x_get_tree_roots)
       original_vms = @data[:results].sort_by { |a| a[:name].downcase }
       profiles_one = @rsop_tree.send(:x_get_tree_hash_kids, vms.first, false)
       profiles_two = @rsop_tree.send(:x_get_tree_hash_kids, vms.last, false)
@@ -60,7 +60,7 @@ describe TreeBuilderPolicySimulationResults do
     end
 
     it 'sets policy nodes correctly' do
-      vms = @rsop_tree.send(:x_get_tree_roots, false)
+      vms = @rsop_tree.send(:x_get_tree_roots)
       original_vms = @data[:results].sort_by { |a| a[:name].downcase }
       profiles = @rsop_tree.send(:x_get_tree_hash_kids, vms.first, false)
       policies = @rsop_tree.send(:x_get_tree_hash_kids, profiles.first, false)
@@ -69,7 +69,7 @@ describe TreeBuilderPolicySimulationResults do
     end
 
     it 'sets condition and action nodes correctly' do
-      vms = @rsop_tree.send(:x_get_tree_roots, false)
+      vms = @rsop_tree.send(:x_get_tree_roots)
       original_vms = @data[:results].sort_by { |a| a[:name].downcase }
       profiles = @rsop_tree.send(:x_get_tree_hash_kids, vms.first, false)
       policies = @rsop_tree.send(:x_get_tree_hash_kids, profiles.first, false)

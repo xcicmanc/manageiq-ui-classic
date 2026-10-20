@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::MiqAeDomainsCenter < ApplicationHelper::Toolba
   button_group('miq_ae_domain_vmdb', [
     select(
       :miq_ae_domain_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -15,8 +15,8 @@ class ApplicationHelper::Toolbar::MiqAeDomainsCenter < ApplicationHelper::Toolba
         button(
           :miq_ae_domain_edit,
           'pficon pficon-edit fa-lg',
-          N_('Select a single Domains to edit'),
-          N_('Edit Selected Domains'),
+          N_('Select a single Domain to edit'),
+          N_('Edit Selected Domain'),
           :url_parms    => "main_div",
           :send_checked => true,
           :enabled      => false,

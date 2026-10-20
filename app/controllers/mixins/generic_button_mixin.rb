@@ -12,7 +12,7 @@ module Mixins
       return [:finished, pfx] if vm_button_redirected?(pfx, pressed)
 
       unless ["#{pfx}_edit", "#{pfx}_miq_request_new", "#{pfx}_clone",
-              "#{pfx}_migrate", "#{pfx}_publish"].include?(pressed)
+              "#{pfx}_migrate", "#{pfx}_publish", 'vm_rename'].include?(pressed)
         @refresh_div = "main_div"
         @refresh_partial = "layouts/gtl"
         show # Handle VMs buttons
@@ -34,7 +34,11 @@ module Mixins
       when 'load_balancer_tag'                then tag(LoadBalancer)
       when 'network_port_tag'                 then tag(NetworkPort)
       when 'network_router_tag'               then tag(NetworkRouter)
+      when 'network_service_tag'              then tag(NetworkService)
+      when 'network_service_entry_tag'        then tag(NetworkServiceEntry)
       when 'security_group_tag'               then tag(SecurityGroup)
+      when 'security_policy_tag'              then tag(SecurityPolicy)
+      when 'security_policy_rule_tag'         then tag(SecurityPolicyRule)
       end
 
       @flash_array.nil? ? :finished : :continue
@@ -42,7 +46,7 @@ module Mixins
 
     def button
       @edit = session[:edit] # Restore @edit for adv search box
-      params[:display] = @display if %w(vms images instances).include?(@display)
+      params[:display] = @display if %w[vms images instances].include?(@display)
       params[:page] = @current_page unless @current_page.nil? # Save current page for list refresh
 
       if params[:pressed] == "custom_button"
@@ -74,14 +78,47 @@ module Mixins
 
       check_if_button_is_implemented
 
-      if params[:pressed].ends_with?("_edit") || ["#{pfx}_miq_request_new", "#{pfx}_clone",
-                                                  "#{pfx}_migrate", "#{pfx}_publish"].include?(params[:pressed])
+      if single_delete_test
+        single_delete_redirect
+        return
+      end
+
+      if params[:pressed].ends_with?("_edit") ||
+         ["#{pfx}_miq_request_new", "#{pfx}_clone", "#{pfx}_migrate", "#{pfx}_publish"].include?(params[:pressed]) ||
+         params[:pressed] == 'vm_rename' && @flash_array.nil?
         render_or_redirect_partial(pfx)
       elsif @refresh_div == "main_div" && @lastaction == "show_list"
         replace_gtl_main_div
       else
-        render_flash
+        render_flash unless performed?
       end
+    end
+
+    def evaluate_button(action, allowed_actions)
+      unless allowed_actions.key?(action)
+        raise ActionController::RoutingError, _('Invalid button action')
+      end
+
+      send_action = allowed_actions[action]
+      send(send_action)
+    end
+
+    def validate_item_supports_action_button(action, item_type)
+      unless checked_item_id
+        error_msg = (_("\"%{action}\" requires a single item to be selected.") % {
+          :action => action
+        })
+        return {:action_supported => false, :message => error_msg}
+      end
+
+      item = find_record_with_rbac(item_type, checked_item_id)
+      return {:action_supported => true, :message => nil} if item.supports?(action)
+
+      error_msg = (_("\"%{item_name}\" does not supports %{action}") % {
+        :item_name => item.name,
+        :action    => action
+      })
+      {:action_supported => false, :message => error_msg}
     end
   end
 end

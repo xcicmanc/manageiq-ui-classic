@@ -71,28 +71,6 @@ shared_examples_for 'A controller that has vm_common routes' do
     end
   end
 
-  describe '#edit_vm' do
-    it 'routes with POST' do
-      expect(post("/#{controller_name}/edit_vm")).to route_to("#{controller_name}#edit_vm")
-    end
-  end
-
-  describe '#evm_relationship_field_changed' do
-    it 'routes with POST' do
-      expect(
-        post("/#{controller_name}/evm_relationship_field_changed")
-      ).to route_to("#{controller_name}#evm_relationship_field_changed")
-    end
-  end
-
-  describe '#evm_relationship_update' do
-    it 'routes with POST' do
-      expect(
-        post("/#{controller_name}/evm_relationship_update")
-      ).to route_to("#{controller_name}#evm_relationship_update")
-    end
-  end
-
   describe '#explorer' do
     it 'routes with POST' do
       expect(post("/#{controller_name}/explorer")).to route_to("#{controller_name}#explorer")
@@ -108,12 +86,6 @@ shared_examples_for 'A controller that has vm_common routes' do
   describe '#filesystem_drivers' do
     it 'routes with POST' do
       expect(post("/#{controller_name}/filesystem_drivers")).to route_to("#{controller_name}#filesystem_drivers")
-    end
-  end
-
-  describe '#form_field_changed' do
-    it 'routes with POST' do
-      expect(post("/#{controller_name}/form_field_changed")).to route_to("#{controller_name}#form_field_changed")
     end
   end
 
@@ -138,14 +110,6 @@ shared_examples_for 'A controller that has vm_common routes' do
   describe '#linux_initprocesses' do
     it 'routes with POST' do
       expect(post("/#{controller_name}/linux_initprocesses")).to route_to("#{controller_name}#linux_initprocesses")
-    end
-  end
-
-  describe '#ownership_field_changed' do
-    it 'routes with POST' do
-      expect(
-        post("/#{controller_name}/ownership_field_changed")
-      ).to route_to("#{controller_name}#ownership_field_changed")
     end
   end
 
@@ -227,18 +191,6 @@ shared_examples_for 'A controller that has vm_common routes' do
     end
   end
 
-  describe '#retire' do
-    it 'routes with POST' do
-      expect(post("/#{controller_name}/retire")).to route_to("#{controller_name}#retire")
-    end
-  end
-
-  describe '#retirement_info' do
-    it 'routes with GET' do
-      expect(get("/#{controller_name}/retirement_info")).to route_to("#{controller_name}#retirement_info")
-    end
-  end
-
   describe '#scan_histories' do
     it 'routes with POST' do
       expect(post("/#{controller_name}/scan_histories")).to route_to("#{controller_name}#scan_histories")
@@ -266,12 +218,6 @@ shared_examples_for 'A controller that has vm_common routes' do
 
     it 'routes with POST' do
       expect(post("/#{controller_name}/show")).to route_to("#{controller_name}#show")
-    end
-  end
-
-  describe '#squash_toggle' do
-    it 'routes with POST' do
-      expect(post("/#{controller_name}/squash_toggle")).to route_to("#{controller_name}#squash_toggle")
     end
   end
 

@@ -1,0 +1,122 @@
+@use '@carbon/react/scss/theme' as *;
+@use '@carbon/styles/scss/components/button';
+$rail-primary-bg: $background; // carbon--gray-90
+$rail-secondary-bg: $layer-01; // carbon--gray-80
+
+$row-active-primary-bg: $layer-hover-01; // carbon--gray-80
+$row-active-secondary-bg: $layer-03; // carbon--gray-60
+
+$row-fg-text: $text-primary; // carbon--gray-10
+$row-fg-icon: $icon-primary; // carbon--gray-10
+
+$user-fg: $text-helper; // $carbon--gray-50
+
+$divider-fg: $text-placeholder; // $carbon--gray-60;
+
+$find-bg: $layer-01;
+$find-placeholder-fg: $text-helper;
+
+$clear-btn-outline: button.$button-tertiary;
+$clear-btn-fill: $layer-selected-inverse;
+$clear-btn-background: $layer-01;
+$clear-btn-hover-background: $background-hover;
+$clear-btn-active: $layer-02;
+
+$focus-outline: $focus;
+
+$menu-tooltip-border: $icon-inverse;
+$menu-tooltip-assistive-text-font-color: $text-on-color;
+
+// unused, theme default
+// $row-selected-border: $carbon--blue-60;
+
+.cds--side-nav {
+  background-color: $rail-primary-bg;
+
+  .cds--side-nav__link.force-hover,
+  .cds--side-nav__link:hover,
+  .cds--side-nav__link.cds--side-nav__link--current {
+    background-color: $row-active-primary-bg;
+  }
+}
+
+.cds--side-nav.secondary {
+  background-color: $rail-secondary-bg;
+
+  .cds--side-nav__item--active > .cds--side-nav__submenu,
+  .cds--side-nav__link.cds--side-nav__link--current,
+  .cds--side-nav__link.force-hover,
+  .cds--side-nav__link:hover,
+  .cds--side-nav__submenu[aria-expanded=false]:hover {
+    background-color: $row-active-secondary-bg;
+  }
+}
+
+.cds--side-nav__link-text,
+.cds--side-nav__submenu-title,
+li.menu-group {
+  color: $row-fg-text;
+}
+
+.cds--side-nav__icon > svg,
+.menu-collapse-button > svg,
+.menu-group svg,
+.menu-search > svg,
+.menu-user svg {
+  fill: $row-fg-icon;
+}
+
+.cds--side-nav__icon > i {
+  color: $row-fg-icon;
+}
+
+.cds--side-nav__hr {
+  color: $divider-fg;
+}
+
+.menu-user {
+  color: $user-fg;
+}
+
+.menu-search {
+  .cds--search-input {
+    background-color: $find-bg;
+    color: $row-fg-text;
+
+    &:focus ~ .cds--search-close:hover {
+      outline: 2px solid $clear-btn-outline;
+      outline-offset: -2px;
+    }
+  }
+
+  button.cds--search-close {
+    fill: $clear-btn-fill;
+
+    &::before {
+      background-color: $clear-btn-background;
+    }
+
+    &:hover {
+      background: $clear-btn-hover-background;
+    }
+
+    &:focus {
+      outline: 2px solid $clear-btn-outline;
+      outline-offset: -2px;
+
+      &::before {
+        background-color: $clear-btn-outline;
+      }
+    }
+
+    &:active {
+      outline: 2px solid $clear-btn-outline;
+      outline-offset: -2px;
+      background-color: $clear-btn-active;
+    }
+  }
+
+  .cds--label {
+    color: $find-placeholder-fg;
+  }
+}

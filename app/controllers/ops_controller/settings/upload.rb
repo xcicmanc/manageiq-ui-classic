@@ -1,63 +1,74 @@
 module OpsController::Settings::Upload
   extend ActiveSupport::Concern
+  include Mixins::ImageValidationMixin
 
-  logo_dir = File.expand_path(File.join(Rails.root, "public/upload"))
-  Dir.mkdir logo_dir unless File.exist?(logo_dir)
-  @@logo_file = File.join(logo_dir, "custom_logo.png")
-  @@login_logo_file = File.join(logo_dir, "custom_login_logo.png")
   def upload_logo
-    upload_logos("custom")
+    assert_privileges("ops_settings")
+
+    logo_file = File.join(logo_dir, "custom_logo.png")
+    upload_logos(logo_file, params[:upload], _('Custom logo image'), "png")
   end
 
   def upload_login_logo
-    upload_logos("login")
+    assert_privileges("ops_settings")
+
+    login_logo_file = File.join(logo_dir, "custom_login_logo.png")
+    upload_logos(login_logo_file, params[:login], _('Custom login image'), "png")
   end
 
-  def upload_logos(typ)
-    fld = typ == 'custom' ? params[:upload] : params[:login]
-    if fld && fld[:logo] && fld[:logo].respond_to?(:read)
-      if fld[:logo].original_filename.split(".").last.downcase != "png"
-        msg = if typ == "custom"
-                _("Custom logo image must be a .png file")
-              else
-                _("Custom login image must be a .png file")
-              end
-        err = true
+  def upload_login_brand
+    assert_privileges("ops_settings")
+
+    login_logo_file = File.join(logo_dir, "custom_brand.png")
+    upload_logos(login_logo_file, params[:brand], _('Custom brand'), "png")
+  end
+
+  def upload_favicon
+    assert_privileges("ops_settings")
+
+    logo_file = File.join(logo_dir, "custom_favicon.ico")
+    upload_logos(logo_file, params[:favicon], _('Custom favicon'), "ico")
+  end
+
+  def upload_logos(file, field, text, type)
+    if field && field[:logo] && field[:logo].respond_to?(:read)
+      unless valid_image_file?(field[:logo], type)
+        add_flash(_("%{image} must be a .%{type} file") % {:image => text, :type => type}, :error)
       else
-        File.open(typ == "custom" ? @@logo_file : @@login_logo_file, "wb") { |f| f.write(fld[:logo].read) }
-        msg = if typ == "custom"
-                _('Custom Logo file "%{name}" uploaded') % {:name => fld[:logo].original_filename}
-              else
-                _('Custom login file "%{name}" uploaded') % {:name => fld[:logo].original_filename}
-              end
-        err = false
+        File.open(file, "wb") { |f| f.write(field[:logo].read) }
+        add_flash(_("%{image} \"%{name}\" uploaded") % {:image => text, :name => field[:logo].original_filename})
       end
     else
-      msg = _("Use the Choose file button to locate .png image file")
-      err = true
+      add_flash(_("Use the Choose file button to locate .%{image_type} image file") % {:image_type => type}, :error)
     end
-    redirect_to :action => 'explorer', :flash_msg => msg, :flash_error => err, :no_refresh => true
+    flash_to_session
+    redirect_to(:action => 'explorer')
   end
 
   def upload_form_field_changed
+    assert_privileges("ops_settings")
+
     return unless load_edit("settings_#{params[:id]}_edit__#{@sb[:selected_server_id]}", "replace_cell__explorer")
+
     @edit[:new][:upload_type] = !params[:upload_type].nil? && params[:upload_type] != "" ? params[:upload_type] : nil
-    if !params[:upload_type].blank?
-      msg = _("Locate and upload a file to start the import process")
-    else
-      msg = _("Choose the type of custom variables to be imported")
-    end
+    msg = if params[:upload_type].present?
+            _("Locate and upload a file to start the import process")
+          else
+            _("Choose the type of custom variables to be imported")
+          end
     add_flash(msg, :info)
     @sb[:good] = nil
     render :update do |page|
       page << javascript_prologue
-      page.replace_html("settings_import", :partial => "settings_import_tab")
+      page.replace_html("import_variables", :partial => "settings_import_tab")
     end
   end
 
   def upload_csv
+    assert_privileges("region_edit")
+
     return unless load_edit("#{@sb[:active_tab]}_edit__#{@sb[:selected_server_id]}", "replace_cell__explorer")
-    err = false
+
     @flash_array = []
     if params[:upload] && params[:upload][:file] && params[:upload][:file].respond_to?(:read)
       begin
@@ -74,32 +85,35 @@ module OpsController::Settings::Upload
           end
         end
       rescue => bang
-        msg = _("Error during 'upload': %{message}") % {:message => bang.message}
-        err = true
+        add_flash(_("Error during 'upload': %{message}") % {:message => bang.message}, :error)
       else
-        imp.errors.each do |_field, msg|
-          msg = msg
-          err = true
-        end
+        imp.errors.each { |error| add_flash(error.message, :error) }
         add_flash(_("Import validation complete: %{good_record}, %{bad_record}") % {
           :good_record => n_("%{num} good record", "%{num} good records", imp.stats[:good]) % {:num => imp.stats[:good]},
           :bad_record  => n_("%{num} bad record", "%{num} bad records", imp.stats[:bad]) % {:num => imp.stats[:bad]}
         }, :warning)
-        if imp.stats[:good] == 0
-          msg = _("No valid import records were found, please upload another file")
-          err = true
+        if imp.stats[:good].zero?
+          add_flash(_("No valid import records were found, please upload another file"), :error)
         else
-          msg = _("Press the Apply button to import the good records into the %{product} database") % {:product => Vmdb::Appliance.PRODUCT_NAME}
-          err = false
+          add_flash(_("Press the Apply button to import the good records into the %{product} database") % {:product => Vmdb::Appliance.PRODUCT_NAME})
           @sb[:good] = imp.stats[:good]
           @sb[:imports] = imp
         end
       end
     else
-      msg = _("Use the Choose file button to locate CSV file")
-      err = true
+      add_flash(_("Use the Choose file button to locate CSV file"), :error)
     end
-    @sb[:show_button] = (@sb[:good] && @sb[:good] > 0)
-    redirect_to :action => 'explorer', :flash_msg => msg, :flash_error => err, :no_refresh => true
+    @sb[:show_button] = @sb[:good].try(:positive?)
+    flash_to_session
+    session[:flash_msgs] = @flash_array.dup if @flash_array
+    redirect_to(:action => 'explorer', :no_refresh => true)
+  end
+
+  private
+
+  def logo_dir
+    dir = Rails.root.join('public', 'upload').expand_path
+    Dir.mkdir(dir) unless dir.exist?
+    dir.to_s
   end
 end

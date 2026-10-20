@@ -5,18 +5,22 @@ module AuthKeyPairCloudHelper::TextualSummary
   # Groups
   #
   def textual_group_relationships
-    TextualGroup.new(_("Relationships"), %i(vms))
+    TextualGroup.new(_("Relationships"), %i[provider vms])
   end
 
   def textual_group_properties
-    TextualGroup.new(_("Properties"), %i(name fingerprint))
+    TextualGroup.new(_("Properties"), %i[name fingerprint])
+  end
+
+  def textual_provider
+    textual_link(@record.ext_management_system)
   end
 
   #
   # Items
   #
   def textual_fingerprint
-    @record.fingerprint
+    {:label => _('Fingerprint'), :value => @record.fingerprint}
   end
 
   def textual_vms
@@ -27,5 +31,20 @@ module AuthKeyPairCloudHelper::TextualSummary
       h[:title] = _("Show all Instances")
     end
     h
+  end
+
+  def textual_group_lifecycle
+    TextualGroup.new(
+      _("Lifecycle"),
+      %i[owner group]
+    )
+  end
+
+  def textual_owner
+    @record.evm_owner.try(:name)
+  end
+
+  def textual_group
+    {:label => _("Group"), :value => @record.miq_group.try(:description)}
   end
 end

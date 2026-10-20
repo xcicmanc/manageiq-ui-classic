@@ -1,5 +1,5 @@
 module Menu
-  Section = Struct.new(:id, :name, :icon, :items, :placement, :before, :type, :href) do
+  Section = Struct.new(:id, :name, :icon, :items, :placement, :before, :type, :href, :parent_id) do
     extend ActiveModel::Naming
 
     def self.base_class
@@ -16,6 +16,8 @@ module Menu
       self.placement ||= :default
       self.type ||= :default
 
+      self.items.compact!
+
       @parent = nil
       items.each { |el| el.parent = self }
     end
@@ -31,23 +33,17 @@ module Menu
     end
 
     def visible?
+      return false unless Vmdb::PermissionStores.instance.supported_ui_menu?(id)
+
       userid = User.current_userid
-      store = Vmdb::PermissionStores.instance
-      auth  = store.can?(id) && User.current_user.role_allows_any?(:identifiers => features_recursive)
+      auth = User.current_user.role_allows_any?(:identifiers => features_recursive)
       $log.debug("Role Authorization #{auth ? "successful" : "failed"} for: userid [#{userid}], main tab [#{id}]")
+
       auth
     end
 
     def subsection?
       @subsection ||= Array(items).detect { |el| el.kind_of?(Section) }
-    end
-
-    def link_params
-      params = case type
-               when :big_iframe then {:href => "/dashboard/iframe?sid=#{id}"}
-               else                  {:href => "/dashboard/maintab/?tab=#{id}"}
-               end
-      params.merge(:onclick => 'return miqCheckForChanges();')
     end
 
     def leaf?
@@ -67,19 +63,6 @@ module Menu
         return child_match if child_match.present?
       end
       nil
-    end
-
-    def default_redirect_url
-      items.each do |item|
-        next unless item.visible?
-        if item.kind_of?(Item)
-          return item.link_params[:href]
-        else
-          section_result = item.default_redirect_url
-          return section_result if section_result
-        end
-      end
-      false
     end
 
     def preprocess_sections(section_hash)

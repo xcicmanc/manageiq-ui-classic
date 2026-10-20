@@ -1,15 +1,7 @@
 class TreeBuilderTemplateFilter < TreeBuilderVmsFilter
-  def tree_init_options(tree_name)
-    super.update(:leaf => 'ManageIQ::Providers::InfraManager::Template')
-  end
-
-  def set_locals_for_render
-    locals = super
-    locals.merge!(
-      :tree_id   => "templates_filter_treebox",
-      :tree_name => "templates_filter_tree",
-      :autoload  => false
-    )
+  def initialize(*args)
+    @root_class = 'ManageIQ::Providers::InfraManager::Template'
+    super(*args)
   end
 
   def root_options

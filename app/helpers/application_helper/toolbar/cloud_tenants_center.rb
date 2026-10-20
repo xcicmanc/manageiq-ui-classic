@@ -2,13 +2,13 @@ class ApplicationHelper::Toolbar::CloudTenantsCenter < ApplicationHelper::Toolba
   button_group('cloud_tenant_vmdb', [
     select(
       :cloud_tenant_vmdb_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
         button(
           :cloud_tenant_new,
-          'pficon pficon-edit fa-lg',
+          'pficon pficon-add-circle-o fa-lg',
           t = N_('Create Cloud Tenant'),
           t,
           :klass => ApplicationHelper::Button::NewCloudTenant),
@@ -37,7 +37,7 @@ class ApplicationHelper::Toolbar::CloudTenantsCenter < ApplicationHelper::Toolba
   button_group('cloud_tenant_policy', [
     select(
       :cloud_tenant_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :enabled => false,

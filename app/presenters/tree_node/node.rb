@@ -1,68 +1,40 @@
 module TreeNode
   class Node
-    def initialize(object, parent_id, options)
+    attr_reader :nodes, :tree
+    attr_writer :icon, :image, :text
+    attr_accessor :checkable, :checked, :color, :expanded, :hide_checkbox, :icon_background, :lazy, :klass, :selectable, :selected, :tooltip
+
+    def initialize(object, parent_id, tree)
       @object = object
       @parent_id = parent_id
-      @options = options
+      @tree = tree
+      @nodes = []
     end
 
     def text
       @object.name
     end
 
-    def tooltip
-      nil
-    end
-
     def image
-      nil
+      @image || @object.try(:decorate).try(:fileicon)
     end
 
     def icon
-      @object.try(:decorate).try(:fonticon)
-    end
-
-    def klass
-      nil
-    end
-
-    def selectable
-      true
-    end
-
-    def selected
-      nil
-    end
-
-    def color
-      nil
-    end
-
-    def checkable
-      true
-    end
-
-    def expand
-      @options[:open_all].present? && @options[:open_all] && @options[:expand] != false
-    end
-
-    def hide_checkbox
-      @options.key?(:hideCheckbox) && @options[:hideCheckbox]
+      @icon || @object.try(:decorate).try(:fonticon)
     end
 
     def key
-      if @object.id.nil?
+      if @object.try(:id).nil?
         # FIXME: this makes problems in tests
         # to handle "Unassigned groups" node in automate buttons tree
         "-#{@object.name.split('|').last}"
       else
         base_class = @object.class.base_model.name # i.e. Vm or MiqTemplate
-        base_class = "Datacenter" if base_class == "EmsFolder" && @object.kind_of?(Datacenter)
-        base_class = "ManageIQ::Providers::Foreman::ConfigurationManager" if @object.kind_of?(ManageIQ::Providers::Foreman::ConfigurationManager)
-        base_class = "ManageIQ::Providers::AnsibleTower::AutomationManager" if @object.kind_of?(ManageIQ::Providers::AnsibleTower::AutomationManager)
+        base_class = "Datacenter" if base_class == "EmsFolder" && @object.kind_of?(::Datacenter)
+        base_class = "ManageIQ::Providers::ExternalAutomationManager" if @object.kind_of?(ManageIQ::Providers::ExternalAutomationManager)
         prefix = TreeBuilder.get_prefix_for_model(base_class)
-        cid = ApplicationRecord.compress_id(@object.id)
-        "#{@options[:full_ids] && !@parent_id.blank? ? "#{@parent_id}_" : ''}#{prefix}-#{cid}"
+        cid = @object.id
+        "#{@tree.try(:options).try(:[], :full_ids) && @parent_id.present? ? "#{@parent_id}_" : ''}#{prefix}-#{cid}"
       end
     end
 
@@ -72,31 +44,26 @@ module TreeNode
     end
 
     def to_h
-      node = {
-        :key          => key,
-        :text         => escape(text),
-        :tooltip      => escape(tooltip),
-        :icon         => icon,
-        :iconColor    => color,
-        :expand       => expand,
-        :hideCheckbox => hide_checkbox ? hide_checkbox : nil,
-        :addClass     => klass,
-        :selectable   => selectable,
-        :select       => selected,
-        :checkable    => checkable ? nil : false,
-      }
-
-      node[:image] = if !image
-                       nil
-                     elsif image.start_with?("/")
-                       image
-                     elsif image =~ %r{^[a-zA-Z0-9]+/}
-                       ActionController::Base.helpers.image_path(image)
-                     else
-                       ActionController::Base.helpers.image_path("100/#{image}")
-                     end
-
-      node.delete_if { |_, v| v.nil? }
+      {
+        :key            => key,
+        :text           => escape(text),
+        :tooltip        => escape(tooltip),
+        :image          => image ? ActionController::Base.helpers.image_path(image) : nil,
+        :icon           => icon,
+        :iconBackground => icon_background,
+        :iconColor      => color,
+        :hideCheckbox   => hide_checkbox,
+        :class          => [selectable ? nil : 'no-cursor'].push(klass).compact.join(' ').presence, # add no-cursor if not selectable
+        :selectable     => selectable,
+        :checkable      => checkable ? nil : false,
+        :lazyLoad       => lazy,
+        :nodes          => nodes.presence,
+        :state          => {
+          :checked  => checked,
+          :expanded => expanded,
+          :selected => selected
+        }.compact
+      }.compact
     end
 
     class << self
@@ -110,8 +77,8 @@ module TreeNode
 
           if result.nil?
             if block_given?
-              args = [@object, @options, @parent_id].take(block.arity.abs)
-              result = instance_exec(*args, &block)
+              # All blocks here are either to_procs that only take the receiver or a block with no arguments.
+              result = instance_exec(@object, &block)
             else
               result = value
             end
@@ -120,8 +87,6 @@ module TreeNode
 
           result
         end
-
-        equals_method(attribute)
       end
 
       def set_attributes(*attributes, &block)
@@ -139,16 +104,12 @@ module TreeNode
 
             result
           end
-
-          equals_method(attribute)
-        end
-      end
-
-      def equals_method(attribute)
-        define_method("#{attribute}=".to_sym) do |result|
-          instance_variable_set("@#{attribute}".to_sym, result)
         end
       end
     end
+
+    set_attribute(:selectable, true)
+    set_attribute(:checkable, true)
+    set_attribute(:expanded) { @tree.try(:expand_node?, key) || false }
   end
 end

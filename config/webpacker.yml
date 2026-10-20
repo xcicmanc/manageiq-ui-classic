@@ -1,17 +1,14 @@
-# Note: You must restart bin/webpack-dev-server for changes to take effect
-
 default: &default
   source_path: app/javascript
   source_entry_path: packs
   public_output_path: packs
 
   extensions:
-  - .coffee
-  - .erb
+  - .mjs
   - .js
   - .jsx
   - .ts
-  - .vue
+  - .tsx
   - .sass
   - .scss
   - .css
@@ -23,12 +20,6 @@ default: &default
 
 development:
   <<: *default
-
-# uncomment these to enable webpack:server
-  dev_server:
-    host: 0.0.0.0
-    port: 8080
-    https: false
 
 test:
   <<: *default

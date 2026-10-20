@@ -1,9 +1,9 @@
 describe "Login process" do
   let(:user) do
-    FactoryGirl.create(:user_with_email, :password => "smartvm", :role => "super_administrator")
+    FactoryBot.create(:user_with_email, :role => "super_administrator")
   end
 
-  before(:each) do
+  before do
     EvmSpecHelper.local_miq_server
     user
   end
@@ -21,13 +21,19 @@ describe "Login process" do
     end
 
     it "redirects to 'login' and sets start_url for main menu click" do
-      get '/dashboard/maintab/?tab=svc'
+      get '/report/explorer'
       expect(response).to redirect_to(:controller => 'dashboard', :action => 'login', :timeout => false)
-      expect(session[:start_url]).to eq('http://www.example.com/dashboard/maintab?tab=svc')
+      expect(session[:start_url]).to eq('http://www.example.com/report/explorer')
+    end
+
+    it "redirects to 'login' and skips start_url for logout" do
+      get '/dashboard/logout'
+      expect(response).to redirect_to(:controller => 'dashboard', :action => 'login')
+      expect(session[:start_url]).to be_nil
     end
 
     it "allows login with correct password" do
-      post '/dashboard/authenticate', :params => { :user_name => user.userid, :user_password => 'smartvm' }
+      post '/dashboard/authenticate', :params => { :user_name => user.userid, :user_password => 'dummy' }
       expect(response.status).to eq(200)
       expect(response.body).not_to match(/password you entered is incorrect/)
     end
@@ -41,7 +47,7 @@ describe "Login process" do
 
   context 'w/ a valid session' do
     it "allows access" do
-      post '/dashboard/authenticate', :params => { :user_name => user.userid, :user_password => 'smartvm' }
+      post '/dashboard/authenticate', :params => { :user_name => user.userid, :user_password => 'dummy' }
       get '/ems_cloud/show_list'
       expect(response.status).to eq(200)
     end

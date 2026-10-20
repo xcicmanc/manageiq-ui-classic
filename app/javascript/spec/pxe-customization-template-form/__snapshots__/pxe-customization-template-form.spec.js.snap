@@ -1,0 +1,1153 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Pxe Customization Template Form Component should render adding a new pxe customization template 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class=""
+      id="basic-information"
+      name="basic-information"
+    >
+      <div>
+        <h3>
+          Basic Information
+        </h3>
+      </div>
+      <div
+        class="cds--form-item cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="name"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-5"
+            >
+              *
+            </span>
+            Name
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="name"
+              maxlength="255"
+              name="name"
+              type="text"
+              value=""
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="description"
+          >
+            Description
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="description"
+              maxlength="100"
+              name="description"
+              type="text"
+              value=""
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item"
+      >
+        <div
+          class="cds--select"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="pxe_image_type_id"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-5"
+            >
+              *
+            </span>
+            Image Type
+          </label>
+          <div
+            class="cds--select-input__wrapper"
+          >
+            <select
+              class="cds--select-input"
+              id="pxe_image_type_id"
+              name="pxe_image_type_id"
+              title=""
+            >
+              <option
+                class="cds--select-option"
+                label="<Choose>"
+                value=""
+              >
+                &lt;Choose&gt;
+              </option>
+              <option
+                class="cds--select-option"
+                label="pxe-image-type1"
+                value="1"
+              >
+                pxe-image-type1
+              </option>
+              <option
+                class="cds--select-option"
+                label="pxe-image-type2"
+                value="2"
+              >
+                pxe-image-type2
+              </option>
+            </select>
+            <svg
+              aria-hidden="true"
+              class="cds--select__arrow"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item"
+      >
+        <div
+          class="cds--select"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="type"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-5"
+            >
+              *
+            </span>
+            Type
+          </label>
+          <div
+            class="cds--select-input__wrapper"
+          >
+            <select
+              class="cds--select-input"
+              id="type"
+              name="type"
+              title="<Choose>"
+            >
+              <option
+                class="cds--select-option"
+                label="<Choose>"
+                value=""
+              >
+                &lt;Choose&gt;
+              </option>
+              <option
+                class="cds--select-option"
+                label="Kickstart"
+                value="CustomizationTemplateKickstart"
+              >
+                Kickstart
+              </option>
+              <option
+                class="cds--select-option"
+                label="Sysprep"
+                value="CustomizationTemplateSysprep"
+              >
+                Sysprep
+              </option>
+              <option
+                class="cds--select-option"
+                label="CloudInit"
+                value="CustomizationTemplateCloudInit"
+              >
+                CloudInit
+              </option>
+            </select>
+            <svg
+              aria-hidden="true"
+              class="cds--select__arrow"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <fieldset
+        class="cds--fieldset"
+      >
+        <legend
+          class="cds--label"
+        >
+          Script
+        </legend>
+        <div
+          class="react-codemirror2 miq-codemirror "
+        >
+          <div
+            class="CodeMirror cm-s-eclipse CodeMirror-wrap"
+            translate="no"
+          >
+            <div
+              style="overflow: hidden; position: relative; width: 3px; height: 0px;"
+            >
+              <textarea
+                autocapitalize="off"
+                autocorrect="off"
+                spellcheck="false"
+                style="position: absolute; bottom: -1em; padding: 0px; width: 1000px; height: 1em; min-height: 1em; outline: none;"
+                tabindex="0"
+              />
+            </div>
+            <div
+              class="CodeMirror-vscrollbar"
+              cm-not-content="true"
+              tabindex="-1"
+            >
+              <div
+                style="min-width: 1px;"
+              />
+            </div>
+            <div
+              class="CodeMirror-hscrollbar"
+              cm-not-content="true"
+              tabindex="-1"
+            >
+              <div
+                style="height: 100%; min-height: 1px;"
+              />
+            </div>
+            <div
+              class="CodeMirror-scrollbar-filler"
+              cm-not-content="true"
+            />
+            <div
+              class="CodeMirror-gutter-filler"
+              cm-not-content="true"
+            />
+            <div
+              class="CodeMirror-scroll"
+              tabindex="-1"
+            >
+              <div
+                class="CodeMirror-sizer"
+                style="margin-left: 0px;"
+              >
+                <div
+                  style="position: relative;"
+                >
+                  <div
+                    class="CodeMirror-lines"
+                    role="presentation"
+                  >
+                    <div
+                      role="presentation"
+                      style="position: relative; outline: none;"
+                    >
+                      <div
+                        class="CodeMirror-measure"
+                      >
+                        <pre
+                          class="CodeMirror-line-like"
+                        >
+                          <span>
+                            xxxxxxxxxx
+                          </span>
+                        </pre>
+                      </div>
+                      <div
+                        class="CodeMirror-measure"
+                      />
+                      <div
+                        style="position: relative; z-index: 1;"
+                      />
+                      <div
+                        class="CodeMirror-cursors"
+                      />
+                      <div
+                        class="CodeMirror-code"
+                        role="presentation"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                style="position: absolute; height: 50px; width: 1px;"
+              />
+              <div
+                class="CodeMirror-gutters"
+                style="left: 0px;"
+              >
+                <div
+                  class="CodeMirror-gutter CodeMirror-lint-markers"
+                />
+                <div
+                  class="CodeMirror-gutter CodeMirror-linenumbers"
+                  style="width: 1px;"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Add
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`Pxe Customization Template Form Component should render copying a pxe customization template 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class=""
+      id="basic-information"
+      name="basic-information"
+    >
+      <div>
+        <h3>
+          Basic Information
+        </h3>
+      </div>
+      <div
+        class="cds--form-item cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="name"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-5"
+            >
+              *
+            </span>
+            Name
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="name"
+              maxlength="255"
+              name="name"
+              type="text"
+              value="Copy of foo"
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="description"
+          >
+            Description
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="description"
+              maxlength="100"
+              name="description"
+              type="text"
+              value="bar"
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item"
+      >
+        <div
+          class="cds--select"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="pxe_image_type_id"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-5"
+            >
+              *
+            </span>
+            Image Type
+          </label>
+          <div
+            class="cds--select-input__wrapper"
+          >
+            <select
+              class="cds--select-input"
+              id="pxe_image_type_id"
+              name="pxe_image_type_id"
+              title=""
+            >
+              <option
+                class="cds--select-option"
+                label="<Choose>"
+                value=""
+              >
+                &lt;Choose&gt;
+              </option>
+              <option
+                class="cds--select-option"
+                label="pxe-image-type1"
+                value="1"
+              >
+                pxe-image-type1
+              </option>
+              <option
+                class="cds--select-option"
+                label="pxe-image-type2"
+                value="2"
+              >
+                pxe-image-type2
+              </option>
+            </select>
+            <svg
+              aria-hidden="true"
+              class="cds--select__arrow"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item"
+      >
+        <div
+          class="cds--select"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="type"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-5"
+            >
+              *
+            </span>
+            Type
+          </label>
+          <div
+            class="cds--select-input__wrapper"
+          >
+            <select
+              class="cds--select-input"
+              id="type"
+              name="type"
+              title="<Choose>"
+            >
+              <option
+                class="cds--select-option"
+                label="<Choose>"
+                value=""
+              >
+                &lt;Choose&gt;
+              </option>
+              <option
+                class="cds--select-option"
+                label="Kickstart"
+                value="CustomizationTemplateKickstart"
+              >
+                Kickstart
+              </option>
+              <option
+                class="cds--select-option"
+                label="Sysprep"
+                value="CustomizationTemplateSysprep"
+              >
+                Sysprep
+              </option>
+              <option
+                class="cds--select-option"
+                label="CloudInit"
+                value="CustomizationTemplateCloudInit"
+              >
+                CloudInit
+              </option>
+            </select>
+            <svg
+              aria-hidden="true"
+              class="cds--select__arrow"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <fieldset
+        class="cds--fieldset"
+      >
+        <legend
+          class="cds--label"
+        >
+          Script
+        </legend>
+        <div
+          class="react-codemirror2 miq-codemirror "
+        >
+          <div
+            class="CodeMirror cm-s-eclipse CodeMirror-wrap"
+            translate="no"
+          >
+            <div
+              style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 0px; left: 0px;"
+            >
+              <textarea
+                autocapitalize="off"
+                autocorrect="off"
+                spellcheck="false"
+                style="position: absolute; bottom: -1em; padding: 0px; width: 1000px; height: 1em; min-height: 1em; outline: none;"
+                tabindex="0"
+              />
+            </div>
+            <div
+              class="CodeMirror-vscrollbar"
+              cm-not-content="true"
+              style="display: block; bottom: 0px;"
+              tabindex="-1"
+            >
+              <div
+                style="min-width: 1px; height: 54px;"
+              />
+            </div>
+            <div
+              class="CodeMirror-hscrollbar"
+              cm-not-content="true"
+              tabindex="-1"
+            >
+              <div
+                style="height: 100%; min-height: 1px; width: 0px;"
+              />
+            </div>
+            <div
+              class="CodeMirror-scrollbar-filler"
+              cm-not-content="true"
+            />
+            <div
+              class="CodeMirror-gutter-filler"
+              cm-not-content="true"
+            />
+            <div
+              class="CodeMirror-scroll"
+              tabindex="-1"
+            >
+              <div
+                class="CodeMirror-sizer"
+                style="margin-left: 0px; padding-right: 0px; padding-bottom: 0px;"
+              >
+                <div
+                  style="position: relative;"
+                >
+                  <div
+                    class="CodeMirror-lines"
+                    role="presentation"
+                  >
+                    <div
+                      role="presentation"
+                      style="position: relative; outline: none;"
+                    >
+                      <div
+                        class="CodeMirror-measure"
+                      />
+                      <div
+                        class="CodeMirror-measure"
+                      >
+                        <pre
+                          class="CodeMirror-line"
+                          role="presentation"
+                        >
+                          <span
+                            role="presentation"
+                            style="padding-right: 0.1px;"
+                          >
+                            write script here
+                          </span>
+                        </pre>
+                      </div>
+                      <div
+                        style="position: relative; z-index: 1;"
+                      />
+                      <div
+                        class="CodeMirror-cursors"
+                      />
+                      <div
+                        class="CodeMirror-code"
+                        role="presentation"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                style="position: absolute; height: 50px; width: 1px; border-bottom: 0px solid transparent;"
+              />
+              <div
+                class="CodeMirror-gutters"
+                style="left: 0px;"
+              >
+                <div
+                  class="CodeMirror-gutter CodeMirror-lint-markers"
+                />
+                <div
+                  class="CodeMirror-gutter CodeMirror-linenumbers"
+                  style="width: 1px;"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary"
+        type="submit"
+        variant="primary"
+      >
+        Add
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`Pxe Customization Template Form Component should render editing a pxe customization template 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class=""
+      id="basic-information"
+      name="basic-information"
+    >
+      <div>
+        <h3>
+          Basic Information
+        </h3>
+      </div>
+      <div
+        class="cds--form-item cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="name"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-5"
+            >
+              *
+            </span>
+            Name
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="name"
+              maxlength="255"
+              name="name"
+              type="text"
+              value="foo"
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="description"
+          >
+            Description
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="description"
+              maxlength="100"
+              name="description"
+              type="text"
+              value="bar"
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item"
+      >
+        <div
+          class="cds--select"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="pxe_image_type_id"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-5"
+            >
+              *
+            </span>
+            Image Type
+          </label>
+          <div
+            class="cds--select-input__wrapper"
+          >
+            <select
+              class="cds--select-input"
+              id="pxe_image_type_id"
+              name="pxe_image_type_id"
+              title=""
+            >
+              <option
+                class="cds--select-option"
+                label="<Choose>"
+                value=""
+              >
+                &lt;Choose&gt;
+              </option>
+              <option
+                class="cds--select-option"
+                label="pxe-image-type1"
+                value="1"
+              >
+                pxe-image-type1
+              </option>
+              <option
+                class="cds--select-option"
+                label="pxe-image-type2"
+                value="2"
+              >
+                pxe-image-type2
+              </option>
+            </select>
+            <svg
+              aria-hidden="true"
+              class="cds--select__arrow"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item"
+      >
+        <div
+          class="cds--select"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="type"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-5"
+            >
+              *
+            </span>
+            Type
+          </label>
+          <div
+            class="cds--select-input__wrapper"
+          >
+            <select
+              class="cds--select-input"
+              id="type"
+              name="type"
+              title="Kickstart"
+            >
+              <option
+                class="cds--select-option"
+                label="<Choose>"
+                value=""
+              >
+                &lt;Choose&gt;
+              </option>
+              <option
+                class="cds--select-option"
+                label="Kickstart"
+                value="CustomizationTemplateKickstart"
+              >
+                Kickstart
+              </option>
+              <option
+                class="cds--select-option"
+                label="Sysprep"
+                value="CustomizationTemplateSysprep"
+              >
+                Sysprep
+              </option>
+              <option
+                class="cds--select-option"
+                label="CloudInit"
+                value="CustomizationTemplateCloudInit"
+              >
+                CloudInit
+              </option>
+            </select>
+            <svg
+              aria-hidden="true"
+              class="cds--select__arrow"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <fieldset
+        class="cds--fieldset"
+      >
+        <legend
+          class="cds--label"
+        >
+          Script
+        </legend>
+        <div
+          class="react-codemirror2 miq-codemirror "
+        >
+          <div
+            class="CodeMirror cm-s-eclipse CodeMirror-wrap"
+            translate="no"
+          >
+            <div
+              style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 0px; left: 0px;"
+            >
+              <textarea
+                autocapitalize="off"
+                autocorrect="off"
+                spellcheck="false"
+                style="position: absolute; bottom: -1em; padding: 0px; width: 1000px; height: 1em; min-height: 1em; outline: none;"
+                tabindex="0"
+              />
+            </div>
+            <div
+              class="CodeMirror-vscrollbar"
+              cm-not-content="true"
+              style="display: block; bottom: 0px;"
+              tabindex="-1"
+            >
+              <div
+                style="min-width: 1px; height: 54px;"
+              />
+            </div>
+            <div
+              class="CodeMirror-hscrollbar"
+              cm-not-content="true"
+              tabindex="-1"
+            >
+              <div
+                style="height: 100%; min-height: 1px; width: 0px;"
+              />
+            </div>
+            <div
+              class="CodeMirror-scrollbar-filler"
+              cm-not-content="true"
+            />
+            <div
+              class="CodeMirror-gutter-filler"
+              cm-not-content="true"
+            />
+            <div
+              class="CodeMirror-scroll"
+              tabindex="-1"
+            >
+              <div
+                class="CodeMirror-sizer"
+                style="margin-left: 0px; padding-right: 0px; padding-bottom: 0px;"
+              >
+                <div
+                  style="position: relative;"
+                >
+                  <div
+                    class="CodeMirror-lines"
+                    role="presentation"
+                  >
+                    <div
+                      role="presentation"
+                      style="position: relative; outline: none;"
+                    >
+                      <div
+                        class="CodeMirror-measure"
+                      >
+                        <pre
+                          class="CodeMirror-line-like"
+                        >
+                          <span>
+                            xxxxxxxxxx
+                          </span>
+                        </pre>
+                      </div>
+                      <div
+                        class="CodeMirror-measure"
+                      />
+                      <div
+                        style="position: relative; z-index: 1;"
+                      />
+                      <div
+                        class="CodeMirror-cursors"
+                      />
+                      <div
+                        class="CodeMirror-code"
+                        role="presentation"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                style="position: absolute; height: 50px; width: 1px; border-bottom: 0px solid transparent;"
+              />
+              <div
+                class="CodeMirror-gutters"
+                style="left: 0px;"
+              >
+                <div
+                  class="CodeMirror-gutter CodeMirror-lint-markers"
+                />
+                <div
+                  class="CodeMirror-gutter CodeMirror-linenumbers"
+                  style="width: 1px;"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Save
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary cds--btn--disabled"
+        disabled=""
+        type="button"
+      >
+        Reset
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;

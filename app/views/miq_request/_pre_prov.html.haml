@@ -1,35 +1,17 @@
-= render :partial => "layouts/flash_msg"
 #pre_prov_div
   - typ = request.parameters[:controller] == "vm_cloud" ? ui_lookup(:table => "template_cloud") : ui_lookup(:table => "template_infra")
-  %h3
-    = _("Provision %{what} based on the selected %{type}") % {:what => ui_lookup(:tables => request.parameters[:controller]), :type => typ}
-  %label
-    - id = @edit[:req_id] || "new"
-    %input{:type => "checkbox",
-           :onclick => "miqAjax('" + url_for_only_path({:action => "vm_pre_prov", :id => id.to_s, :hide_deprecated_templates => !@edit[:hide_deprecated_templates]}) + "')",
-           :checked => @edit[:hide_deprecated_templates]}
-      = _('Hide deprecated')
-  %table.table.table-bordered.table-hover.table-striped.table-selectable
-    %thead
-      %tr
-        - id = @edit[:req_id] || "new"
-        - ["name", "image?", "operating_system.product_name", "platform",
-            "cpu_total_cores", "mem_cpu", "allocated_disk_storage", "deprecated",
-            "ext_management_system.name", "v_total_snapshots", "cloud_tenant"].each do |column_name|
-          - if @edit[:vm_headers].include?(column_name)
-            %th
-              -# Replaced to exclude non-view table fields from sorting
-              = link_to(h(@edit[:vm_headers][column_name]),
-                {:action => "vm_pre_prov", :sort_choice => column_name, :id => id.to_s},
-                "data-miq_sparkle_on"  => true,
-                "data-miq_sparkle_off" => true,
-                "data-method"          => :post,
-                :remote                => true)
-              - if column_name == @edit[:vm_sortcol]
-                %img{:src => image_path("16/sort_#{@edit[:vm_sortdir] == 'ASC' ? 'up' : 'down'}.png")}
-    %tbody
-      - @vms.each do |row|
-        - if row.respond_to?(:volume_template?) || row.respond_to?(:volume_snapshot_template?)
-          = render :partial => "miq_request/pre_prov_volumes_snapshots", :locals => {:row => row}
-        - else
-          = render :partial => "miq_request/pre_prov_images", :locals => {:row => row}
+  - show_checkbox = !@edit[:hide_deprecated_templates].nil?
+  - id = @edit[:req_id] || "new"
+  - hide_deprecated_url = url_for_only_path(:action => "vm_pre_prov", :template_klass => params[:template_klass], :id => id.to_s)
+
+  = react('FilterProvisionInstance', {:hideDeprecated => @edit[:hide_deprecated_templates], :searchText => params[:search_text] || '', :url => hide_deprecated_url, :showCheckbox => show_checkbox})
+
+  .provision-instance-container
+    .provision-instance-list
+      = render :partial => "layouts/x_gtl"
+
+    .provision-instance-actions
+      #pre_prov_form_buttons_div.pull-right
+        = render :partial => 'layouts/x_edit_buttons', :locals => {:action_url => 'pre_prov', :continue_button => true, :no_reset => true}
+  :javascript
+    $(provisioningListenToRx);

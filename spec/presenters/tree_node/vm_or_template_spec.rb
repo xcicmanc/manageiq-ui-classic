@@ -1,7 +1,5 @@
-require 'shared/presenters/tree_node/common'
-
 describe TreeNode::VmOrTemplate do
-  subject { described_class.new(object, nil, {}) }
+  subject { described_class.new(object, nil, nil) }
 
   # FIXME: make this dynamic somehow by using VmOrTemplate.descendants
   # Template classes
@@ -17,14 +15,12 @@ describe TreeNode::VmOrTemplate do
     template_microsoft
     template_redhat
     template_vmware
-    template_xen
   ).each do |factory|
-    klass = FactoryGirl.factory_by_name(factory).instance_variable_get(:@class_name)
-    context(klass) do
-      let(:object) { FactoryGirl.create(factory, :name => "template", :template => true) }
+    context(factory.to_s) do
+      let(:object) { FactoryBot.create(factory, :name => "template", :template => true) }
 
       include_examples 'TreeNode::Node#key prefix', 't-'
-      include_examples 'TreeNode::Node#image', 'svg/currentstate-archived.svg'
+      include_examples 'TreeNode::Node#icon', 'fa fa-archive'
 
       describe '#tooltip' do
         it 'returns with nil' do
@@ -48,14 +44,12 @@ describe TreeNode::VmOrTemplate do
     vm_microsoft
     vm_redhat
     vm_vmware
-    vm_xen
   ).each do |factory|
-    klass = FactoryGirl.factory_by_name(factory).instance_variable_get(:@class_name)
-    context(klass) do
-      let(:object) { FactoryGirl.create(factory) }
+    context(factory.to_s) do
+      let(:object) { FactoryBot.create(factory) }
 
       include_examples 'TreeNode::Node#key prefix', 'v-'
-      include_examples 'TreeNode::Node#image', 'svg/currentstate-archived.svg'
+      include_examples 'TreeNode::Node#icon', 'fa fa-archive'
 
       describe '#tooltip' do
         it 'returns with the correct prefix and suffix' do

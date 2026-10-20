@@ -1,9 +1,9 @@
 describe TreeBuilderPolicySimulation do
   context 'TreeBuilderPolicySimulation' do
     before do
-      role = MiqUserRole.find_by_name("EvmRole-operator")
-      @group = FactoryGirl.create(:miq_group, :miq_user_role => role, :description => "Policy Simulation Group")
-      login_as FactoryGirl.create(:user, :userid => 'policy_simulation_wilma', :miq_groups => [@group])
+      role = MiqUserRole.find_by(:name => "EvmRole-operator")
+      @group = FactoryBot.create(:miq_group, :miq_user_role => role, :description => "Policy Simulation Group")
+      login_as FactoryBot.create(:user, :userid => 'policy_simulation_wilma', :miq_groups => [@group])
       @policy_options = {:out_of_scope => true, :passed => true, :failed => true}
       exp = {"FIND"   => {"checkcount" => {">=" => {"value" => "1", "field" => "<count>"}},
                           "search"     => {"INCLUDES" => {"value" => "nb", "field" => "Vm.filesystems-name"}}},
@@ -31,7 +31,6 @@ describe TreeBuilderPolicySimulation do
                                                       'expression'  => exp}]}]}]
 
       @policy_simulation_tree = TreeBuilderPolicySimulation.new(:policy_simulation_tree,
-                                                                :policy_simulation,
                                                                 {},
                                                                 true,
                                                                 :root      => @data,
@@ -40,8 +39,8 @@ describe TreeBuilderPolicySimulation do
     end
 
     it 'sets tree as not lazy' do
-      tree_options = @policy_simulation_tree.send(:tree_init_options, :policy_simulation)
-      expect(tree_options[:lazy]).to eq(false)
+      tree_options = @policy_simulation_tree.send(:tree_init_options)
+      expect(tree_options[:lazy]).not_to be_truthy
     end
 
     it 'sets root correctly' do
@@ -64,7 +63,7 @@ describe TreeBuilderPolicySimulation do
     end
 
     it 'sets Policy Profile node correctly' do
-      node = @policy_simulation_tree.send(:x_get_tree_roots, false).first
+      node = @policy_simulation_tree.send(:x_get_tree_roots).first
       expect(node[:text]).to eq("<strong>Policy Profile:</strong> #{@data.first['description']}")
       expect(node[:icon]).to eq("pficon pficon-ok")
       expect(node[:tip]).to eq(@data.first['description'])
@@ -72,7 +71,7 @@ describe TreeBuilderPolicySimulation do
     end
 
     it 'sets Policy nodes correctly' do
-      node = @policy_simulation_tree.send(:x_get_tree_roots, false).first
+      node = @policy_simulation_tree.send(:x_get_tree_roots).first
       kids = @policy_simulation_tree.send(:x_get_tree_hash_kids, node, false)
       expect(kids.first[:text]).to eq("<strong>Policy:</strong> #{@data.first['policies'].first['description']}")
       expect(kids.first[:icon]).to eq('fa fa-ban')
@@ -85,7 +84,7 @@ describe TreeBuilderPolicySimulation do
     end
 
     it 'sets Condition nodes correctly' do
-      root = @policy_simulation_tree.send(:x_get_tree_roots, false).first
+      root = @policy_simulation_tree.send(:x_get_tree_roots).first
       parent_one = @policy_simulation_tree.send(:x_get_tree_hash_kids, root, false).first
       kid_one = @policy_simulation_tree.send(:x_get_tree_hash_kids, parent_one, false).first
       parent_two = @policy_simulation_tree.send(:x_get_tree_hash_kids, root, false).last
@@ -99,7 +98,7 @@ describe TreeBuilderPolicySimulation do
     end
 
     it 'sets Condition nodes correctly' do
-      root = @policy_simulation_tree.send(:x_get_tree_roots, false).first
+      root = @policy_simulation_tree.send(:x_get_tree_roots).first
       grand_parent_one = @policy_simulation_tree.send(:x_get_tree_hash_kids, root, false).first
       parent_one = @policy_simulation_tree.send(:x_get_tree_hash_kids, grand_parent_one, false).first
       grand_parent_two = @policy_simulation_tree.send(:x_get_tree_hash_kids, root, false).last
@@ -116,12 +115,11 @@ describe TreeBuilderPolicySimulation do
   end
   context 'TreeBuilderPolicySimulation without data' do
     before do
-      role = MiqUserRole.find_by_name("EvmRole-operator")
-      @group = FactoryGirl.create(:miq_group, :miq_user_role => role, :description => "No node Group")
-      login_as FactoryGirl.create(:user, :userid => 'no_node_wilma', :miq_groups => [@group])
+      role = MiqUserRole.find_by(:name => "EvmRole-operator")
+      @group = FactoryBot.create(:miq_group, :miq_user_role => role, :description => "No node Group")
+      login_as FactoryBot.create(:user, :userid => 'no_node_wilma', :miq_groups => [@group])
       @policy_options = {:out_of_scope => true, :passed => true, :failed => true}
       @policy_simulation_tree = TreeBuilderPolicySimulation.new(:policy_simulation_tree,
-                                                                :policy_simulaton,
                                                                 {},
                                                                 true,
                                                                 :root      => {},
@@ -129,7 +127,7 @@ describe TreeBuilderPolicySimulation do
                                                                 :options   => @policy_options)
     end
     it 'sets Policy Profile node correctly if no data found' do
-      node = @policy_simulation_tree.send(:x_get_tree_roots, false).first
+      node = @policy_simulation_tree.send(:x_get_tree_roots).first
       expect(node[:text]).to eq("Items out of scope")
       expect(node[:icon]).to eq("fa fa-ban")
       expect(node[:selectable]).to eq(false)

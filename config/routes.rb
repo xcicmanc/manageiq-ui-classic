@@ -1,34 +1,35 @@
 Rails.application.routes.draw do
-  # rubocop:disable AlignHash
-  # rubocop:disable MultilineOperationIndentation
+  # rubocop:disable Layout/HashAlignment
+  # rubocop:disable Layout/MultilineOperationIndentation
   # default routes for each controller
-  default_routes = %w(
+  default_routes = %w[
     report_data
-  )
+  ]
 
   # grouped routes
-  adv_search_post = %w(
+  adv_search_post = %w[
     adv_search_button
     adv_search_clear
     adv_search_load_choice
     adv_search_name_typed
     adv_search_toggle
-    adv_search_text_clear
-  )
+    search_clear
+  ]
 
-  button_post = %w(
+  button_post = %w[
     button_create
     button_update
-  )
+  ]
 
-  compare_get = %w(
+  compare_get = %w[
     compare_miq
     compare_to_csv
     compare_to_pdf
     compare_to_txt
-  )
+  ]
 
-  compare_post = %w(
+  compare_post = %w[
+    compare_cancel
     compare_choose_base
     compare_compress
     compare_miq
@@ -38,202 +39,221 @@ Rails.application.routes.draw do
     compare_mode
     compare_remove
     compare_set_state
-  )
+  ]
 
-  dialog_runner_post = %w(
+  dialog_runner_post = %w[
     dialog_field_changed
     dialog_form_button_pressed
     dynamic_checkbox_refresh
     dynamic_date_refresh
     dynamic_radio_button_refresh
     dynamic_text_box_refresh
-  )
+    open_url_after_dialog
+  ]
 
-  discover_get_post = %w(
-    discover
-    discover_field_changed
-  )
-
-  drift_get = %w(
+  drift_get = %w[
     drift
     drift_history
     drift_to_csv
     drift_to_pdf
     drift_to_txt
-  )
+  ]
 
-  drift_post = %w(
+  drift_post = %w[
     drift_all
     drift_compress
     drift_differences
     drift_history
     drift_mode
     drift_same
-  )
+  ]
 
-  exp_post = %w(
+  exp_post = %w[
     exp_button
     exp_changed
     exp_token_pressed
-  )
+  ]
 
-  evm_relationship_post = %w(
-    evm_relationship_field_changed
-    evm_relationship_update
-  )
-
-  ownership_post = %w(
+  ownership_post = %w[
     ownership
-    ownership_field_changed
     ownership_update
-  )
+  ]
 
-  perf_post = %w(
+  perf_post = %w[
     perf_chart_chooser
     perf_top_chart
-  )
+  ]
 
-  policy_post = %w(
+  policy_post = %w[
     policy_options
     policy_show_options
     policy_sim
     policy_sim_add
     policy_sim_remove
-  )
+  ]
 
-  pre_prov_post = %w(
+  pre_prov_post = %w[
     pre_prov
     pre_prov_continue
-  )
+  ]
 
-  save_post = %w(
+  save_post = %w[
     save_default_search
-  )
+  ]
 
-  snap_post = %w(
+  snap_post = %w[
     snap_pressed
-    snap_vm
-  )
+  ]
 
-  x_post = %w(
+  x_post = %w[
     x_button
     x_history
     x_search_by_name
     x_show
-  )
+  ]
 
   controller_routes = {
-    :alert                    => {
-      :get  => %w(
-        index
-        rss
-        show_list
-      ),
-      :post => %w(
-        role_selected
-        start_rss
-      ),
+
+    :ems_storage_dashboard      => {
+      :get => %w[
+        show
+        aggregate_status_data
+        resources_capacity_data
+        aggregate_event_data
+      ]
     },
 
     :auth_key_pair_cloud      => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
         index
         new
+        protect
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-        ems_form_choices
-      ) + compare_get,
-      :post => %w(
+        download_private_key
+        ownership
+
+      ] +
+        compare_get,
+      :post => %w[
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
-        quick_search
-        show
-        show_list
-        tagging_edit
-        tag_edit_form_field_changed
-        wait_for_task
-      ) + adv_search_post + compare_post + exp_post + save_post
-    },
-
-    :automation_manager => {
-      :get  => %w(
-        download_data
-        download_summary_pdf
-        explorer
-        form_fields
-        show
-        x_show
-        x_button
-        show_list
-        tagging_edit
-      ),
-      :post => %w(
-        accordion_select
-        authentication_validate
-        button
-        change_tab
-        delete
-        edit
-        explorer
-        form_field_changed
-        new
-        provision
-        quick_search
-        refresh
-        reload
-        show
-        show_list
-        tagging
-        tagging_edit
-        tag_edit_form_field_changed
-        tree_autoload
-        tree_select
-        configscript_service_dialog_submit
-        cs_form_field_changed
-        users
-        wait_for_task
-      ) +
-        adv_search_post +
-        exp_post +
-        x_post
-    },
-
-    :availability_zone        => {
-      :get  => %w(
-        dialog_load
-        download_data
-        download_summary_pdf
-        index
-        perf_top_chart
-        show
-        show_list
-        tagging_edit
-      ) +
-               compare_get,
-      :post => %w(
-        button
-        listnav_search_selected
+        ownership_update
+        protect
         quick_search
         sections_field_changed
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
+        wait_for_task
+      ] +
+        adv_search_post +
+        compare_post +
+        exp_post +
+        save_post
+    },
+
+    :placement_group => {
+      :get  => %w[
+        show_list
+        index
+        show
+        download_data
+        download_summary_pdf
+      ],
+      :post => %w[
+        quick_search
+        show_list
+        show
+      ] +
+        adv_search_post +
+        exp_post
+    },
+
+    :automation_manager_configured_system => {
+      :get => %w[
+        download_data
+        download_summary_pdf
+        show
+        show_list
+        tagging_edit
+      ],
+      :post => %w[
+        button
+        listnav_search_selected
+        quick_search
+        reload
+        show
+        show_list
+        tagging_edit
+      ] +
+        adv_search_post +
+        exp_post
+    },
+
+    :configuration_script => {
+      :get  => %w[
+        configuration_script_service_dialog
+        download_summary_pdf
+        show
+        show_list
+        tagging_edit
+      ],
+      :post => %w[
+        button
+        listnav_search_selected
+        quick_search
+        reload
+        show
+        show_list
+        tagging_edit
+      ] +
+        adv_search_post +
+        exp_post +
+        save_post
+    },
+
+    :availability_zone        => {
+      :get  => %w[
+        dialog_load
+        download_data
+        download_summary_pdf
+        index
+        perf_top_chart
+        protect
+        show
+        show_list
+        tagging_edit
+      ] +
+        compare_get,
+      :post => %w[
+        button
+        listnav_search_selected
+        protect
+        quick_search
+        sections_field_changed
+        show
+        show_list
+        tagging_edit
         tl_chooser
         wait_for_task
-      ) + adv_search_post + compare_post + exp_post + perf_post + save_post + dialog_runner_post
+      ] +
+        adv_search_post +
+        compare_post +
+        dialog_runner_post +
+        exp_post +
+        perf_post +
+        save_post
     },
 
     :host_aggregate           => {
-      :get  => %w(
+      :get  => %w[
         add_host_select
+        delete_host_aggregates
         download_data
         download_summary_pdf
         edit
@@ -241,17 +261,21 @@ Rails.application.routes.draw do
         index
         new
         perf_top_chart
+        protect
         remove_host_select
         show
         show_list
         tagging_edit
-      ) +
-               compare_get,
-      :post => %w(
+      ] +
+        compare_get,
+      :post => %w[
         add_host
         add_host_select
         button
+        delete_host_aggregates
+        listnav_search_selected
         create
+        protect
         quick_search
         remove_host
         remove_host_select
@@ -259,23 +283,28 @@ Rails.application.routes.draw do
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
         tl_chooser
         update
         wait_for_task
-      ) + adv_search_post + compare_post + exp_post + perf_post
+      ] +
+        adv_search_post +
+        compare_post +
+        exp_post +
+        perf_post +
+        save_post
     },
 
     :catalog                  => {
-      :get  => %w(
-        catalog_item_form_fields
+      :get  => %w[
         download_data
         explorer
         ot_edit
+        ot_orchestration_managers
         ot_show
+        servicetemplates_names
         show
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         ab_group_reorder
         accordion_select
         ae_tree_select
@@ -285,124 +314,119 @@ Rails.application.routes.draw do
         atomic_st_edit
         automate_button_field_changed
         playbook_options_field_changed
+        embedded_workflows_modal
         explorer
-        get_ae_tree_edit_key
         group_create
-        group_form_field_changed
         group_reorder_field_changed
         group_update
-        identify_catalog
-        orchestration_template_add
-        orchestration_template_copy
-        orchestration_template_edit
-        ot_add_form_field_changed
-        ot_add_submit
-        ot_copy_submit
-        ot_edit_submit
-        ot_form_field_changed
         ot_tags_edit
-        process_sts
+        ownership_update
         prov_field_changed
         reload
         resolve
         resource_delete
-        service_dialog_from_ot_submit
+        save_copy_catalog
         servicetemplate_edit
+        servicetemplate_copy
+        servicetemplate_copy_cancel
+        servicetemplate_copy_saved
         sort_ds_grid
         sort_host_grid
         sort_iso_img_grid
         sort_pxe_img_grid
         sort_vc_grid
+        sort_template_grid
         sort_vm_grid
         st_catalog_edit
-        st_catalog_form_field_changed
-        st_delete
         st_edit
         st_form_field_changed
         st_tags_edit
         st_upload_image
-        svc_catalog_provision
-        tag_edit_form_field_changed
         tree_autoload
         tree_select
         x_button
         x_history
         x_show
-      ) +
+      ] +
                button_post +
                exp_post +
                dialog_runner_post
     },
 
-    :chargeback               => {
-      :get  => %w(
-        explorer
+    :chargeback_assignment => {
+      :get => %w[
+        index
+      ]
+    },
+    :chargeback_rate => {
+      :get  => %w[
+        copy
+        edit
+        new
+        show_list
+        show
+      ],
+      :post => %w[
+        delete
+        edit
+        form_field_changed
+        show_list
+        show
+        tier_add
+        tier_remove
+      ]
+    },
+
+    :chargeback_report => {
+      :get  => %w[
+        show
+        show_list
         render_csv
         render_pdf
         render_txt
         report_only
-      ),
-      :post => %w(
-        accordion_select
-        explorer
-        cb_assign_field_changed
-        cb_assign_update
-        cb_rate_edit
-        cb_rate_form_field_changed
-        cb_rate_show
-        cb_rates_delete
-        cb_rates_list
-        cb_tier_add
-        cb_tier_remove
+      ],
+      :post => %w[
         saved_report_paging
-        tree_autoload
-        tree_select
-        x_button
-        x_show
-      )
+        show
+      ]
     },
 
     :configuration_job      => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
         index
-        outputs
         parameters
-        resources
         show
         show_list
         tagging_edit
         protect
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
-        outputs
         listnav_search_selected
-        panel_control
         parameters
         quick_search
-        resources
         sections_field_changed
         show
         show_list
         protect
         tagging_edit
-        tag_edit_form_field_changed
-      ) +
+      ] +
         adv_search_post +
         exp_post +
         save_post
     },
 
     :consumption                  => {
-      :get => %w(
+      :get => %w[
         show
-      )
+      ]
     },
 
     :cloud_object_store_container => {
-      :get => %w(
+      :get => %w[
         dialog_load
         download_data
         download_summary_pdf
@@ -410,27 +434,23 @@ Rails.application.routes.draw do
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
         new
-      ) + compare_get,
-      :post => %w(
+      ],
+      :post => %w[
         button
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-        create
         wait_for_task
-      ) + compare_post + adv_search_post + exp_post + save_post + dialog_runner_post
+      ] + adv_search_post + exp_post + save_post + dialog_runner_post
     },
 
     :cloud_tenant             => {
-      :get => %w(
-        cloud_tenant_form_fields
+      :get => %w[
+        delete_cloud_tenants
         dialog_load
         download_data
         download_summary_pdf
@@ -441,175 +461,180 @@ Rails.application.routes.draw do
         show
         show_list
         tagging_edit
-      ) +
-               compare_get,
-      :post => %w(
+      ] +
+        compare_get,
+      :post => %w[
         button
         listnav_search_selected
-        create
         protect
         quick_search
         sections_field_changed
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-        update
         wait_for_task
-      ) +
-               compare_post + adv_search_post + exp_post + save_post + dialog_runner_post
+      ] +
+        adv_search_post +
+        compare_post +
+        dialog_runner_post +
+        exp_post +
+        save_post
+    },
+
+    :cloud_tenant_dashboard      => {
+      :get => %w[
+        data
+        recent_instances_data
+        recent_images_data
+        aggregate_status_data
+      ]
     },
 
     :cloud_object_store_object => {
-      :get => %w(
+      :get => %w[
         download_data
         download_summary_pdf
-        edit
         index
-        new
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ) + compare_get,
-      :post => %w(
+      ],
+      :post => %w[
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-        update
-      ) + compare_post + adv_search_post + exp_post
+      ] + adv_search_post + exp_post + save_post
     },
 
     :cloud_volume             => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
         download_data
         download_summary_pdf
         attach
         detach
+        clone
         backup_new
         backup_select
         snapshot_new
         edit
-        delete_volumes
-        cloud_volume_tenants
         index
         new
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ) + compare_get,
-      :post => %w(
-        attach_volume
-        detach_volume
-        backup_create
-        backup_restore
-        snapshot_create
+      ] +
+        compare_get,
+      :post => %w[
         button
         create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
+        reload
+        sections_field_changed
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
         update
         wait_for_task
-      ) + compare_post + adv_search_post + exp_post + save_post + dialog_runner_post
+      ] +
+        adv_search_post +
+        compare_post +
+        dialog_runner_post +
+        exp_post +
+        save_post
     },
 
     :cloud_volume_snapshot    => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
         index
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ) + compare_get,
-      :post => %w(
+      ],
+      :post => %w[
         button
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ) + compare_post + adv_search_post + exp_post + save_post
+      ] + adv_search_post + exp_post + save_post
     },
 
     :cloud_volume_backup    => {
-      :get  => %w(
+      :get  => %w[
         volume_select
         volume_form_choices
         download_data
-        edit
         index
-        new
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ) + compare_get,
-      :post => %w(
+      ],
+      :post => %w[
         backup_restore
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-        update
         wait_for_task
-      ) + compare_post + adv_search_post + exp_post + save_post
+      ] + adv_search_post + exp_post + save_post
+    },
+
+    :cloud_volume_type        => {
+      :get  => %w[
+        download_data
+        index
+        show
+        show_list
+        tagging_edit
+      ],
+      :post => %w[
+        button
+        dynamic_checkbox_refresh
+        listnav_search_selected
+        quick_search
+        show
+        show_list
+        tagging_edit
+        wait_for_task
+      ] + adv_search_post + exp_post + save_post
     },
 
     :configuration            => {
       # TODO: routes for new/edit/copy buttons need to be revisited
       # TODO: so they can be changed to send up POST request instead of GET
-      :get  => %w(
+      :get  => %w[
         change_tab
         index
         show
         timeprofile_copy
         timeprofile_edit
         timeprofile_new
-        time_profile_form_fields
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
         filters_field_changed
-        form_field_changed
-        theme_changed
-        timeprofile_create
         timeprofile_delete
-        timeprofile_field_changed
-        timeprofile_update
         tree_autoload
         update
-        view_selected
-      )
+      ]
     },
 
     :container                => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
         perf_top_chart
@@ -618,12 +643,10 @@ Rails.application.routes.draw do
         wait_for_task
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         accordion_select
         button
-        container_form_field_changed
         show
         show_list
         tl_chooser
@@ -633,49 +656,44 @@ Rails.application.routes.draw do
         tree_autoload
         tree_select
         tagging_edit
-        tag_edit_form_field_changed
         listnav_search_selected
-      ) +
+        x_button
+        x_history
+        x_search_by_name
+      ] +
                adv_search_post +
                exp_post +
                perf_post +
-               save_post +
-               x_post
+               save_post
     },
 
     :container_group          => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
         download_data
         download_summary_pdf
-        edit
         index
-        new
         perf_top_chart
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
         protect
-      ),
-      :post => %w(
+        console
+        kube_exec_console
+      ],
+      :post => %w[
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         sections_field_changed
         show
         show_list
         tl_chooser
-        update
         wait_for_task
         tagging_edit
-        tag_edit_form_field_changed
         protect
-        squash_toggle
-      ) +
+      ] +
                adv_search_post +
                exp_post +
                perf_post +
@@ -684,77 +702,62 @@ Rails.application.routes.draw do
     },
 
     :container_node           => {
-      :get  => %w(
+      :get  => %w[
+        dialog_load
         download_data
         download_summary_pdf
-        edit
         index
-        new
         perf_top_chart
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
         protect
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         sections_field_changed
         show
         show_list
         tl_chooser
-        update
         wait_for_task
         tagging_edit
-        tag_edit_form_field_changed
         protect
-        squash_toggle
-        launch_cockpit
         launch_external_logging
-      ) +
+      ] +
                adv_search_post +
+               dialog_runner_post +
                exp_post +
                perf_post +
                save_post
     },
 
     :container_replicator     => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
-        edit
         index
-        new
         perf_top_chart
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
         protect
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         sections_field_changed
         show
         show_list
         tl_chooser
-        update
         wait_for_task
         tagging_edit
-        tag_edit_form_field_changed
         protect
-        squash_toggle
-      ) +
+      ] +
                adv_search_post +
                exp_post +
                perf_post +
@@ -762,98 +765,76 @@ Rails.application.routes.draw do
     },
 
     :container_image          => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
         download_data
         download_summary_pdf
-        edit
         index
-        new
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
         guest_applications
         openscap_rule_results
         openscap_html
         protect
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         sections_field_changed
         show
         show_list
-        update
         tagging_edit
-        tag_edit_form_field_changed
         guest_applications
         openscap_rule_results
         protect
-        squash_toggle
-      ) + adv_search_post + exp_post + save_post + dialog_runner_post
+      ] + adv_search_post + exp_post + save_post + dialog_runner_post
     },
 
     :container_image_registry => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
-        edit
         index
-        new
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         sections_field_changed
         show
         show_list
-        update
         tagging_edit
-        tag_edit_form_field_changed
-      ) + adv_search_post + exp_post + save_post
+      ] + adv_search_post + exp_post + save_post
     },
 
     :container_service        => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
-        edit
         index
-        new
         perf_top_chart
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         sections_field_changed
         show
         show_list
-        update
         wait_for_task
         tagging_edit
-        tag_edit_form_field_changed
-      ) +
+      ] +
                adv_search_post +
                exp_post +
                perf_post +
@@ -861,35 +842,28 @@ Rails.application.routes.draw do
     },
 
     :container_project        => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
         download_data
         download_summary_pdf
-        edit
         index
-        new
         perf_top_chart
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         sections_field_changed
         show
         show_list
         tl_chooser
-        update
         wait_for_task
         tagging_edit
-        tag_edit_form_field_changed
-      ) +
+      ] +
                adv_search_post +
                exp_post +
                perf_post +
@@ -898,92 +872,71 @@ Rails.application.routes.draw do
     },
 
     :container_route          => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
-        edit
         index
-        new
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         sections_field_changed
         show
         show_list
-        update
         tagging_edit
-        tag_edit_form_field_changed
-      ) + adv_search_post + exp_post + save_post
+      ] + adv_search_post + exp_post + save_post
     },
 
     :persistent_volume        => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
         download_data
         download_summary_pdf
-        edit
         index
-        new
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         sections_field_changed
         show
         show_list
-        update
         tagging_edit
-        tag_edit_form_field_changed
-      ) + adv_search_post + exp_post + save_post + dialog_runner_post
+      ] + adv_search_post + exp_post + save_post + dialog_runner_post
     },
 
     :container_build          => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
-        edit
         index
-        new
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         sections_field_changed
         show
         show_list
-        update
         tagging_edit
-        tag_edit_form_field_changed
-      ) + adv_search_post + exp_post + save_post
+      ] + adv_search_post + exp_post + save_post
     },
 
     :container_template          => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
         download_data
         download_summary_pdf
@@ -992,13 +945,11 @@ Rails.application.routes.draw do
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
         ct_form_field_changed
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         quick_search
         sections_field_changed
@@ -1006,195 +957,132 @@ Rails.application.routes.draw do
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ) + adv_search_post + exp_post + save_post + dialog_runner_post
+      ] + adv_search_post + exp_post + save_post + dialog_runner_post
     },
 
-    :container_topology       => {
-      :get => %w(
+    :physical_infra_overview => {
+      :get => %w[
         show
-        data
-      )
-    },
-
-    :container_project_topology => {
-      :get => %w(
-        show
-        data
-      )
-    },
-
-    :middleware_topology       => {
-      :get => %w(
-        show
-        data
-      )
-    },
-
-    :network_topology         => {
-      :get => %w(
-        show
-        data
-      )
-    },
-
-    :cloud_topology         => {
-      :get => %w(
-        show
-        data
-      )
-    },
-
-    :infra_topology         => {
-      :get => %w(
-        show
-        data
-      )
-    },
-
-    :physical_infra_topology         => {
-      :get => %w(
-        show
-        data
-      )
+      ]
     },
 
     :container_dashboard      => {
-      :get => %w(
-        show
+      :get => %w[
         data
+        ems_utilization_data
+        heatmaps_data
+        image_metrics_data
+        network_metrics_data
+        pod_metrics_data
         project_data
-      )
-    },
-
-    :alerts_overview      => {
-      :get => %w(
+        refresh_status_data
         show
-      )
-    },
-
-    :alerts_list      => {
-      :get => %w(
-        show
-        class_icons
-      )
-    },
-
-    :alerts_most_recent      => {
-      :get => %w(
-        show
-      )
+      ]
     },
 
     :dashboard                => {
-      :get  => %w(
+      :get  => %w[
         auth_error
-        cockpit_redirect
         iframe
         change_tab
         index
         login
         logout
         saml_login
-        maintab
+        oidc_login
         render_csv
         render_pdf
         render_txt
         render_chart
         report_only
         show
-        timeline
         timeline_data
         start_url
         widget_to_pdf
         widget_chart_data
         widget_menu_data
         widget_report_data
-        widget_rss_data
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         external_authenticate
         kerberos_authenticate
         initiate_saml_login
+        initiate_oidc_login
         authenticate
         change_group
         csp_report
         timeline_data
         login_retry
         reset_widgets
-        resize_layout
-        tl_generate
         tree_select
         wait_for_task
         widget_add
         widget_close
         widget_dd_done
-        widget_toggle_minmax
-        widget_zoom
-      )
+      ]
     },
 
     :ems_cloud                => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
-        discover
         download_data
         download_summary_pdf
-        ems_cloud_form_fields
         protect
+        show
         show_list
         sync_users
         tagging_edit
-      ) +
-               compare_get,
-      :post => %w(
+      ] +
+        compare_get,
+      :post => %w[
+        new
         button
-        create
         dynamic_checkbox_refresh
-        dynamic_list_refresh
         dynamic_radio_button_refresh
         dynamic_text_box_refresh
-        form_field_changed
         listnav_search_selected
         protect
-        provider_type_field_changed
         quick_search
         sections_field_changed
         show
         show_list
         sync_users
-        tag_edit_form_field_changed
         tagging_edit
         tl_chooser
-        update
         wait_for_task
-        squash_toggle
-      ) +
+        launch_console
+      ] +
                adv_search_post +
                compare_post +
                dialog_runner_post +
-               discover_get_post +
                exp_post +
                save_post
     },
 
+    :ems_cloud_dashboard      => {
+      :get => %w[
+        data
+        recent_instances_data
+        recent_images_data
+        aggregate_status_data
+      ]
+    },
+
     :ems_cluster              => {
-      :get  => %w(
-        columns_json
+      :get  => %w[
         dialog_load
         download_data
         download_summary_pdf
         index
         perf_top_chart
         protect
-        rows_json
         show
         show_list
         tagging_edit
-      ) +
+      ] +
                compare_get +
                drift_get,
-      :post => %w(
+      :post => %w[
         button
         listnav_search_selected
         protect
@@ -1202,12 +1090,11 @@ Rails.application.routes.draw do
         sections_field_changed
         show
         show_list
-        tag_edit_form_field_changed
         tagging_edit
         tl_chooser
         tree_autoload
         wait_for_task
-      ) +
+      ] +
                adv_search_post +
                compare_post +
                dialog_runner_post +
@@ -1218,158 +1105,241 @@ Rails.application.routes.draw do
     },
 
     :ems_infra                => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
-        discover
         download_data
         download_summary_pdf
-        ems_infra_form_fields
         register_nodes
-        introspect_nodes
         protect
         scaledown
         scaling
+        show
         show_list
         tagging_edit
-      ) +
+      ] +
                compare_get,
-      :post => %w(
+      :post => %w[
+        new
         button
-        create
-        form_field_changed
         register_nodes
-        introspect_nodes
         listnav_search_selected
         protect
         quick_search
+        reload
         sections_field_changed
         show
         show_list
-        tag_edit_form_field_changed
         tagging_edit
         tl_chooser
         tree_autoload
-        update
         wait_for_task
-        x_show
         scaling
         scaledown
-        squash_toggle
         open_admin_ui
         open_admin_ui_done
-      ) +
+        launch_console
+      ] +
                adv_search_post +
                compare_post +
                dialog_runner_post +
-               discover_get_post +
                exp_post +
                save_post
     },
 
     :ems_infra_dashboard      => {
-      :get => %w(
-        show
+      :get => %w[
         data
         cluster_metrics_data
         ems_utilization_data
         recent_hosts_data
         recent_vms_data
-      )
+        aggregate_status_data
+      ]
     },
 
     :ems_physical_infra                => {
-      :get  => %w(
-        discover
+      :get  => %w[
+        dialog_load
         download_data
         download_summary_pdf
-        ems_physical_infra_form_fields
         protect
+        show
         show_list
         tagging_edit
-      ) +
-               compare_get,
-      :post => %w(
+      ],
+      :post => %w[
+        new
         button
-        create
         listnav_search_selected
         protect
         quick_search
         show
         show_list
-        squash_toggle
-        tag_edit_form_field_changed
         tagging_edit
         tl_chooser
         tree_autoload
-        update
         wait_for_task
-        x_show
         launch_console
-      ) +
+      ] +
                adv_search_post +
-               compare_post +
                dialog_runner_post +
-               discover_get_post +
                exp_post +
                save_post
     },
 
-    :physical_server    =>  {
-      :get  =>  %w(
+    :physical_switch    =>  {
+      :get  =>  %w[
+        dialog_load
         download_data
+        download_summary_pdf
+        show_list
+        show
+      ],
+
+      :post   =>  %w[
+        button
+        listnav_search_selected
+        show_list
+        quick_search
+      ] + adv_search_post + save_post + dialog_runner_post,
+    },
+
+    :physical_server    =>  {
+      :get  =>  %w[
+        dialog_load
+        download_data
+        download_summary_pdf
         perf_top_chart
         protect
         show_list
         show
         tagging_edit
-      ) + compare_get,
+        console_file
+      ],
 
-      :post   =>  %w(
+      :post   =>  %w[
         button
         show_list
-        create
-        create_del
         listnav_search_selected
         protect
         tagging_edit
-        tag_edit_form_field_changed
-        update
-        update_del
         quick_search
         tl_chooser
         wait_for_task
         provision
-      ) +
+        console
+      ] +
+          adv_search_post +
+          exp_post +
+          save_post +
+          dialog_runner_post
+    },
+
+    :physical_rack    =>  {
+      :get  =>  %w[
+        dialog_load
+        download_data
+        download_summary_pdf
+        protect
+        show_list
+        show
+      ],
+      :post   =>  %w[
+        button
+        show_list
+        quick_search
+      ] + dialog_runner_post
+    },
+
+    :physical_network_port    => {
+      :get  => %w[
+        download_data
+        download_summary_pdf
+        show_list
+        show
+      ],
+
+      :post  => %w[
+        show_list
+      ]
+    },
+
+    :physical_storage   => {
+      :get  => %w[
+        dialog_load
+        download_data
+        download_summary_pdf
+        edit
+        show
+        show_list
+        new
+      ],
+      :post => %w[
+        button
+        tl_chooser
+        wait_for_task
+        listnav_search_selected
+        quick_search
+        show_list
+      ] + adv_search_post + save_post + exp_post + dialog_runner_post,
+    },
+
+    :physical_chassis    => {
+      :get  => %w[
+        dialog_load
+        download_data
+        download_summary_pdf
+        protect
+        show_list
+        show
+      ],
+
+      :post  => %w[
+        button
+        show_list
+        quick_search
+      ] + dialog_runner_post,
+    },
+
+    :guest_device    =>  {
+      :get  =>  %w[
+        show_list
+        show
+        quick_search
+        download_summary_pdf
+      ],
+
+      :post   =>  %w[
+        show_list
+      ] +
           adv_search_post +
           exp_post +
           save_post
     },
 
     :ems_physical_infra_dashboard      => {
-      :get => %w(
-        show
-        data
-      )
+      :get => %w[
+        recent_servers_data
+        aggregate_status_data
+        servers_group_data
+      ]
     },
 
     :ems_container            => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
         download_data
         download_summary_pdf
         perf_top_chart
         protect
+        show
         show_list
         tagging_edit
-        ems_container_form_fields
-        tag_edit_form_field_changed
-      ) +
-               compare_get,
-      :post => %w(
+      ],
+      :post => %w[
+        new
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
         protect
         quick_search
@@ -1377,476 +1347,235 @@ Rails.application.routes.draw do
         show
         show_list
         tl_chooser
-        update
         wait_for_task
         tagging_edit
-        tag_edit_form_field_changed
-        squash_toggle
         launch_external_logging
-      ) +
+      ] +
                adv_search_post +
-               compare_post +
                dialog_runner_post +
                exp_post +
                perf_post +
                save_post
     },
 
-    :ems_middleware            => {
-      :get  => %w(
-        download_data
-        download_summary_pdf
-        ems_middleware_form_fields
-        show_list
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-               compare_get,
-      :post => %w(
-        button
-        create
-        dynamic_checkbox_refresh
-        form_field_changed
-        listnav_search_selected
-        quick_search
-        sections_field_changed
-        show
-        show_list
-        tl_chooser
-        update
-        wait_for_task
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-               adv_search_post +
-               compare_post +
-               exp_post +
-               save_post
-    },
-
-    :middleware_server            => {
-      :get  => %w(
-        download_data
-        download_summary_pdf
-        edit
-        index
-        new
-        perf_top_chart
-        show
-        show_list
-        tagging_edit
-        tag_edit_form_field_changed
-        jdbc_drivers
-        dr_download
-        dr_report_download
-        protect
-      ) +
-               compare_get,
-      :post => %w(
-        add_deployment
-        add_jdbc_driver
-        add_datasource
-        button
-        create
-        dynamic_checkbox_refresh
-        form_field_changed
-        listnav_search_selected
-        perf_chart_chooser
-        quick_search
-        run_operation
-        sections_field_changed
-        show
-        show_list
-        tl_chooser
-        update
-        wait_for_task
-        tagging_edit
-        tag_edit_form_field_changed
-        dr_delete
-        protect
-      ) +
-               adv_search_post +
-               compare_post +
-               exp_post +
-               policy_post +
-               save_post
-    },
-
-    :middleware_deployment            => {
-      :get  => %w(
-        download_data
-        download_summary_pdf
-        edit
-        index
-        new
-        show
-        show_list
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-               compare_get,
-      :post => %w(
-        button
-        create
-        dynamic_checkbox_refresh
-        form_field_changed
-        listnav_search_selected
-        quick_search
-        sections_field_changed
-        show
-        show_list
-        tl_chooser
-        update
-        wait_for_task
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-               adv_search_post +
-               compare_post +
-               exp_post +
-               save_post
-    },
-
-    :middleware_datasource => {
-      :get  => %w(
-        download_data
-        download_summary_pdf
-        edit
-        index
-        new
-        perf_chart_chooser
-        show
-        show_list
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-      compare_get,
-      :post => %w(
-        button
-        create
-        dynamic_checkbox_refresh
-        form_field_changed
-        listnav_search_selected
-        quick_search
-        sections_field_changed
-        perf_chart_chooser
-        show
-        show_list
-        tl_chooser
-        update
-        wait_for_task
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-      adv_search_post +
-      compare_post +
-      exp_post +
-      save_post
-    },
-
-    :middleware_domain => {
-      :get  => %w(
-        download_data
-        download_summary_pdf
-        edit
-        index
-        show
-        show_list
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-        compare_get,
-      :post => %w(
-        button
-        create
-        dynamic_checkbox_refresh
-        form_field_changed
-        listnav_search_selected
-        quick_search
-        sections_field_changed
-        show
-        show_list
-        tl_chooser
-        update
-        wait_for_task
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-        adv_search_post +
-        compare_post +
-        exp_post +
-        save_post
-    },
-
-    :middleware_server_group => {
-      :get  => %w(
-        download_data
-        download_summary_pdf
-        edit
-        index
-        show
-        show_list
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-        compare_get,
-      :post => %w(
-        add_deployment
-        button
-        create
-        dynamic_checkbox_refresh
-        form_field_changed
-        listnav_search_selected
-        quick_search
-        run_operation
-        sections_field_changed
-        show
-        show_list
-        tl_chooser
-        update
-        wait_for_task
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-        adv_search_post +
-        compare_post +
-        exp_post +
-        save_post
-    },
-
-    :middleware_messaging => {
-      :get  => %w(
-        download_data
-        download_summary_pdf
-        index
-        perf_chart_chooser
-        show
-        show_list
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-      compare_get,
-      :post => %w(
-        button
-        perf_chart_chooser
-        show
-        show_list
-        quick_search
-        listnav_search_selected
-        tl_chooser
-        update
-        wait_for_task
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-        adv_search_post +
-        exp_post +
-        save_post
-    },
-
-    :ems_datawarehouse => {
-      :get  => %w(
-        download_data
-        download_summary_pdf
-        ems_datawarehouse_form_fields
-        show_list
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-      compare_get,
-      :post => %w(
-        button
-        create
-        dynamic_checkbox_refresh
-        form_field_changed
-        listnav_search_selected
-        quick_search
-        sections_field_changed
-        show
-        show_list
-        tl_chooser
-        update
-        wait_for_task
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-      adv_search_post +
-      compare_post +
-      exp_post +
-      save_post
-    },
-
     :ems_network              => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
         download_data
         download_summary_pdf
-        ems_network_form_fields
         index
         protect
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ) +
-        compare_get,
-      :post => %w(
+      ],
+      :post => %w[
+        new
         button
-        create
         dynamic_checkbox_refresh
-        dynamic_list_refresh
         dynamic_radio_button_refresh
         dynamic_text_box_refresh
-        form_field_changed
         listnav_search_selected
         protect
-        provider_type_field_changed
         quick_search
         sections_field_changed
         show_list
-        tag_edit_form_field_changed
         tagging_edit
         tl_chooser
-        update
         wait_for_task
-      ) +
+      ] +
         adv_search_post +
-        compare_post +
         dialog_runner_post +
         exp_post +
         save_post
     },
 
     :security_group           => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
         edit
         download_data
         download_summary_pdf
         index
         new
+        protect
         show
         show_list
         tagging_edit
-      ) +
+      ] +
         compare_get,
-      :post => %w(
+      :post => %w[
         button
         create
-        form_field_changed
-        quick_search
         listnav_search_selected
+        protect
+        quick_search
         sections_field_changed
         show
         show_list
-        tag_edit_form_field_changed
         tagging_edit
         update
         wait_for_task
-      ) +
+      ] +
         adv_search_post +
         compare_post +
+        save_post +
+        exp_post +
+        dialog_runner_post
+    },
+
+    :security_policy          => {
+      :get  => %w[
+        dialog_load
+        download_data
+        download_summary_pdf
+        show
+        show_list
+        tagging_edit
+      ],
+      :post => %w[
+        button
+        quick_search
+        listnav_search_selected
+        show
+        show_list
+        tagging_edit
+        wait_for_task
+      ] +
+        adv_search_post +
+        save_post +
+        exp_post +
+        dialog_runner_post
+    },
+
+    :security_policy_rule     => {
+      :get  => %w[
+        dialog_load
+        download_data
+        download_summary_pdf
+        show
+        show_list
+        tagging_edit
+      ],
+      :post => %w[
+        button
+        quick_search
+        listnav_search_selected
+        show
+        show_list
+        tagging_edit
+        wait_for_task
+      ] +
+        adv_search_post +
         save_post +
         exp_post +
         dialog_runner_post
     },
 
     :floating_ip              => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
         edit
-        floating_ip_form_fields
         index
-        networks_by_ems
         new
         show
         show_list
         tagging_edit
-      ) +
-        compare_get,
-      :post => %w(
+      ],
+      :post => %w[
         button
         create
-        form_field_changed
         listnav_search_selected
         quick_search
         show
         show_list
-        tag_edit_form_field_changed
         tagging_edit
-        update
         wait_for_task
-      ) +
+      ] +
         adv_search_post +
-        compare_post +
         save_post +
         exp_post
     },
 
     :cloud_subnet             => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
         download_data
         download_summary_pdf
-        cloud_subnet_form_fields
-        cloud_subnet_networks_by_ems
-        cloud_tenants_by_ems
         edit
         index
         new
+        protect
         show
         show_list
         tagging_edit
-      ) +
+      ] +
         compare_get,
-      :post => %w(
+      :post => %w[
         button
-        create
         dynamic_checkbox_refresh
-        form_field_changed
         listnav_search_selected
+        protect
         quick_search
+        sections_field_changed
         show
         show_list
-        tag_edit_form_field_changed
         tagging_edit
-        update
         wait_for_task
-      ) +
+      ] +
         adv_search_post +
         compare_post +
         save_post +
         exp_post +
         dialog_runner_post
     },
-
+    :cloud_database             => {
+      :get  => %w[
+        show_list
+        index
+        show
+        download_data
+        download_summary_pdf
+        edit
+        new
+      ],
+      :post => %w[
+        quick_search
+        show_list
+        show
+        button
+      ] +
+        adv_search_post +
+        exp_post
+    },
     :cloud_network             => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
         download_data
         download_summary_pdf
         edit
         index
         new
+        protect
         show
         show_list
         tagging_edit
-      ) +
+      ] +
         compare_get,
-      :post => %w(
+      :post => %w[
         button
         create
         dynamic_checkbox_refresh
-        form_field_changed
-        quick_search
         listnav_search_selected
+        protect
+        quick_search
+        sections_field_changed
         show
         show_list
-        tag_edit_form_field_changed
         tagging_edit
         update
         wait_for_task
-      ) +
+      ] +
         adv_search_post +
         compare_post +
         save_post +
@@ -1855,60 +1584,51 @@ Rails.application.routes.draw do
     },
 
     :network_port             => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
         index
         show
         show_list
         tagging_edit
-      ) +
-        compare_get,
-      :post => %w(
+      ],
+      :post => %w[
         button
-        create
-        form_field_changed
         quick_search
         listnav_search_selected
         sections_field_changed
         show
         show_list
-        tag_edit_form_field_changed
         tagging_edit
-        update
         wait_for_task
-      ) +
+      ] +
         adv_search_post +
-        compare_post +
         save_post +
         exp_post
     },
 
     :network_router           => {
-      :get  => %w(
+      :get  => %w[
         add_interface_select
         dialog_load
         download_data
         download_summary_pdf
         edit
         index
-        network_router_form_fields
-        network_router_networks_by_ems
-        network_router_subnets_by_network
         new
+        protect
         remove_interface_select
         show
         show_list
         tagging_edit
-      ) +
+      ] +
         compare_get,
-      :post => %w(
+      :post => %w[
         add_interface
         add_interface_select
         button
-        create
-        form_field_changed
         listnav_search_selected
+        protect
         quick_search
         remove_interface
         remove_interface_select
@@ -1916,10 +1636,8 @@ Rails.application.routes.draw do
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-        update
         wait_for_task
-      ) +
+      ] +
         adv_search_post +
         compare_post +
         save_post +
@@ -1927,31 +1645,26 @@ Rails.application.routes.draw do
         dialog_runner_post
     },
 
-    :load_balancer             => {
-      :get  => %w(
-        dialog_load
+    :network_service          => {
+      :get  => %w[
         download_data
         download_summary_pdf
-        index
         show
         show_list
         tagging_edit
-      ) +
-        compare_get,
-      :post => %w(
+      ],
+      :post => %w[
         button
         quick_search
+        listnav_search_selected
         show
         show_list
-        listnav_search_selected
-        tag_edit_form_field_changed
         tagging_edit
-      ) +
+        wait_for_task
+      ] +
         adv_search_post +
-        compare_post +
         save_post +
-        exp_post +
-        dialog_runner_post
+        exp_post
     },
 
     :flavor                   => {
@@ -1959,27 +1672,29 @@ Rails.application.routes.draw do
       # in app/controllers/application_controller/tags.rb#tag that are used in
       # a role of a method call.
       # Then remove this route from all other controllers too.
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
         index
+        protect
         show
         show_list
         new
         tagging_edit
         ems_list
-      ) +
-               compare_get,
-      :post => %w(
+        cloud_tenants
+      ] +
+        compare_get,
+      :post => %w[
         button
         listnav_search_selected
+        protect
         quick_search
         sections_field_changed
         show
         show_list
-        tag_edit_form_field_changed
         tagging_edit
-      ) +
+      ] +
                adv_search_post +
                compare_post +
                exp_post +
@@ -1987,7 +1702,7 @@ Rails.application.routes.draw do
     },
 
     :host                     => {
-      :get  => %w(
+      :get  => %w[
         advanced_settings
         dialog_load
         download_data
@@ -2003,26 +1718,20 @@ Rails.application.routes.draw do
         host_services
         host_cloud_services
         index
-        list
-        new
         patches
         perf_top_chart
         protect
         show
-        show_association
-        show_details
         show_list
         start
         tagging_edit
         users
-      ) +
+      ] +
                compare_get +
-               discover_get_post +
                drift_get,
-      :post => %w(
+      :post => %w[
         advanced_settings
         button
-        create
         drift_all
         drift_compress
         drift_differences
@@ -2030,8 +1739,6 @@ Rails.application.routes.draw do
         drift_same
         filesystems
         firewall_rules
-        firewallrules
-        form_field_changed
         groups
         guest_applications
         host_services
@@ -2043,48 +1750,41 @@ Rails.application.routes.draw do
         sections_field_changed
         show
         show_list
-        squash_toggle
-        tag_edit_form_field_changed
         tagging_edit
         tl_chooser
         tree_autoload
-        update
         users
         wait_for_task
-      ) +
+      ] +
                adv_search_post +
                compare_post +
                dialog_runner_post +
-               discover_get_post +
                exp_post +
                perf_post +
                save_post
     },
 
     :infra_networking         => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
         download_data
         download_summary_pdf
         explorer
         hosts
-        show
         show_list
         tagging
         tagging_edit
         x_show
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
+        custom_button_events
         explorer
         hosts
         listnav_search_selected
-        panel_control
         quick_search
         reload
-        show
         show_list
-        tag_edit_form_field_changed
         tagging
         tagging_edit
         tree_select
@@ -2092,7 +1792,7 @@ Rails.application.routes.draw do
         x_button
         x_show
         x_search_by_name
-      ) +
+      ] +
         adv_search_post +
         exp_post +
         save_post +
@@ -2101,116 +1801,129 @@ Rails.application.routes.draw do
     },
 
     :generic_object => {
-      :get => %w(
+      :get => %w[
         show
         show_list
         tagging_edit
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
-        tag_edit_form_field_changed
         tagging_edit
-      )
+      ]
     },
 
     :generic_object_definition => {
-      :get => %w(
+      :get => %w[
+        custom_buttons_in_set
         download_data
         download_summary_pdf
         edit
         new
         retrieve_distinct_instances_across_domains
+        service_template_ansible_playbooks
         show
         show_list
         tagging_edit
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         add_button_in_group
         button
-        create_del
         custom_button_group_new
         custom_button_group_edit
         custom_button_new
         custom_button_edit
         edit
-        exp_button
-        exp_changed
-        exp_token_pressed
         listnav_search_selected
         new
-        update_del
         quick_search
         show_list
-        tag_edit_form_field_changed
         tagging_edit
         tree_select
-        x_show
-      ) +
+      ] +
         adv_search_post +
+        exp_post +
         save_post
     },
 
     :ansible_credential => {
-      :get => %w(
+      :get => %w[
         download_data
         download_summary_pdf
         edit
         new
         show
         show_list
-      ),
-      :post => %w(
+        tagging_edit
+      ],
+      :post => %w[
+        search_clear
         button
         show_list
-      )
+        tagging_edit
+      ]
     },
 
     :ansible_playbook => {
-      :get => %w(
+      :get => %w[
         download_data
         download_summary_pdf
         show
         show_list
-      ),
-      :post => %w(
-        show_list)
+        tagging_edit
+      ],
+      :post => %w[
+        search_clear
+        button
+        show_list
+        tagging_edit
+      ]
     },
 
     :ansible_repository => {
-      :get => %w(
+      :get => %w[
         download_data
         download_summary_pdf
         edit
         new
         show
         show_list
-      ),
-      :post => %w(
+        tagging_edit
+      ],
+      :post => %w[
+        search_clear
         button
         edit
         new
         repository_refresh
         show_list
-      )
+        tagging_edit
+      ]
     },
 
     :miq_ae_class             => {
-      :get  => %w(
+      :get  => %w[
         explorer
         method_form_fields
-      ),
-      :post => %w(
+        namespace
+        ae_domains
+        ae_methods
+        ae_method_operations
+        show
+        edit_class_record
+        instance_form_data
+        new_instance
+        edit_instance
+      ],
+      :post => %w[
         add_update_method
-        ae_tree_select
-        ae_tree_select_toggle
         change_tab
         copy_objects
+        copy_objects_save
         create
         create_instance
         create_method
-        create_ns
+        create_namespace
         domains_priority_edit
-        embedded_methods_remove
         explorer
         expand_toggle
         field_accept
@@ -2222,13 +1935,8 @@ Rails.application.routes.draw do
         fields_form_field_changed
         fields_seq_edit
         fields_seq_field_changed
-        form_copy_objects_field_changed
         form_field_changed
-        form_instance_field_changed
         form_method_field_changed
-        form_ns_field_changed
-        priority_form_field_changed
-        refresh_git_domain
         reload
         tree_select
         tree_autoload
@@ -2236,52 +1944,42 @@ Rails.application.routes.draw do
         update_fields
         update_instance
         update_method
-        update_ns
+        update_namespace
         validate_method_data
         x_button
         x_history
         x_show
-      ) + adv_search_post +
+        class_update
+      ] + adv_search_post +
         exp_post
     },
     :miq_ae_customization     => {
-      :get  => %w(
-        dialog_accordion_json
+      :get  => %w[
         explorer
         editor
         export_service_dialogs
         show
-      ),
-      :post => %w(
+        old_dialogs_edit_get
+      ],
+      :post => %w[
         ab_group_reorder
-        ae_tree_select
-        ae_tree_select_toggle
         accordion_select
         automate_button_field_changed
         playbook_options_field_changed
-        cancel_import
         change_tab
-        dialog_edit
+        dialog_copy_editor
         dialog_edit_editor
         dialog_new_editor
-        dialog_form_field_changed
         dialog_list
-        dialog_res_remove
-        dialog_res_reorder
-        enablement_expression
-        visibility_expression
         explorer
-        field_value_accept
-        field_value_delete
-        field_value_select
         group_create
-        group_form_field_changed
         group_reorder_field_changed
         group_update
         import_service_dialogs
         old_dialogs_form_field_changed
         old_dialogs_list
         old_dialogs_update
+        provision_dialogs_update
         reload
         resolve
         tree_autoload
@@ -2290,23 +1988,24 @@ Rails.application.routes.draw do
         x_button
         x_history
         x_show
-      ) +
+      ] +
                button_post + exp_post
     },
 
     :miq_ae_tools             => {
-      :get  => %w(
+      :get  => %w[
         automate_json
         check_git_task
         export_datastore
         fetch_log
         import_export
         log
+        get_form_targets
         resolve
-        review_git_import
-        review_import
-      ),
-      :post => %w(
+        resolve_automate_simulation
+        get_simulation_form_vars
+      ],
+      :post => %w[
         button
         cancel_import
         form_field_changed
@@ -2314,113 +2013,185 @@ Rails.application.routes.draw do
         import_via_git
         reset_datastore
         resolve
+        resolve_automate_simulation
         retrieve_git_datastore
-        upload
         upload_import_file
         wait_for_task
-      )
+      ]
     },
 
     :utilization              => {
-      :get  => %w(
+      :get  => %w[
         index
         report_download
         timeline_data
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         change_tab
         chart_chooser
         tree_autoload
         tree_select
         wait_for_task
-      )
+      ]
     },
 
-    :planning                 => {
-      :get  => %w(
-        index
-        report_download
-      ),
-      :post => %w(
-        change_tab
-        option_changed
-        plan
-        reset
-        wait_for_task
-      )
-    },
-
-    :bottlenecks              => {
-      :get  => %w(
-        index
-        timeline_data
-      ),
-      :post => %w(
-        reload
-        tl_chooser
-        tree_autoload
-        tree_select
-        wait_for_task
-      )
-    },
-
-    :miq_policy               => {
-      :get  => %w(
-        explorer
+    :miq_policy_export       => {
+      :get  => %w[
         export
-        fetch_log
         fetch_yaml
         get_json
         import
-        log
-        rsop
-      ),
-      :post => %w(
-        accordion_select
-        action_edit
-        action_field_changed
-        action_get_all
-        action_tag_pressed
-        alert_delete
-        alert_edit
-        alert_field_changed
-        alert_get_all
-        alert_profile_assign
-        alert_profile_assign_changed
-        alert_profile_delete
-        alert_profile_edit
-        alert_profile_field_changed
-        button
-        condition_edit
-        condition_field_changed
-        event_edit
+      ],
+      :post => %w[
         export
         export_field_changed
         import
-        policy_edit
-        policy_get_all
+        upload
+      ]
+    },
+
+    :miq_policy               => {
+      :get  => %w[
+        copy
+        edit
+        miq_event_edit
+        miq_policy_edit_conditions
+        miq_policy_edit_events
+        new
+        show
+        show_list
+      ],
+      :post => %w[
+        edit
+        event_build_action_values
+        miq_event_edit
+        miq_policy_edit
+        miq_policy_edit_conditions
+        miq_policy_edit_events
         policy_field_changed
-        profile_edit
-        profile_field_changed
         quick_search
         reload
+        show
+        show_list
+      ] +
+         adv_search_post +
+         exp_post
+    },
+
+    :miq_policy_log   => {
+      :get => %w[
+        fetch_log
+      ],
+      :post => %w[
+        button
+      ]
+    },
+
+    :miq_policy_rsop         => {
+      :post => %w[
         rsop
         rsop_option_changed
         rsop_show_options
         rsop_toggle
-        tree_autoload
-        tree_select
-        upload
         wait_for_task
-      ) +
-               adv_search_post +
-               exp_post +
-               x_post
+      ]
+    },
+
+    :miq_policy_set => {
+      :get  => %w[
+        edit
+        new
+        show
+        show_list
+      ],
+      :post => %w[
+        reload
+        show
+        show_list
+      ]
+    },
+
+    :miq_action       => {
+      :get  => %w[
+        edit
+        new
+        show
+        show_list
+      ],
+      :post => %w[
+        miq_action_edit
+        action_field_changed
+        edit
+        show
+        show_list
+      ]
+    },
+
+    :miq_alert => {
+      :get  => %w[
+        copy
+        edit
+        new
+        show
+        show_list
+      ],
+      :post => %w[
+        alert_field_changed
+        edit
+        show
+        show_list
+      ] +
+        exp_post
+    },
+
+    :miq_alert_set  => {
+      :get  => %w[
+        edit
+        edit_assignment
+        new
+        show
+        show_list
+      ],
+      :post => %w[
+        alert_profile_assign_changed
+        alert_profile_field_changed
+        edit
+        edit_assignment
+        new
+        show
+        show_list
+      ]
+    },
+
+    :miq_event_definition => {
+      :get  => %w[
+        show
+        show_list
+      ],
+      :post => %w[
+        show_list
+      ]
+    },
+
+    :condition => {
+      :get  => %w[
+        copy
+        edit
+        new
+        show
+        show_list
+      ],
+      :post => %w[
+        show
+        show_list
+      ] +
+          adv_search_post +
+          exp_post
     },
 
     :miq_request              => {
       # FIXME: Change stamp to POST only; We need to remove the redirect
-      :get  => %w(
+      :get  => %w[
         index
         post_install_callback
         pre_prov
@@ -2429,341 +2200,299 @@ Rails.application.routes.draw do
         show
         show_list
         stamp
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
         post_install_callback
         pre_prov
-        prov_button
-        prov_change_options
         prov_continue
         prov_edit
         prov_field_changed
         prov_load_tab
-        prov_show_option
         request_copy
         request_edit
-        retrieve_email
         show_list
         sort_configured_system_grid
+        sort_configuration_script_grid
         sort_ds_grid
         sort_host_grid
         sort_iso_img_grid
         sort_pxe_img_grid
         sort_template_grid
         sort_vc_grid
+        sort_template_grid
         sort_vm_grid
         sort_windows_image_grid
         stamp
         stamp_field_changed
         vm_pre_prov
-        upload
-      ) +
+      ] +
                dialog_runner_post
     },
 
     :miq_task                 => {
-      :get  => %w(
+      :get  => %w[
         change_tab
         index
+        show
         jobs
-        tasks_show_option
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         button
         jobs
-        tasks_button
-        tasks_change_options
-      )
+      ]
     },
 
     :miq_template             => {
-      :get  => %w(
+      :get  => %w[
         download_summary_pdf
         edit
         show
         ownership
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         edit
-        edit_vm
-        form_field_changed
-        ownership_form_fields
         show
-      ) +
+      ] +
                ownership_post
     },
 
-    :ems_block_storage              => {
-      :get  => %w(
-        dialog_load
-        download_data
-        download_summary_pdf
-        edit
-        ems_storage_form_fields
-        index
-        new
-        protect
-        show
-        show_list
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-        compare_get,
-      :post => %w(
-        button
-        create
-        dynamic_checkbox_refresh
-        dynamic_list_refresh
-        dynamic_radio_button_refresh
-        dynamic_text_box_refresh
-        form_field_changed
-        listnav_search_selected
-        protect
-        provider_type_field_changed
-        quick_search
-        sections_field_changed
-        show
-        show_list
-        quick_search
-        tag_edit_form_field_changed
-        tagging_edit
-        tl_chooser
-        update
-        wait_for_task
-      ) +
-        adv_search_post +
-        compare_post +
-        dialog_runner_post +
-        exp_post +
-        save_post
-    },
-
-    :ems_object_storage              => {
-      :get  => %w(
-        dialog_load
-        download_data
-        download_summary_pdf
-        edit
-        ems_storage_form_fields
-        index
-        new
-        protect
-        show
-        show_list
-        tagging_edit
-        tag_edit_form_field_changed
-      ) +
-        compare_get,
-      :post => %w(
-        button
-        create
-        dynamic_checkbox_refresh
-        dynamic_list_refresh
-        dynamic_radio_button_refresh
-        dynamic_text_box_refresh
-        form_field_changed
-        listnav_search_selected
-        protect
-        provider_type_field_changed
-        quick_search
-        sections_field_changed
-        show
-        show_list
-        tag_edit_form_field_changed
-        tagging_edit
-        tl_chooser
-        update
-        wait_for_task
-      ) +
-        adv_search_post +
-        compare_post +
-        dialog_runner_post +
-        exp_post +
-        save_post
-    },
-
     :ems_storage              => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
         download_data
         download_summary_pdf
         edit
-        ems_storage_form_fields
         index
         new
         protect
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
-      ) +
-        compare_get,
-      :post => %w(
+      ],
+      :post => %w[
+        new
         button
-        create
         dynamic_checkbox_refresh
-        dynamic_list_refresh
         dynamic_radio_button_refresh
         dynamic_text_box_refresh
-        form_field_changed
         listnav_search_selected
         protect
-        provider_type_field_changed
         quick_search
         sections_field_changed
         show
         show_list
-        tag_edit_form_field_changed
+        quick_search
         tagging_edit
         tl_chooser
-        update
         wait_for_task
-      ) +
+      ] +
         adv_search_post +
-        compare_post +
         dialog_runner_post +
+        exp_post +
+        save_post
+    },
+
+    :host_initiator   => {
+      :get  => %w[
+        download_data
+        download_summary_pdf
+        index
+        show
+        show_list
+        new
+      ],
+      :post => %w[
+        button
+        listnav_search_selected
+        quick_search
+        show_list
+      ] +
+        adv_search_post +
+        exp_post +
+        save_post
+    },
+
+    :host_initiator_group   => {
+      :get  => %w[
+        download_data
+        download_summary_pdf
+        index
+        show
+        show_list
+        edit
+        new
+      ],
+      :post => %w[
+        button
+        listnav_search_selected
+        quick_search
+        show_list
+      ] +
+        adv_search_post +
+        exp_post +
+        save_post
+    },
+
+    :storage_resource   => {
+      :get  => %w[
+        download_data
+        download_summary_pdf
+        index
+        show
+        show_list
+      ],
+      :post => %w[
+        listnav_search_selected
+        quick_search
+        show_list
+      ] +
+        adv_search_post +
+        exp_post +
+        save_post
+    },
+
+    :storage_service   => {
+      :get  => %w[
+        download_data
+        download_summary_pdf
+        edit
+        index
+        show
+        show_list
+        new
+      ],
+      :post => %w[
+        button
+        listnav_search_selected
+        quick_search
+        show_list
+      ] +
+        adv_search_post +
+        exp_post +
+        save_post
+    },
+
+    :volume_mapping => {
+      :get  => %w[
+        download_data
+        download_summary_pdf
+        index
+        show
+        show_list
+        new
+      ],
+      :post => %w[
+        button
+        listnav_search_selected
+        quick_search
+        show_list
+      ] +
+        adv_search_post +
         exp_post +
         save_post
     },
 
     :ops                      => {
-      :get  => %w(
+      :get  => %w[
+        all_categories
+        ap_form_data
+        category_entries
+        category_information
+        cu_collection_fetch
         dialog_load
         explorer
         fetch_audit_log
-        fetch_build
         fetch_log
         fetch_production_log
-        log_collection_form_fields
-        log_protocol_changed
         pglogical_subscriptions_form_fields
         schedule_form_fields
-        show_product_update
-        tenant_quotas_form_fields
-        tenant_form_fields
-        ldap_regions_list
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         accordion_select
-        activate
         apply_imports
-        ap_ce_delete
-        ap_ce_select
         ap_edit
-        ap_form_field_changed
-        ap_set_active_tab
+        ap_form_data
         aps_list
         automate_schedules_set_vars
         button
         category_delete
         category_edit
         category_field_changed
-        category_update
         ce_accept
         ce_delete
         ce_new_cat
         ce_select
         change_tab
-        cu_collection_field_changed
         cu_collection_update
         cu_repair
         cu_repair_field_changed
-        db_backup
-        db_backup_form_field_changed
-        db_gc_collection
-        db_list
         diagnostics_server_list
         diagnostics_tree_select
-        diagnostics_worker_selected
-        edit_rhn
         explorer
-        fetch_build
         fetch_target_ids
-        forest_accept
-        forest_delete
-        forest_form_field_changed
-        forest_select
-        help_menu_form_field_changed
         label_tag_mapping_delete
         label_tag_mapping_edit
         label_tag_mapping_update
         label_tag_mapping_field_changed
-        log_depot_edit
-        log_depot_field_changed
-        log_depot_validate
-        orphaned_records_delete
         perf_chart_chooser
         pglogical_save_subscriptions
         pglogical_validate_subscription
-        product_updates_list
         rbac_group_edit
         rbac_group_field_changed
         rbac_group_load_tab
         rbac_group_seq_edit
-        rbac_group_user_lookup
         rbac_groups_list
         rbac_role_edit
-        rbac_role_field_changed
         rbac_roles_list
         rbac_tags_edit
         rbac_tenant_edit
         rbac_tenants_list
         rbac_tenant_manage_quotas
         rbac_user_edit
-        rbac_user_field_changed
         rbac_users_list
         region_edit
-        region_form_field_changed
-        repo_default_name
         restart_server
-        rhn_buttons
-        rhn_default_server
-        rhn_validate
         schedule_edit
-        schedule_form_field_changed
         schedule_form_filter_type_field_changed
         schedules_list
-        schedule_update
         settings_form_field_changed
         settings_update
-        settings_update_help_menu
         show
-        show_product_update
         smartproxy_affinity_field_changed
-        tag_edit_form_field_changed
         tl_chooser
         tree_autoload
         tree_select
-        update
         upload_csv
         upload_form_field_changed
+        upload_login_brand
         upload_login_logo
         upload_logo
-        validate_replcation_worker
+        upload_favicon
         wait_for_task
         x_button
-        x_show
         zone_edit
-        zone_field_changed
-        ldap_region_add
-        ldap_region_edit
-        ldap_region_form_field_changed
-        ldap_domain_edit
-        ldap_domain_form_field_changed
-        ls_select
-        ldap_entry_changed
-        ls_delete
-      ) + exp_post + dialog_runner_post
-   },
+      ] + exp_post + dialog_runner_post
+    },
+
+    :optimization => {
+      :get => %w[
+        index
+        show_list
+        show
+        json_list
+      ],
+      :post => %w[
+        queue_report
+      ],
+    },
 
     :orchestration_stack      => {
-      :get  => %w(
+      :get  => %w[
         cloud_networks
         dialog_load
         download_data
         download_summary_pdf
-        retirement_info
         index
         outputs
         parameters
@@ -2774,8 +2503,9 @@ Rails.application.routes.draw do
         stacks_ot_info
         tagging_edit
         protect
-      ),
-      :post => %w(
+      ] +
+        compare_get,
+      :post => %w[
         button
         cloud_networks
         outputs
@@ -2783,99 +2513,155 @@ Rails.application.routes.draw do
         parameters
         quick_search
         resources
-        retire
         sections_field_changed
         show
         show_list
         stacks_ot_copy
         protect
         tagging_edit
-        tag_edit_form_field_changed
-      ) +
+      ] +
                adv_search_post +
+               compare_post +
                exp_post +
                save_post +
                dialog_runner_post
     },
 
-    :provider_foreman         => {
-      :get  => %w(
+    :ems_automation => {
+      :get  => %w[
         download_data
         download_summary_pdf
-        explorer
+        edit
         form_fields
+        new
         show
         show_list
         tagging_edit
-      ),
-      :post => %w(
-        accordion_select
+      ],
+      :post => %w[
+        authentication_validate
+        button
+        edit
+        new
+        quick_search
+        reload
+        show
+        show_list
+        tagging_edit
+        wait_for_task
+      ] +
+        adv_search_post +
+        exp_post
+    },
+
+    :ems_configuration => {
+      :get  => %w[
+        button
+        download_data
+        download_summary_pdf
+        edit
+        form_fields
+        new
+        show
+        show_list
+        tagging_edit
+      ],
+      :post => %w[
         authentication_validate
         button
         change_tab
-        delete
         edit
-        explorer
-        form_field_changed
         new
-        provision
         quick_search
-        refresh
         reload
         show
         show_list
-        tagging
         tagging_edit
-        tag_edit_form_field_changed
-        tree_autoload
-        tree_select
-        configscript_service_dialog_submit
-        cs_form_field_changed
-        users
         wait_for_task
-        x_button
-      ) +
-               adv_search_post +
-               exp_post +
-               x_post
+      ] +
+        adv_search_post +
+        exp_post +
+        save_post
+    },
+
+    :configuration_profile  => {
+      :get  => %w[
+        download_data
+        download_summary_pdf
+        show
+        show_list
+        tagging_edit
+      ],
+      :post => %w[
+        button
+        quick_search
+        reload
+        show
+        show_list
+        tagging_edit
+        launch_configuration_profile_console
+      ] +
+        adv_search_post +
+        exp_post +
+        save_post
+    },
+
+    :configured_system  => {
+      :get  => %w[
+        download_data
+        download_summary_pdf
+        show
+        show_list
+        tagging_edit
+      ],
+      :post => %w[
+        button
+        new
+        quick_search
+        reload
+        show
+        show_list
+        tagging_edit
+        wait_for_task
+        launch_configured_system_console
+        listnav_search_selected
+      ] +
+        adv_search_post +
+        dialog_runner_post +
+        exp_post +
+        save_post
     },
 
     :pxe                      => {
-      :get  => %w(
+      :get  => %w[
         explorer
-      ),
-      :post => %w(
+        tagging_edit
+      ],
+      :post => %w[
         accordion_select
         explorer
-        iso_datastore_create
-        iso_datastore_form_field_changed
         iso_datastore_list
         iso_image_edit
-        iso_img_form_field_changed
-        log_depot_validate
         pxe_image_edit
         pxe_image_type_edit
-        pxe_image_type_form_field_changed
         pxe_image_type_list
-        pxe_img_form_field_changed
-        pxe_server_create_update
-        pxe_server_form_field_changed
+        pxe_server_async_cred_validation
         pxe_server_list
         pxe_wimg_edit
-        pxe_wimg_form_field_changed
         reload
-        template_create_update
-        template_form_field_changed
+        tagging_edit
         template_list
         tree_autoload
         tree_select
         x_button
         x_history
-      )
+      ]
     },
 
     :report                   => {
-      :get  => %w(
+      :get  => %w[
+        dashboard_get
+        db_copy
         db_widget_dd_done
         download_report
         explorer
@@ -2883,19 +2669,19 @@ Rails.application.routes.draw do
         miq_report_edit
         miq_report_new
         preview_chart
-        preview_timeline
         render_chart
         report_only
         sample_chart
-        sample_timeline
+        print_report
         send_report_data
         tree_autoload
         tree_select
-      ),
-      :post => %w(
+      ],
+      :post => %w[
         accordion_select
         change_tab
-        create
+        dashboard_render
+        db_copy
         db_edit
         db_form_field_changed
         db_seq_edit
@@ -2919,7 +2705,6 @@ Rails.application.routes.draw do
         schedule_edit
         schedule_form_field_changed
         show_preview
-        show_saved
         tree_autoload
         tree_select
         upload
@@ -2933,12 +2718,12 @@ Rails.application.routes.draw do
         x_button
         x_history
         x_show
-      ) +
+      ] +
                exp_post
     },
 
     :resource_pool            => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
         index
@@ -2946,9 +2731,9 @@ Rails.application.routes.draw do
         show
         show_list
         tagging_edit
-      ) +
-               compare_get,
-      :post => %w(
+      ] +
+        compare_get,
+      :post => %w[
         button
         listnav_search_selected
         protect
@@ -2956,10 +2741,9 @@ Rails.application.routes.draw do
         show
         show_list
         tagging_edit
-        tag_edit_form_field_changed
         tree_autoload
         quick_search
-      ) +
+      ] +
                adv_search_post +
                compare_post +
                exp_post +
@@ -2967,57 +2751,48 @@ Rails.application.routes.draw do
     },
 
     :restful_redirect => {
-      :get => %w(
+      :get => %w[
         index
-      )
+      ]
     },
 
     :service                  => {
-      :get  => %w(
+      :get  => %w[
         dialog_load
         download_data
-        edit
-        explorer
-        retirement_info
+        service_reconfigure
         reconfigure_form_fields
         retire
+        button
         service_form_fields
         show
-        generic_object
+        show_list
+        edit
+        ownership
         tagging_edit
-      ),
-      :post => %w(
-        button
-        explorer
+      ],
+      :post => %w[
         listnav_search_selected
-        ownership_field_changed
         ownership_update
         quick_search
         reload
-        retire
-        service_edit
-        service_tag
+        edit
         show
-        generic_object
+        button
         show_list
-        tag_edit_form_field_changed
         tagging_edit
-        tree_autoload
-        tree_select
-        x_button
-        x_history
-        x_show
-        ownership_form_fields
-      ) +
+        show
+        ownership
+        wait_for_task
+      ] +
                dialog_runner_post +
                adv_search_post +
                exp_post +
-               save_post +
-               x_post
+               save_post
     },
 
     :storage                  => {
-      :get  => %w(
+      :get  => %w[
         button
         debris_files
         dialog_load
@@ -3036,9 +2811,9 @@ Rails.application.routes.draw do
         vm_ram_files
         vm_misc_files
         x_show
-      ) +
+      ] +
                compare_get,
-      :post => %w(
+      :post => %w[
         accordion_select
         button
         debris_files
@@ -3052,13 +2827,10 @@ Rails.application.routes.draw do
         reload
         sections_field_changed
         show
-        show_association
-        show_details
         show_list
         storage_list
         storage_pod_list
         snapshot_files
-        tag_edit_form_field_changed
         tagging
         tagging_edit
         tree_autoload
@@ -3068,7 +2840,7 @@ Rails.application.routes.draw do
         wait_for_task
         x_search_by_name
         x_show
-      ) +
+      ] +
                adv_search_post +
                compare_post +
                dialog_runner_post +
@@ -3078,21 +2850,19 @@ Rails.application.routes.draw do
     },
 
     :support                  => {
-      :get  => %w(index)
+      :get  => %w[index]
     },
 
     :vm                       => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
         edit
-        retirement_info
         ownership
         policy_sim
         reconfigure
         reconfigure_form_fields
         resize
-        resize_form_fields
         evacuate
         evacuate_form_fields
         live_migrate
@@ -3107,23 +2877,19 @@ Rails.application.routes.draw do
         right_size
         show
         show_list
-      ),
-      :post => %w(
-        edit_vm
-        form_field_changed
+      ],
+      :post => %w[
         policy_sim
         policy_sim_add
+        policy_sim_cancel
         policy_sim_remove
-        provision
         reconfigure
         reconfigure_form_fields
         reconfigure_update
-        resize_vm
         evacuate_vm
         live_migrate_vm
         associate_floating_ip_vm
         disassociate_floating_ip_vm
-        retire
         right_size
         set_checked_items
         show_list
@@ -3131,14 +2897,13 @@ Rails.application.routes.draw do
         genealogy_tree_selected
         ownership_update
         wait_for_task
-        ownership_form_fields
-      ) +
+      ] +
                ownership_post +
                pre_prov_post
     },
 
     :vm_cloud                 => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
         drift_to_csv
@@ -3146,17 +2911,16 @@ Rails.application.routes.draw do
         drift_to_txt
         explorer
         filesystem_download
-        retirement_info
         reconfigure_form_fields
         launch_html5_console
+        launch_vmrc_console
         perf_chart_chooser
         protect
         retire
+        right_size_print
         show
         tagging_edit
         resize
-        resize_form_fields
-        migrate
         live_migrate_form_fields
         attach
         detach
@@ -3168,28 +2932,23 @@ Rails.application.routes.draw do
         disassociate_floating_ip_form_fields
         add_security_group
         remove_security_group
-      ) +
+      ] +
                compare_get,
-      :post => %w(
+      :post => %w[
         advanced_settings
         accordion_select
         button
-        edit_vm
-        resize_vm
-        resize_field_changed
         event_logs
         explorer
         launch_html5_console
-        launch_cockpit
         filesystems
         filesystem_drivers
-        form_field_changed
         guest_applications
         groups
         html5_console
+        management_console
         kernel_drivers
         linux_initprocesses
-        ownership_field_changed
         ownership_update
         patches
         perf_chart_chooser
@@ -3201,23 +2960,20 @@ Rails.application.routes.draw do
         quick_search
         registry_items
         reload
-        retire
         reconfigure_update
         scan_histories
         sections_field_changed
         security_groups
         sort_template_grid
+        sort_vm_grid
         floating_ips
         network_routers
         network_ports
-        load_balancers
         cloud_subnets
         cloud_networks
         cloud_volumes
         show
-        squash_toggle
         tagging_edit
-        tag_edit_form_field_changed
         tl_chooser
         tree_autoload
         tree_select
@@ -3232,14 +2988,11 @@ Rails.application.routes.draw do
         ownership_update
         associate_floating_ip_vm
         disassociate_floating_ip_vm
-        wait_for_task
-        ownership_form_fields
-      ) +
+      ] +
                adv_search_post +
                compare_post +
                dialog_runner_post +
                drift_post +
-               evm_relationship_post +
                exp_post +
                policy_post +
                pre_prov_post +
@@ -3248,7 +3001,7 @@ Rails.application.routes.draw do
     },
 
     :vm_infra                 => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
         drift_to_csv
@@ -3256,34 +3009,32 @@ Rails.application.routes.draw do
         drift_to_txt
         explorer
         filesystem_download
-        retirement_info
         reconfigure_form_fields
-        launch_vmware_console
+        right_size_print
         launch_html5_console
+        launch_vmrc_console
+        launch_native_console
         perf_chart_chooser
         policies
         protect
         retire
         show
         tagging_edit
-      ) +
+      ] +
                compare_get,
-      :post => %w(
+      :post => %w[
         accordion_select
         advanced_settings
         button
-        console
-        edit_vm
         event_logs
         explorer
         filesystems
         filesystem_drivers
-        form_field_changed
         guest_applications
         groups
         kernel_drivers
         linux_initprocesses
-        ownership_field_changed
+        management_console
         ownership_update
         patches
         perf_chart_chooser
@@ -3293,11 +3044,9 @@ Rails.application.routes.draw do
         prov_edit
         prov_field_changed
         quick_search
-        reconfigure_field_changed
         reconfigure_update
         registry_items
         reload
-        retire
         scan_histories
         sections_field_changed
         security_groups
@@ -3308,28 +3057,23 @@ Rails.application.routes.draw do
         sort_vc_grid
         sort_template_grid
         sort_vm_grid
-        squash_toggle
         tagging_edit
-        tag_edit_form_field_changed
         tl_chooser
         tree_autoload
         tree_select
         users
         vmrc_console
-        launch_cockpit
         vm_pre_prov
-        vm_vdi
         html5_console
+        native_console
         wait_for_task
         win32_services
         ownership_update
-        ownership_form_fields
-      ) +
+      ] +
                adv_search_post +
                compare_post +
                dialog_runner_post +
                drift_post +
-               evm_relationship_post +
                exp_post +
                policy_post +
                pre_prov_post +
@@ -3338,7 +3082,7 @@ Rails.application.routes.draw do
     },
 
     :vm_or_template           => {
-      :get  => %w(
+      :get  => %w[
         download_data
         download_summary_pdf
         drift_to_csv
@@ -3346,39 +3090,34 @@ Rails.application.routes.draw do
         drift_to_txt
         explorer
         launch_html5_console
-        retirement_info
+        launch_vmrc_console
+        launch_native_console
         reconfigure_form_fields
-        launch_vmware_console
+        policies
         protect
         retire
         show
         tagging_edit
-        util_report_download
-        utilization
         vm_show
-      ) +
+      ] +
                compare_get,
-      :post => %w(
+      :post => %w[
         accordion_select
         advanced_settings
         button
-        console
         drift_all
         drift_differences
         drift_history
         drift_mode
         drift_same
-        edit_vm
         event_logs
         explorer
         filesystem_drivers
         filesystems
-        form_field_changed
         groups
         guest_applications
         kernel_drivers
         linux_initprocesses
-        ownership_field_changed
         ownership_update
         patches
         perf_chart_chooser
@@ -3388,11 +3127,9 @@ Rails.application.routes.draw do
         prov_edit
         prov_field_changed
         quick_search
-        reconfigure_field_changed
         reconfigure_update
         registry_items
         reload
-        retire
         scan_histories
         sections_field_changed
         security_groups
@@ -3407,16 +3144,15 @@ Rails.application.routes.draw do
         sort_host_grid
         sort_iso_img_grid
         sort_vc_grid
-        squash_toggle
         tagging_edit
-        tag_edit_form_field_changed
         tl_chooser
         tree_select
         users
-        util_chart_chooser
         vm_pre_prov
         vmrc_console
         html5_console
+        native_console
+        management_console
         wait_for_task
         win32_services
         x_button
@@ -3424,18 +3160,116 @@ Rails.application.routes.draw do
         x_search_by_name
         x_show
         ownership_update
-        ownership_form_fields
-      ) +
+      ] +
                adv_search_post +
                compare_post +
                dialog_runner_post +
-               evm_relationship_post +
                exp_post +
                policy_post +
                pre_prov_post +
                snap_post
     },
+
+    :workflow => {
+      :get => %w[
+        map_credentials
+        download_data
+        download_summary_pdf
+        show
+        show_list
+        tagging_edit
+      ],
+      :post => %w[
+        search_clear
+        button
+        show_list
+        tagging_edit
+      ]
+    },
+
+    :workflow_repository => {
+      :get => %w[
+        download_data
+        download_summary_pdf
+        edit
+        new
+        show
+        show_list
+        tagging_edit
+      ],
+      :post => %w[
+        button
+        edit
+        new
+        repository_refresh
+        show_list
+        tagging_edit
+      ]
+    },
+
+    :workflow_credential => {
+      :get => %w[
+        download_data
+        download_summary_pdf
+        edit
+        new
+        show
+        show_list
+        tagging_edit
+      ],
+      :post => %w[
+        search_clear
+        button
+        show_list
+        tagging_edit
+      ]
+    },
+
+    :firmware_registry => {
+      :get => %w[
+        download_data
+        download_summary_pdf
+        show
+        show_list
+      ],
+      :post => %w[
+        show_list
+      ]
+    },
+
+    :firmware_binary => {
+      :get => %w[
+        download_data
+        download_summary_pdf
+        show
+      ]
+    },
+
+    :firmware_target => {
+      :get => %w[
+        download_data
+        download_summary_pdf
+        show
+      ]
+    },
   }
+
+  routes_without_index = %i[
+    cloud_tenant_dashboard
+    container_dashboard
+    ems_cloud
+    ems_cloud_dashboard
+    ems_container
+    ems_infra
+    ems_storage_dashboard
+    ems_infra_dashboard
+    ems_network
+    ems_physical_infra
+    ems_physical_infra_dashboard
+    ems_storage
+    miq_ae_customization
+    pxe
+  ].freeze
 
   root :to => 'dashboard#login'
 
@@ -3443,24 +3277,24 @@ Rails.application.routes.draw do
   get '/pictures/:basename' => 'picture#show', :basename => /[\da-zA-Z]+\.[\da-zA-Z]+/
 
   get '/saml_login(/*path)' => 'dashboard#saml_login'
+  get '/oidc_login(/*path)' => 'dashboard#oidc_login'
 
   # ping response for load balancing
   get '/ping' => 'ping#index'
 
   controller_routes.each do |controller_name, controller_actions|
     # Default route with no action to controller's index action
-    unless [
-      :ems_cloud, :ems_infra, :ems_physical_infra, :ems_container, :ems_middleware, :ems_datawarehouse, :ems_network
-    ].include?(controller_name)
-      match controller_name.to_s, :controller => controller_name, :action => :index, :via => :get
+    unless routes_without_index.include?(controller_name)
+      get controller_name.to_s, :controller => controller_name, :action => :index
     end
 
     default_routes.each do |action_name|
       post "#{controller_name}/#{action_name}(/:id)",
-          :action     => action_name,
-          :controller => controller_name
+           :action     => action_name,
+           :controller => controller_name
     end
 
+    # rubocop:disable Style/Next, Style/SafeNavigation
     # One-by-one get/post routes for defined controllers
     if controller_actions.kind_of?(Hash)
       unless controller_actions[:get].nil?
@@ -3479,19 +3313,29 @@ Rails.application.routes.draw do
         end
       end
     end
+    # rubocop:enable Style/Next, Style/SafeNavigation
   end
 
   # API-like JSON trees
   get '/tree/automate_entrypoint', :to => 'tree#automate_entrypoint'
 
+  # Expression editor metadata endpoints (used by the React ExpressionEditor component)
+  scope '/expression_editor' do
+    get  'metadata',          :to => 'expression_editor#metadata'
+    get  'operators',         :to => 'expression_editor#operators'
+    get  'tag_values',        :to => 'expression_editor#tag_values'
+    get  'find_check_fields', :to => 'expression_editor#find_check_fields'
+  end
+
   # pure-angular templates
   get '/static/*id' => 'static#show', :format => false
 
-  resources :ems_cloud,          :as => :ems_clouds
-  resources :ems_infra,          :as => :ems_infras
-  resources :ems_physical_infra, :as => :ems_physical_infras
-  resources :ems_container,      :as => :ems_containers
-  resources :ems_middleware,     :as => :ems_middlewares
-  resources :ems_datawarehouse,  :as => :ems_datawarehouses
-  resources :ems_network,        :as => :ems_networks
+  # prevent No route matches [GET] "/favicon.ico"
+  get '/favicon.ico' => 'static#favicon', :format => false
+
+  %w[ems_cloud ems_infra ems_physical_infra ems_container ems_network ems_storage].each do |resource|
+    resources(resource.to_sym, :as => resource.pluralize.to_sym, :except => %i[create update destroy])
+  end
+  # rubocop:enable Layout/HashAlignment
+  # rubocop:enable Layout/MultilineOperationIndentation
 end

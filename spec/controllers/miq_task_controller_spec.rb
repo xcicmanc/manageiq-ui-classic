@@ -2,7 +2,7 @@ require "spec_helper"
 
 describe MiqTaskController do
   context "#tasks_condition" do
-    let(:user) { FactoryGirl.create(:user) }
+    let(:user) { FactoryBot.create(:user) }
     subject { controller.send(:tasks_condition, @opts) }
     before do
       allow(controller).to receive_messages(:session => user)
@@ -238,8 +238,7 @@ describe MiqTaskController do
                 'miq_tasks.updated_on>=? AND '\
                 'miq_tasks.updated_on<=?'
         expected = [query, user.userid, "Waiting_to_start", "Queued", "Finished", "Ok",
-                    "Finished", "Error", "Finished", "Warn", "Finished", "Waiting_to_start", "Queued"
-                   ]
+                    "Finished", "Error", "Finished", "Warn", "Finished", "Waiting_to_start", "Queued"]
         expected += get_time_period(@opts[:time_period])
         expect(subject).to eq(expected)
       end
@@ -467,8 +466,7 @@ describe MiqTaskController do
                 "miq_tasks.updated_on>=? AND "\
                 "miq_tasks.updated_on<=?"
         expected = [query, "Waiting_to_start", "Queued", "Finished", "Ok", "Finished", "Error",
-                    "Finished", "Warn", "Finished", "Waiting_to_start", "Queued"
-                   ]
+                    "Finished", "Warn", "Finished", "Waiting_to_start", "Queued"]
         expected += get_time_period(@opts[:time_period])
         expect(subject).to eq(expected)
       end
@@ -808,7 +806,7 @@ describe MiqTaskController do
     end
 
     describe "building tabs" do
-      before(:each) do
+      before do
         controller.instance_variable_set(:@tabform, "ui_2")
         controller.instance_variable_set(:@settings, :perpage => {})
         allow(controller).to receive(:role_allows?).and_return(true)
@@ -831,6 +829,22 @@ describe MiqTaskController do
         allow(controller).to receive(:get_view)
         controller.list_jobs
         expect(assigns(:active_tab)).to eq("2")
+      end
+    end
+
+    describe ".cancel_task" do
+      before do
+        allow(controller).to receive(:jobs_info)
+        allow(controller).to receive(:role_allows?).and_return(true)
+
+        task = double("MiqTask")
+        allow(MiqTask).to receive(:find_by).and_return(task)
+        allow(task).to receive(:state).and_return("starting")
+        allow(task).to receive(:process_cancel).and_raise("Not Permitted Signal")
+      end
+
+      it "does not raise error if not alowed signal sent" do
+        expect { controller.cancel_task }.not_to raise_error
       end
     end
 

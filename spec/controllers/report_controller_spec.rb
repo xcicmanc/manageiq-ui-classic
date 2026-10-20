@@ -1,53 +1,55 @@
 require ManageIQ::UI::Classic::Engine.root.join("spec/helpers/report_helper_spec.rb")
 
 describe ReportController do
+  before { allow(controller).to receive(:data_for_breadcrumbs).and_return({}) }
+
   context "Get form variables" do
     context "press col buttons" do
       it "moves columns left" do
-        controller.instance_variable_set(:@_params, :button => "left")
+        controller.params = {:button => "left"}
         expect(controller).to receive(:move_cols_left)
         controller.send(:gfv_move_cols_buttons)
       end
 
       it "moves columns right" do
-        controller.instance_variable_set(:@_params, :button => "right")
+        controller.params = {:button => "right"}
         expect(controller).to receive(:move_cols_right)
         controller.send(:gfv_move_cols_buttons)
       end
 
       it "moves columns up" do
-        controller.instance_variable_set(:@_params, :button => "up")
+        controller.params = {:button => "up"}
         expect(controller).to receive(:move_cols_up)
         controller.send(:gfv_move_cols_buttons)
       end
 
       it "moves columns down" do
-        controller.instance_variable_set(:@_params, :button => "down")
+        controller.params = {:button => "down"}
         expect(controller).to receive(:move_cols_down)
         controller.send(:gfv_move_cols_buttons)
       end
 
       it "moves columns top" do
-        controller.instance_variable_set(:@_params, :button => "top")
+        controller.params = {:button => "top"}
         expect(controller).to receive(:move_cols_top)
         controller.send(:gfv_move_cols_buttons)
       end
 
       it "moves columns bottom" do
-        controller.instance_variable_set(:@_params, :button => "bottom")
+        controller.params = {:button => "bottom"}
         expect(controller).to receive(:move_cols_bottom)
         controller.send(:gfv_move_cols_buttons)
       end
     end
 
     context "handle input fields" do
-      before :each do
+      before do
         controller.instance_variable_set(:@edit, :new => {}) # Editor methods need @edit[:new]
         allow(controller).to receive(:build_edit_screen) # Don't actually build the edit screen
       end
 
       describe "#add_field_to_col_order" do
-        let(:miq_report)               { FactoryGirl.create(:miq_report, :cols => [], :col_order => []) }
+        let(:miq_report)               { FactoryBot.create(:miq_report, :cols => [], :col_order => []) }
         let(:base_model)               { "Vm" }
         let(:virtual_custom_attribute) { "virtual_custom_attribute_kubernetes.io/hostname" }
 
@@ -68,49 +70,49 @@ describe ReportController do
       context "handle report fields" do
         it "sets pdf page size" do
           ps = "US-Legal"
-          controller.instance_variable_set(:@_params, :pdf_page_size => ps)
+          controller.params = {:pdf_page_size => ps}
           controller.send(:gfv_report_fields)
           expect(assigns(:edit)[:new][:pdf_page_size]).to eq(ps)
         end
 
         it "sets queue timeout" do
           to = "1"
-          controller.instance_variable_set(:@_params, :chosen_queue_timeout => to)
+          controller.params = {:chosen_queue_timeout => to}
           controller.send(:gfv_report_fields)
           expect(assigns(:edit)[:new][:queue_timeout]).to eq(to.to_i)
         end
 
         it "clears queue timeout" do
           to = ""
-          controller.instance_variable_set(:@_params, :chosen_queue_timeout => to)
+          controller.params = {:chosen_queue_timeout => to}
           controller.send(:gfv_report_fields)
           expect(assigns(:edit)[:new][:queue_timeout]).to be_nil
         end
 
         it "sets row limit" do
           rl = "10"
-          controller.instance_variable_set(:@_params, :row_limit => rl)
+          controller.params = {:row_limit => rl}
           controller.send(:gfv_report_fields)
           expect(assigns(:edit)[:new][:row_limit]).to eq(rl)
         end
 
         it "clears row limit" do
           rl = ""
-          controller.instance_variable_set(:@_params, :row_limit => rl)
+          controller.params = {:row_limit => rl}
           controller.send(:gfv_report_fields)
           expect(assigns(:edit)[:new][:row_limit]).to eq("")
         end
 
         it "sets report name" do
           rn = "Report Name"
-          controller.instance_variable_set(:@_params, :name => rn)
+          controller.params = {:name => rn}
           controller.send(:gfv_report_fields)
           expect(assigns(:edit)[:new][:name]).to eq(rn)
         end
 
         it "sets report title" do
           rt = "Report Title"
-          controller.instance_variable_set(:@_params, :title => rt)
+          controller.params = {:title => rt}
           controller.send(:gfv_report_fields)
           expect(assigns(:edit)[:new][:title]).to eq(rt)
         end
@@ -119,7 +121,7 @@ describe ReportController do
       context "handle model changes" do
         it "sets CI model" do
           model = "Vm"
-          controller.instance_variable_set(:@_params, :chosen_model => model)
+          controller.params = {:chosen_model => model}
           controller.send(:gfv_model)
           expect(assigns(:edit)[:new][:model]).to eq(model)
           expect(assigns(:refresh_div)).to eq("form_div")
@@ -128,7 +130,7 @@ describe ReportController do
 
         it "sets performance model" do
           model = "VmPerformance"
-          controller.instance_variable_set(:@_params, :chosen_model => model)
+          controller.params = {:chosen_model => model}
           controller.send(:gfv_model)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:model]).to eq(model)
@@ -141,7 +143,7 @@ describe ReportController do
 
         it "sets chargeback model" do
           model = "ChargebackVm"
-          controller.instance_variable_set(:@_params, :chosen_model => model)
+          controller.params = {:chosen_model => model}
           controller.send(:gfv_model)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:model]).to eq(model)
@@ -160,7 +162,7 @@ describe ReportController do
           tc = "VmPerformance-derived_memory_used"
           allow(MiqExpression).to receive(:reporting_available_fields)
             .and_return([["Test", tc]]) # Hand back array of arrays
-          controller.instance_variable_set(:@_params, :chosen_trend_col => tc)
+          controller.params = {:chosen_trend_col => tc}
           controller.send(:gfv_trend)
           edit = assigns(:edit)
           edit_new = edit[:new]
@@ -178,7 +180,7 @@ describe ReportController do
           tc = "VmPerformance-derived_memory_used"
           allow(MiqExpression).to receive(:reporting_available_fields)
             .and_return([["Test (%)", tc]]) # Hand back array of arrays
-          controller.instance_variable_set(:@_params, :chosen_trend_col => tc)
+          controller.params = {:chosen_trend_col => tc}
           controller.send(:gfv_trend)
           edit = assigns(:edit)
           edit_new = edit[:new]
@@ -195,7 +197,7 @@ describe ReportController do
 
         it "clears trend column" do
           tc = "<Choose>"
-          controller.instance_variable_set(:@_params, :chosen_trend_col => tc)
+          controller.params = {:chosen_trend_col => tc}
           controller.send(:gfv_trend)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:perf_trend_db]).to be_nil
@@ -208,7 +210,7 @@ describe ReportController do
 
         it "sets trend limit column" do
           limit_col = "max_derived_cpu_reserved"
-          controller.instance_variable_set(:@_params, :chosen_limit_col => limit_col)
+          controller.params = {:chosen_limit_col => limit_col}
           controller.send(:gfv_trend)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:perf_limit_col]).to eq(limit_col)
@@ -219,7 +221,7 @@ describe ReportController do
 
         it "clears trend limit column" do
           limit_col = "<None>"
-          controller.instance_variable_set(:@_params, :chosen_limit_col => limit_col)
+          controller.params = {:chosen_limit_col => limit_col}
           controller.send(:gfv_trend)
           expect(assigns(:edit)[:new][:perf_limit_col]).to be_nil
           expect(assigns(:refresh_div)).to eq("columns_div")
@@ -228,28 +230,28 @@ describe ReportController do
 
         it "sets trend limit value" do
           limit_val = "50"
-          controller.instance_variable_set(:@_params, :chosen_limit_val => limit_val)
+          controller.params = {:chosen_limit_val => limit_val}
           controller.send(:gfv_trend)
           expect(assigns(:edit)[:new][:perf_limit_val]).to eq(limit_val)
         end
 
         it "sets trend limit percent 1" do
           pct = "70"
-          controller.instance_variable_set(:@_params, :percent1 => pct)
+          controller.params = {:percent1 => pct}
           controller.send(:gfv_trend)
           expect(assigns(:edit)[:new][:perf_target_pct1]).to eq(pct.to_i)
         end
 
         it "sets trend limit percent 2" do
           pct = "80"
-          controller.instance_variable_set(:@_params, :percent2 => pct)
+          controller.params = {:percent2 => pct}
           controller.send(:gfv_trend)
           expect(assigns(:edit)[:new][:perf_target_pct2]).to eq(pct.to_i)
         end
 
         it "sets trend limit percent 3" do
           pct = "90"
-          controller.instance_variable_set(:@_params, :percent3 => pct)
+          controller.params = {:percent3 => pct}
           controller.send(:gfv_trend)
           expect(assigns(:edit)[:new][:perf_target_pct3]).to eq(pct.to_i)
         end
@@ -258,7 +260,7 @@ describe ReportController do
       context "handle performance field changes" do
         it "sets perf interval" do
           perf_int = "hourly"
-          controller.instance_variable_set(:@_params, :chosen_interval => perf_int)
+          controller.params = {:chosen_interval => perf_int}
           controller.send(:gfv_performance)
           edit = assigns(:edit)
           edit_new = edit[:new]
@@ -271,36 +273,36 @@ describe ReportController do
 
         it "sets perf averages" do
           perf_avg = "active_data"
-          controller.instance_variable_set(:@_params, :perf_avgs => perf_avg)
+          controller.params = {:perf_avgs => perf_avg}
           controller.send(:gfv_performance)
           expect(assigns(:edit)[:new][:perf_avgs]).to eq(perf_avg)
         end
 
         it "sets perf start" do
           perf_start = 3.days.to_s
-          controller.instance_variable_set(:@_params, :chosen_start => perf_start)
+          controller.params = {:chosen_start => perf_start}
           controller.send(:gfv_performance)
           expect(assigns(:edit)[:new][:perf_start]).to eq(perf_start)
         end
 
         it "sets perf end" do
           perf_end = 1.day.to_s
-          controller.instance_variable_set(:@_params, :chosen_end => perf_end)
+          controller.params = {:chosen_end => perf_end}
           controller.send(:gfv_performance)
           expect(assigns(:edit)[:new][:perf_end]).to eq(perf_end)
         end
 
         it "sets perf time zone" do
           tz = "Pacific Time (US & Canada)"
-          controller.instance_variable_set(:@_params, :chosen_tz => tz)
+          controller.params = {:chosen_tz => tz}
           controller.send(:gfv_performance)
           expect(assigns(:edit)[:new][:tz]).to eq(tz)
         end
 
         it "sets perf time profile" do
-          time_prof = FactoryGirl.create(:time_profile, :description => "Test", :profile => {:tz => "UTC"})
+          time_prof = FactoryBot.create(:time_profile, :description => "Test", :profile => {:tz => "UTC"})
           chosen_time_prof = time_prof.id.to_s
-          controller.instance_variable_set(:@_params, :chosen_time_profile => chosen_time_prof)
+          controller.params = {:chosen_time_profile => chosen_time_prof}
           controller.send(:gfv_performance)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:time_profile]).to eq(chosen_time_prof.to_i)
@@ -308,7 +310,7 @@ describe ReportController do
 
         it "clears perf time profile" do
           chosen_time_prof = ""
-          controller.instance_variable_set(:@_params, :chosen_time_profile => chosen_time_prof)
+          controller.params = {:chosen_time_profile => chosen_time_prof}
           controller.send(:gfv_performance)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:time_profile]).to be_nil
@@ -321,7 +323,7 @@ describe ReportController do
       context "handle chargeback field changes" do
         it "sets show costs" do
           show_type = "owner"
-          controller.instance_variable_set(:@_params, :cb_show_typ => show_type)
+          controller.params = {:cb_show_typ => show_type}
           controller.send(:gfv_chargeback)
           expect(assigns(:edit)[:new][:cb_show_typ]).to eq(show_type)
           expect(assigns(:refresh_div)).to eq("filter_div")
@@ -330,7 +332,7 @@ describe ReportController do
 
         it "clears show costs" do
           show_type = ""
-          controller.instance_variable_set(:@_params, :cb_show_typ => show_type)
+          controller.params = {:cb_show_typ => show_type}
           controller.send(:gfv_chargeback)
           expect(assigns(:edit)[:new][:cb_show_typ]).to be_nil
           expect(assigns(:refresh_div)).to eq("filter_div")
@@ -339,9 +341,9 @@ describe ReportController do
 
         it "sets tag category" do
           tag_cat = "department"
-          controller.instance_variable_set(:@_params, :cb_tag_cat => tag_cat)
-          cl_rec = FactoryGirl.create(:classification, :name => "test_name", :description => "Test Description")
-          expect(Classification).to receive(:find_by_name).and_return([cl_rec])
+          controller.params = {:cb_tag_cat => tag_cat}
+          cl_rec = FactoryBot.create(:classification, :name => "test_name", :description => "Test Description")
+          expect(Classification).to receive(:lookup_by_name).and_return([cl_rec])
           controller.send(:gfv_chargeback)
           expect(assigns(:edit)[:new][:cb_tag_cat]).to eq(tag_cat)
           expect(assigns(:edit)[:cb_tags]).to be_a_kind_of(Hash)
@@ -351,7 +353,7 @@ describe ReportController do
 
         it "clears tag category" do
           tag_cat = ""
-          controller.instance_variable_set(:@_params, :cb_tag_cat => tag_cat)
+          controller.params = {:cb_tag_cat => tag_cat}
           controller.send(:gfv_chargeback)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:cb_tag_cat]).to be_nil
@@ -362,28 +364,28 @@ describe ReportController do
 
         it "sets owner id" do
           owner_id = "admin"
-          controller.instance_variable_set(:@_params, :cb_owner_id => owner_id)
+          controller.params = {:cb_owner_id => owner_id}
           controller.send(:gfv_chargeback)
           expect(assigns(:edit)[:new][:cb_owner_id]).to eq(owner_id)
         end
 
         it "sets tag value" do
           tag_val = "accounting"
-          controller.instance_variable_set(:@_params, :cb_tag_value => tag_val)
+          controller.params = {:cb_tag_value => tag_val}
           controller.send(:gfv_chargeback)
           expect(assigns(:edit)[:new][:cb_tag_value]).to eq(tag_val)
         end
 
         it "sets group by" do
           group_by = "vm"
-          controller.instance_variable_set(:@_params, :cb_groupby => group_by)
+          controller.params = {:cb_groupby => group_by}
           controller.send(:gfv_chargeback)
           expect(assigns(:edit)[:new][:cb_groupby]).to eq(group_by)
         end
 
         it "sets show costs by" do
           show_costs_by = "day"
-          controller.instance_variable_set(:@_params, :cb_interval => show_costs_by)
+          controller.params = {:cb_interval => show_costs_by}
           controller.send(:gfv_chargeback)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:cb_interval]).to eq(show_costs_by)
@@ -395,14 +397,14 @@ describe ReportController do
 
         it "sets interval size" do
           int_size = "2"
-          controller.instance_variable_set(:@_params, :cb_interval_size => int_size)
+          controller.params = {:cb_interval_size => int_size}
           controller.send(:gfv_chargeback)
           expect(assigns(:edit)[:new][:cb_interval_size]).to eq(int_size.to_i)
         end
 
         it "sets end interval offset" do
           end_int_offset = "2"
-          controller.instance_variable_set(:@_params, :cb_end_interval_offset => end_int_offset)
+          controller.params = {:cb_end_interval_offset => end_int_offset}
           controller.send(:gfv_chargeback)
           expect(assigns(:edit)[:new][:cb_end_interval_offset]).to eq(end_int_offset.to_i)
         end
@@ -411,34 +413,34 @@ describe ReportController do
       context "handle chart field changes" do
         it "sets chart type" do
           chosen_graph = "Bar"
-          controller.instance_variable_set(:@_params, :chosen_graph => chosen_graph)
+          controller.params = {:chosen_graph => chosen_graph}
           controller.send(:gfv_charts)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:graph_type]).to eq(chosen_graph)
           expect(edit_new[:graph_other]).to be_truthy
-          expect(edit_new[:graph_count]).to eq(ReportController::Reports::Editor::GRAPH_MAX_COUNT)
+          expect(edit_new[:graph_count]).to eq(ReportController::Reports::Editor.chart_top_values)
           expect(assigns(:refresh_div)).to eq("chart_div")
           expect(assigns(:refresh_partial)).to eq("form_chart")
         end
 
         it "clears chart type" do
           chosen_graph = "<No chart>"
-          controller.instance_variable_set(:@_params, :chosen_graph => chosen_graph)
+          controller.params = {:chosen_graph => chosen_graph}
           edit = assigns(:edit)
-          edit[:current] = {:graph_count => ReportController::Reports::Editor::GRAPH_MAX_COUNT, :graph_other => true}
+          edit[:current] = {:graph_count => ReportController::Reports::Editor.chart_top_values, :graph_other => true}
           controller.instance_variable_set(:@edit, edit)
           controller.send(:gfv_charts)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:graph_type]).to be_nil
           expect(edit_new[:graph_other]).to be_truthy
-          expect(edit_new[:graph_count]).to eq(ReportController::Reports::Editor::GRAPH_MAX_COUNT)
+          expect(edit_new[:graph_count]).to eq(ReportController::Reports::Editor.chart_top_values)
           expect(assigns(:refresh_div)).to eq("chart_div")
           expect(assigns(:refresh_partial)).to eq("form_chart")
         end
 
         it "sets top values to show" do
-          top_val = "3"
-          controller.instance_variable_set(:@_params, :chosen_count => top_val)
+          top_val = 3
+          controller.params = {:chosen_count => top_val}
           controller.send(:gfv_charts)
           expect(assigns(:edit)[:new][:graph_count]).to eq(top_val)
           expect(assigns(:refresh_div)).to eq("chart_sample_div")
@@ -447,7 +449,7 @@ describe ReportController do
 
         it "sets sum other values" do
           sum_other = "null"
-          controller.instance_variable_set(:@_params, :chosen_other => sum_other)
+          controller.params = {:chosen_other => sum_other}
           controller.send(:gfv_charts)
           expect(assigns(:edit)[:new][:graph_other]).to be_falsey
           expect(assigns(:refresh_div)).to eq("chart_sample_div")
@@ -459,7 +461,7 @@ describe ReportController do
         P1 = "Vm-name".freeze
         P2 = "Vm-boot_time".freeze
         P3 = "Vm-hostname".freeze
-        before :each do
+        before do
           edit = assigns(:edit)
           edit[:pivot_cols] = {}
           controller.instance_variable_set(:@edit, edit)
@@ -467,7 +469,7 @@ describe ReportController do
         end
 
         it "sets pivot 1" do
-          controller.instance_variable_set(:@_params, :chosen_pivot1 => P1)
+          controller.params = {:chosen_pivot1 => P1}
           controller.send(:gfv_pivots)
           expect(assigns(:edit)[:new][:pivot].by1).to eq(P1)
           expect(assigns(:refresh_div)).to eq("consolidate_div")
@@ -475,7 +477,7 @@ describe ReportController do
         end
 
         it "sets pivot 2" do
-          controller.instance_variable_set(:@_params, :chosen_pivot2 => P2)
+          controller.params = {:chosen_pivot2 => P2}
           controller.send(:gfv_pivots)
           expect(assigns(:edit)[:new][:pivot].by2).to eq(P2)
           expect(assigns(:refresh_div)).to eq("consolidate_div")
@@ -483,7 +485,7 @@ describe ReportController do
         end
 
         it "sets pivot 3" do
-          controller.instance_variable_set(:@_params, :chosen_pivot3 => P3)
+          controller.params = {:chosen_pivot3 => P3}
           controller.send(:gfv_pivots)
           expect(assigns(:edit)[:new][:pivot].by3).to eq(P3)
           expect(assigns(:refresh_div)).to eq("consolidate_div")
@@ -494,7 +496,7 @@ describe ReportController do
           edit = assigns(:edit)
           edit[:new][:pivot] = ReportController::PivotOptions.new(P1, P2, P3)
           controller.instance_variable_set(:@edit, edit)
-          controller.instance_variable_set(:@_params, :chosen_pivot1 => ReportHelper::NOTHING_STRING)
+          controller.params = {:chosen_pivot1 => ReportHelper::NOTHING_STRING}
           controller.send(:gfv_pivots)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:pivot].by1).to eq(ReportHelper::NOTHING_STRING)
@@ -508,7 +510,7 @@ describe ReportController do
           edit = assigns(:edit)
           edit[:new][:pivot] = ReportController::PivotOptions.new(P1, P2, P3)
           controller.instance_variable_set(:@edit, edit)
-          controller.instance_variable_set(:@_params, :chosen_pivot2 => ReportHelper::NOTHING_STRING)
+          controller.params = {:chosen_pivot2 => ReportHelper::NOTHING_STRING}
           controller.send(:gfv_pivots)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:pivot].by1).to eq(P1)
@@ -522,7 +524,7 @@ describe ReportController do
           edit = assigns(:edit)
           edit[:new][:pivot] = ReportController::PivotOptions.new(P1, P2, P3)
           controller.instance_variable_set(:@edit, edit)
-          controller.instance_variable_set(:@_params, :chosen_pivot1 => P2)
+          controller.params = {:chosen_pivot1 => P2}
           controller.send(:gfv_pivots)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:pivot].by1).to eq(P2)
@@ -536,7 +538,7 @@ describe ReportController do
           edit = assigns(:edit)
           edit[:new][:pivot] = ReportController::PivotOptions.new(P1, P2, P3)
           controller.instance_variable_set(:@edit, edit)
-          controller.instance_variable_set(:@_params, :chosen_pivot2 => P3)
+          controller.params = {:chosen_pivot2 => P3}
           controller.send(:gfv_pivots)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:pivot].by1).to eq(P1)
@@ -550,7 +552,7 @@ describe ReportController do
       context "handle summary field changes" do
         S1 = "Vm-test1".freeze
         S2 = "Vm-test2".freeze
-        before :each do
+        before do
           edit = assigns(:edit)
           edit[:new][:sortby1] = S1               # Set an initial sort by col
           edit[:new][:sortby2] = S2               # Set no second sort col
@@ -562,7 +564,7 @@ describe ReportController do
 
         it "sets first sort col" do
           new_sort = "Vm-new"
-          controller.instance_variable_set(:@_params, :chosen_sort1 => new_sort)
+          controller.params = {:chosen_sort1 => new_sort}
           controller.send(:gfv_sort)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:sortby1]).to eq(new_sort)
@@ -572,7 +574,7 @@ describe ReportController do
         end
 
         it "set first sort col = second clears second" do
-          controller.instance_variable_set(:@_params, :chosen_sort1 => S2)
+          controller.params = {:chosen_sort1 => S2}
           controller.send(:gfv_sort)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:sortby1]).to eq(S2)
@@ -582,7 +584,7 @@ describe ReportController do
         end
 
         it "clearing first sort col clears both sort cols" do
-          controller.instance_variable_set(:@_params, :chosen_sort1 => ReportHelper::NOTHING_STRING)
+          controller.params = {:chosen_sort1 => ReportHelper::NOTHING_STRING}
           controller.send(:gfv_sort)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:sortby1]).to eq(ReportHelper::NOTHING_STRING)
@@ -593,7 +595,7 @@ describe ReportController do
 
         it "sets first sort col suffix" do
           sfx = "hour"
-          controller.instance_variable_set(:@_params, :sort1_suffix => sfx)
+          controller.params = {:sort1_suffix => sfx}
           controller.send(:gfv_sort)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:sortby1]).to eq("#{S1}__#{sfx}")
@@ -602,14 +604,14 @@ describe ReportController do
 
         it "sets sort order" do
           sort_order = "Descending"
-          controller.instance_variable_set(:@_params, :sort_order => sort_order)
+          controller.params = {:sort_order => sort_order}
           controller.send(:gfv_sort)
           expect(assigns(:edit)[:new][:order]).to eq(sort_order)
         end
 
         it "sets sort breaks" do
           sort_group = "Yes"
-          controller.instance_variable_set(:@_params, :sort_group => sort_group)
+          controller.params = {:sort_group => sort_group}
           controller.send(:gfv_sort)
           expect(assigns(:edit)[:new][:group]).to eq(sort_group)
           expect(assigns(:refresh_div)).to eq("sort_div")
@@ -618,7 +620,7 @@ describe ReportController do
 
         it "sets hide detail rows" do
           hide_detail = "1"
-          controller.instance_variable_set(:@_params, :hide_details => hide_detail)
+          controller.params = {:hide_details => hide_detail}
           controller.send(:gfv_sort)
           expect(assigns(:edit)[:new][:hide_details]).to be_truthy
         end
@@ -626,7 +628,7 @@ describe ReportController do
         # TODO: Not sure why, but this test seems to take .5 seconds while others are way faster
         it "sets format on summary row" do
           fmt = "hour_am_pm"
-          controller.instance_variable_set(:@_params, :break_format => fmt)
+          controller.params = {:break_format => fmt}
           controller.send(:gfv_sort)
 
           # Check to make sure the proper value gets set in the col_options hash using the last part of the sortby1 col as key
@@ -638,7 +640,7 @@ describe ReportController do
 
         it "sets second sort col" do
           new_sort = "Vm-new"
-          controller.instance_variable_set(:@_params, :chosen_sort2 => new_sort)
+          controller.params = {:chosen_sort2 => new_sort}
           controller.send(:gfv_sort)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:sortby1]).to eq(S1)
@@ -646,7 +648,7 @@ describe ReportController do
         end
 
         it "clearing second sort col" do
-          controller.instance_variable_set(:@_params, :chosen_sort2 => ReportHelper::NOTHING_STRING)
+          controller.params = {:chosen_sort2 => ReportHelper::NOTHING_STRING}
           controller.send(:gfv_sort)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:sortby1]).to eq(S1)
@@ -655,7 +657,7 @@ describe ReportController do
 
         it "sets second sort col suffix" do
           sfx = "day"
-          controller.instance_variable_set(:@_params, :sort2_suffix => sfx)
+          controller.params = {:sort2_suffix => sfx}
           controller.send(:gfv_sort)
           edit_new = assigns(:edit)[:new]
           expect(edit_new[:sortby1]).to eq(S1)
@@ -666,7 +668,7 @@ describe ReportController do
           edit_new = assigns(:edit)[:new]
           edit_new[:field_order] = [['Vm-foobar']]
           controller.send(:gfv_key_group_calculations, 'foobar_0', 'total,avg')
-          expect(edit_new[:col_options]['foobar'][:grouping]).to eq([:avg, :total])
+          expect(edit_new[:col_options]['foobar'][:grouping]).to eq(%i(avg total))
         end
 
         it 'aggregs are stored under pivot_cols as a sorted array of symbols' do
@@ -675,47 +677,17 @@ describe ReportController do
           edit[:new][:fields] = [[name = 'Vm-foobar']]
           edit[:new][:headers] = {name => 'shoot me now!'}
           controller.send(:gfv_key_pivot_calculations, 'foobar_0', 'total,avg')
-          expect(edit[:pivot_cols][name]).to eq([:avg, :total])
-        end
-      end
-
-      context "handle timeline field changes" do
-        before :each do
-          col = "Vm-created_on"
-          controller.instance_variable_set(:@_params, :chosen_tl => col)
-          controller.send(:gfv_timeline) # This will set the @edit timeline unit hash keys
-        end
-
-        it "sets timeline col" do
-          col = "Vm-boot_time"
-          controller.instance_variable_set(:@_params, :chosen_tl => col)
-          controller.send(:gfv_timeline)
-          expect(assigns(:edit)[:new][:tl_field]).to eq(col)
-        end
-
-        it "clears timeline col" do
-          controller.instance_variable_set(:@_params, :chosen_tl => ReportHelper::NOTHING_STRING)
-          controller.send(:gfv_timeline)
-          edit = assigns(:edit)
-          expect(edit[:new][:tl_field]).to eq(ReportHelper::NOTHING_STRING)
-        end
-
-        it "sets event to position at" do
-          pos = "First"
-          controller.instance_variable_set(:@_params, :chosen_position => pos)
-          controller.send(:gfv_timeline)
-          expect(assigns(:edit)[:new][:tl_position]).to eq(pos)
-          expect(assigns(:tl_changed)).to be_truthy
+          expect(edit[:pivot_cols][name]).to eq(%i(avg total))
         end
       end
     end
   end
 
   context "ReportController::Schedules" do
-    let(:miq_report) { FactoryGirl.create(:miq_report) }
+    let(:miq_report) { FactoryBot.create(:miq_report) }
 
     before do
-      @current_user = login_as FactoryGirl.create(:user, :features => %w(miq_report_schedule_enable
+      @current_user = login_as FactoryBot.create(:user, :features => %w(miq_report_schedule_enable
                                                                          miq_report_schedule_disable
                                                                          miq_report_schedule_edit))
       allow(User).to receive(:server_timezone).and_return("UTC")
@@ -724,23 +696,14 @@ describe ReportController do
     context "no schedules selected" do
       before do
         allow(controller).to receive(:find_checked_items).and_return([])
-        expect(controller).to receive(:render)
-        expect(controller).to receive(:schedule_get_all)
-        expect(controller).to receive(:replace_right_cell)
       end
 
       it "#miq_report_schedule_enable" do
-        controller.miq_report_schedule_enable
-        flash_messages = assigns(:flash_array)
-        expect(flash_messages.first[:message]).to eq("No Report Schedules were selected to be enabled")
-        expect(flash_messages.first[:level]).to eq(:error)
+        expect { controller.miq_report_schedule_enable }.to raise_error("Can't access records without an id")
       end
 
       it "#miq_report_schedule_disable" do
-        controller.miq_report_schedule_disable
-        flash_messages = assigns(:flash_array)
-        expect(flash_messages.first[:message]).to eq("No Report Schedules were selected to be disabled")
-        expect(flash_messages.first[:level]).to eq(:error)
+        expect { controller.miq_report_schedule_disable }.to raise_error("Can't access records without an id")
       end
     end
 
@@ -750,7 +713,7 @@ describe ReportController do
         allow(server).to receive_messages(:zone_id => 1)
         allow(MiqServer).to receive(:my_server).and_return(server)
 
-        @sch = FactoryGirl.create(:miq_schedule, :enabled => true, :updated_at => 1.hour.ago.utc)
+        @sch = FactoryBot.create(:miq_schedule, :enabled => true, :updated_at => 1.hour.ago.utc)
 
         allow(controller).to receive(:find_records_with_rbac).and_return([@sch])
         expect(controller).to receive(:render).never
@@ -777,8 +740,9 @@ describe ReportController do
       end
 
       it "contains current group id in sched_action field" do
-        controller.instance_variable_set(:@_params, :button => "add", :controller => "report",
-                                                    :action => "schedule_edit")
+        controller.params = {:button => "add",
+                             :controller => "report",
+                             :action => "schedule_edit"}
         controller.miq_report_schedule_disable
         allow(controller).to receive_messages(:load_edit => true)
         allow(controller).to receive(:replace_right_cell)
@@ -804,7 +768,7 @@ describe ReportController do
   end
 
   describe 'x_button' do
-    before(:each) do
+    before do
       stub_user(:features => :all)
       ApplicationController.handle_exceptions = true
     end
@@ -828,8 +792,8 @@ describe ReportController do
     include_context "valid session"
     render_views
 
-    before :each do
-      login_as(FactoryGirl.create(:user))
+    before do
+      login_as user_with_feature(%w(miq_report_export))
       allow(controller).to receive(:x_active_tree) { :export_tree }
     end
 
@@ -869,6 +833,7 @@ describe ReportController do
     let(:params) { {:widgets => widget_list} }
 
     before do
+      stub_user(:features => :all)
       bypass_rescue
     end
 
@@ -926,6 +891,7 @@ describe ReportController do
     let(:widget_import_service) { double("WidgetImportService") }
 
     before do
+      stub_user(:features => :all)
       bypass_rescue
       allow(controller).to receive(:x_node) { 'xx-exportwidgets' }
       controller.instance_variable_set(:@in_a_form, true)
@@ -946,11 +912,11 @@ describe ReportController do
 
       before do
         allow(WidgetImportService).to receive(:new).and_return(widget_import_service)
-        login_as(FactoryGirl.create(:user))
+        login_as(FactoryBot.create(:user))
       end
 
       context "when the widget importer does not raise an error" do
-        let(:ret) { FactoryGirl.build_stubbed(:import_file_upload, :id => '123') }
+        let(:ret) { FactoryBot.build(:import_file_upload, :id => '123') }
 
         before do
           allow(ret).to receive(:widget_list).and_return([])
@@ -1015,6 +981,7 @@ describe ReportController do
     let(:widget_import_service) { double("WidgetImportService") }
 
     before do
+      stub_user(:features => :all)
       bypass_rescue
       allow(controller).to receive(:x_node) { 'xx-exportwidgets' }
       controller.instance_variable_set(:@in_a_form, true)
@@ -1106,8 +1073,7 @@ describe ReportController do
                                        :new => {
                                          :filter    => "Trending",
                                          :subfilter => "Hosts"
-                                       }
-                                      )
+                                       })
       report1 = double("MiqReport",
                        :name => 'Report 1',
                        :id   => 1,
@@ -1134,17 +1100,17 @@ describe ReportController do
     end
   end
 
-  context "#replace_right_cell" do
+  describe "#replace_right_cell" do
     before do
-      FactoryGirl.create(:tenant, :parent => Tenant.root_tenant)
-      login_as FactoryGirl.create(:user_admin) # not sure why this needs to be an admin...
+      FactoryBot.create(:tenant, :parent => Tenant.root_tenant)
+      login_as FactoryBot.create(:user_admin) # not sure why this needs to be an admin...
 
       controller.instance_variable_set(:@sb,
-                                       :trees => {'reports_tree'      => {:active_node => "root"},
-                                                  'savedreports_tree' => {:active_node => "root"},
-                                                  'widgets_tree'      => {:active_node => "root"},
-                                                  'db_tree'           => {:active_node => "root"},
-                                                  'schedules_tree'    => {:active_node => "root"}},
+                                       :trees       => {'reports_tree'      => {:active_node => "root"},
+                                                        'savedreports_tree' => {:active_node => "root"},
+                                                        'widgets_tree'      => {:active_node => "root"},
+                                                        'db_tree'           => {:active_node => "root"},
+                                                        'schedules_tree'    => {:active_node => "root"}},
                                        :active_tree => :reports_tree)
 
       allow(controller).to receive(:x_node) { 'root' }
@@ -1155,10 +1121,21 @@ describe ReportController do
 
     let(:sb) { controller.instance_variable_get(:@sb) }
 
+    it "sanitizes the title when editing report menus" do
+      sb[:node_clicked] = true
+      presenter = ExplorerPresenter.new(:active_tree => :roles_tree)
+      expect(ExplorerPresenter).to receive(:new).and_return(presenter)
+      allow(controller).to receive(:x_active_tree).and_return(:roles_tree)
+      session[:node_selected] = 'foo__<div><iframe/>bar</div>'
+      controller.send(:replace_right_cell, :menu_edit_action => 'g')
+      legend = presenter.instance_variable_get(:@options)[:element_updates][:menu1_legend][:legend]
+      expect(legend).to eq("Manage Folders in &quot;&lt;div&gt;&lt;iframe/&gt;bar&lt;/div&gt;&quot;")
+    end
+
     it "should rebuild trees when last report result is newer than last tree build time" do
       # report is newer, set build_time first
       sb[:rep_tree_build_time] = Time.now.utc
-      FactoryGirl.create(:miq_report_with_results)
+      FactoryBot.create(:miq_report_with_results)
 
       expect(controller).to receive(:build_reports_tree)
       expect(controller).to receive(:build_savedreports_tree)
@@ -1171,7 +1148,7 @@ describe ReportController do
     it "should not rebuild trees which weren't previously built, even though newer" do
       # report is newer, set build_time first
       sb[:rep_tree_build_time] = Time.now.utc
-      FactoryGirl.create(:miq_report_with_results)
+      FactoryBot.create(:miq_report_with_results)
 
       sb[:trees].delete('db_tree')
       sb[:trees].delete('widgets_tree')
@@ -1186,7 +1163,7 @@ describe ReportController do
 
     it "should not rebuild trees when last report result is older than last tree build time" do
       # report is older, set build_time after
-      FactoryGirl.create(:miq_report_with_results)
+      FactoryBot.create(:miq_report_with_results)
       sb[:rep_tree_build_time] = Time.now.utc
 
       expect(controller).not_to receive(:build_reports_tree)
@@ -1202,7 +1179,7 @@ describe ReportController do
       # {:replace_trees => [:reports]} is passed in
 
       # report is older, set build_time after
-      FactoryGirl.create(:miq_report_with_results)
+      FactoryBot.create(:miq_report_with_results)
       sb[:rep_tree_build_time] = Time.now.utc
 
       expect(controller).to receive(:build_reports_tree)
@@ -1214,10 +1191,13 @@ describe ReportController do
     end
 
     it "Can build all the trees" do
-      allow(User).to receive(:server_timezone).and_return("UTC")
+      EvmSpecHelper.local_miq_server
       sb[:rep_tree_build_time] = Time.now.utc
+      MiqReport.seed
+      MiqWidget.seed
       MiqWidgetSet.seed
-      @rpt = create_and_generate_report_for_user("Vendor and Guest OS", "User2")
+      user2 = create_user_with_group('User-2', "Group-1", MiqUserRole.find_by(:name => "EvmRole-operator"))
+      @rpt = create_and_generate_report_for_user("Vendor and Guest OS", user2)
 
       expect(controller).to receive(:reload_trees_by_presenter).with(
         instance_of(ExplorerPresenter),
@@ -1235,20 +1215,20 @@ describe ReportController do
 
   context "#rebuild_trees" do
     before do
-      login_as FactoryGirl.create(:user_admin) # not sure why this needs to be an admin...
+      login_as FactoryBot.create(:user_admin) # not sure why this needs to be an admin...
     end
 
     it "rebuild trees, latest report result was created after last time tree was built" do
       last_build_time = Time.now.utc
       controller.instance_variable_set(:@sb, :rep_tree_build_time => last_build_time)
-      FactoryGirl.create(:miq_report_with_results)
+      FactoryBot.create(:miq_report_with_results)
       res = controller.send(:rebuild_trees)
       expect(res).to be(true)
       expect(assigns(:sb)[:rep_tree_build_time]).not_to eq(last_build_time)
     end
 
     it "don't rebuild trees, latest report result was created before last time tree was built" do
-      FactoryGirl.create(:miq_report_with_results)
+      FactoryBot.create(:miq_report_with_results)
       last_build_time = Time.now.utc
       controller.instance_variable_set(:@sb, :rep_tree_build_time => last_build_time)
       res = controller.send(:rebuild_trees)
@@ -1264,21 +1244,22 @@ describe ReportController do
 
     context "when generating reports" do
       render_views
-      let(:rpt) { FactoryGirl.create(:miq_report) }
+      let(:rpt) { FactoryBot.create(:miq_report) }
 
       before do
         stub_user(:features => :all)
 
-        seed_session_trees('report', :reports_tree, "xx-0_xx-0-1_rep-#{controller.to_cid(rpt.id)}")
+        seed_session_trees('report', :reports_tree, "xx-0_xx-0-1_rep-#{rpt.id}")
         session[:sandboxes]["report"][:rep_tree_build_time] = rpt.created_on
         session[:sandboxes]["report"][:active_accord] = :reports
+        allow(controller).to receive(:data_for_breadcrumbs).and_return([{:title => "title", :action => "action", :key => "key"}])
       end
 
       it "runs report and calls GTL generation" do
         expect_any_instance_of(GtlHelper).to receive(:render_gtl).with match_gtl_options(
           :model_name                     => 'MiqReportResult',
           :report_data_additional_options => {
-            :named_scope => [[:with_current_user_groups_and_report, rpt.id]],
+            :named_scope => [[:with_current_user_groups_and_report, rpt.id.to_s]],
             :model       => 'MiqReportResult'
           }
         )
@@ -1294,75 +1275,104 @@ describe ReportController do
         EvmSpecHelper.local_miq_server
 
         MiqUserRole.seed
-        role = MiqUserRole.find_by_name("EvmRole-operator")
+        role = MiqUserRole.find_by(:name => "EvmRole-operator")
 
         # User1 with 2 groups(Group1,Group2), current group for User2 is Group2
-        create_user_with_group('User2', "Group1", role)
+        @user2 = create_user_with_group('User-2', "Group-1", role)
 
-        @user1 = create_user_with_group('User1', "Group2", role)
-        @user1.miq_groups << MiqGroup.where(:description => "Group1")
+        @user1 = create_user_with_group('User-1', "Group-2", role)
+        @user1.miq_groups << MiqGroup.where(:description => "Group-1")
         login_as @user1
       end
 
       context "User2 generates report under Group1" do
-        before :each do
-          @rpt = create_and_generate_report_for_user("Vendor and Guest OS", "User2")
-        end
-
-        pending "is allowed to see report created under Group1 for User 1(with current group Group2)" do
-          controller.instance_variable_set(:@in_report_data, true)
-          controller.instance_variable_set(:@_params, :controller => "report", :action => "explorer")
-          seed_session_trees('report', :saved_reports)
-          allow(controller).to receive(:get_view_calculate_gtl_type).and_return("list")
-          allow(controller).to receive(:get_view_pages_perpage).and_return(20)
-
-          controller.send(:get_all_saved_reports)
-
-          displayed_items = controller.instance_variable_get(:@pages)[:items]
-          expect(displayed_items).to eq(1)
-
-          expected_report_id = controller.instance_variable_get(:@view).table.data.last.miq_report_id
-          expect(expected_report_id).to eq(@rpt.id)
+        before do
+          os = OperatingSystem.create(:name => "RHEL 7", :product_name => "RHEL7")
+          FactoryBot.create(:vm_vmware, :operating_system => os)
+          @rpt = create_and_generate_report_for_user("Vendor and Guest OS", @user2)
         end
 
         it "is allowed to see miq report result for User1(with current group Group2)" do
           report_result_id = @rpt.miq_report_results.first.id
-          controller.instance_variable_set(:@_params, :id => controller.to_cid(report_result_id),
-                                                      :controller => "report", :action => "explorer")
-          controller.instance_variable_set(:@sb, :last_savedreports_id => nil)
+          controller.params = {:id => report_result_id,
+                               :controller => "report",
+                               :action => "explorer"}
+          controller.instance_variable_set(:@sb, {})
+          controller.instance_variable_set(:@settings, :perpage => { :reports => 20 })
           allow(controller).to receive(:get_all_reps)
-          controller.send(:show_saved_report)
+          controller.send(:show_saved_report, report_result_id)
+
           fetched_report_result_id = controller.instance_variable_get(:@report_result_id)
           expect(fetched_report_result_id).to eq(@rpt.miq_report_results.first.id)
-          fetched_report = controller.instance_variable_get(:@report)
-          expect(fetched_report.id).to eq(@rpt.id)
+
+          fetched_report    = controller.instance_variable_get(:@report)
+          fetched_report.id = @rpt.id # Reports serialized into the report column don't have ids
+          expect(fetched_report).to eq(@rpt)
         end
       end
     end
   end
 
-  describe "#reports_menu_in_sb" do
-    let(:user) { FactoryGirl.create(:user_with_group) }
-    subject! { FactoryGirl.create(:miq_report, :rpt_type => "Custom", :miq_group => user.current_group) }
+  describe "#populate_reports_menu" do
+    let(:user) { FactoryBot.create(:user_with_group) }
+    let(:sandbox) { {} }
 
     before do
       EvmSpecHelper.local_miq_server
       login_as user
     end
 
-    it "it returns correct name for custom folder" do
-      controller.instance_variable_set(:@_params, :controller => "report", :action => "explorer")
+    it 'sets the sandbox' do
+      controller.instance_variable_set(:@sb, sandbox)
+      expect(controller).to receive(:get_reports_menu).and_return('yay')
+      controller.send(:populate_reports_menu)
+      expect(sandbox[:rpt_menu]).to eq('yay')
+    end
+  end
+
+  describe '#get_reports_menu' do
+    let(:group) { FactoryBot.create(:miq_group, :settings => settings) }
+    let(:settings) { {:report_menus => []} }
+
+    before do
       controller.instance_variable_set(:@sb, {})
-      allow(controller).to receive(:get_node_info)
-      controller.send(:reports_menu_in_sb)
-      rpt_menu = controller.instance_variable_get(:@sb)[:rpt_menu]
-      expect(rpt_menu.first.first).to eq("#{user.current_tenant.name} (Group): #{user.current_group.name}")
+    end
+
+    context 'custom menus configured' do
+      it 'retrieves the custom menu' do
+        expect(controller).not_to receive(:default_reports_menu)
+        controller.send(:get_reports_menu, true, group)
+      end
+    end
+
+    context 'custom menus not configured' do
+      let(:settings) { nil }
+      it 'returns with the default menu' do
+        expect(controller).to receive(:default_reports_menu)
+        controller.send(:get_reports_menu, true, group)
+      end
+    end
+
+    context 'custom reports included' do
+      let(:user) { FactoryBot.create(:user_with_group) }
+      let(:menu) { controller.instance_variable_get(:@sb)[:rpt_menu] }
+      subject { controller.send(:get_reports_menu, false, user.current_group) }
+
+      before do
+        EvmSpecHelper.local_miq_server
+        login_as user
+        FactoryBot.create(:miq_report, :rpt_type => "Custom", :miq_group => user.current_group)
+      end
+
+      it 'returns with the correct name for custom folder' do
+        expect(subject.first.first).to eq("#{user.current_tenant.name} (Group): #{user.current_group.name}")
+      end
     end
   end
 
   describe "#miq_report_edit" do
-    let(:admin_user)   { FactoryGirl.create(:user, :role => "super_administrator") }
-    let(:tenant)       { FactoryGirl.create(:tenant) }
+    let(:admin_user)   { FactoryBot.create(:user, :role => "super_administrator") }
+    let(:tenant)       { FactoryBot.create(:tenant) }
     let(:chosen_model) { "ChargebackVm" }
 
     before do
@@ -1400,7 +1410,143 @@ describe ReportController do
       post :form_field_changed, :params => {:id => 'new', :name => 'test'}
       post :form_field_changed, :params => {:button => "right", :available_fields => ["ChargebackVm-cpu_cost"]}
       resp = post :form_field_changed, :params => {:button => "left", :selected_fields => ["ChargebackVm-cpu_cost"]}
-      expect(resp.error?).to be_falsey
+      expect(resp.server_error?).to be_falsey
+    end
+  end
+
+  context "GenericSessionMixin" do
+    let(:report_tab) { 'report_tab' }
+    let(:report_result_id) { 'report_result_id' }
+    let(:menu) { 'menu' }
+    let(:folders) { 'folders' }
+    let(:ght_type) { 'ght_type' }
+    let(:report_groups) { 'report_groups' }
+    let(:edit) { 'edit' }
+    let(:catinfo) { 'catinfo' }
+    let(:grid_folders) { 'gridfolders' }
+    let(:report_lastaction) { 'lastaction' }
+    let(:report_display) { 'display' }
+    let(:report_filters) { 'filters' }
+    let(:report_showtype) { 'showtype' }
+    let(:panels) { 'panels' }
+
+    describe '#get_session_data' do
+      it "Sets variables correctly" do
+        allow(controller).to receive(:session).and_return(:report_tab          => report_tab,
+                                                          :report_result_id    => report_result_id,
+                                                          :report_menu         => menu,
+                                                          :report_folders      => folders,
+                                                          :ght_type            => ght_type,
+                                                          :report_groups       => report_groups,
+                                                          :edit                => edit,
+                                                          :vm_catinfo          => catinfo,
+                                                          :report_grid_folders => grid_folders,
+                                                          :report_lastaction   => report_lastaction,
+                                                          :report_display      => report_display,
+                                                          :report_filters      => report_filters,
+                                                          :report_showtype     => report_showtype)
+        controller.send(:get_session_data)
+
+        expect(controller.instance_variable_get(:@report_tab)).to eq(report_tab)
+        expect(controller.instance_variable_get(:@report_result_id)).to eq(report_result_id)
+        expect(controller.instance_variable_get(:@menu)).to eq(menu)
+        expect(controller.instance_variable_get(:@folders)).to eq(folders)
+        expect(controller.instance_variable_get(:@ght_type)).to eq(ght_type)
+        expect(controller.instance_variable_get(:@report_groups)).to eq(report_groups)
+        expect(controller.instance_variable_get(:@edit)).to eq(edit)
+        expect(controller.instance_variable_get(:@catinfo)).to eq(catinfo)
+        expect(controller.instance_variable_get(:@grid_folders)).to eq(grid_folders)
+        expect(controller.instance_variable_get(:@lastaction)).to eq(report_lastaction)
+        expect(controller.instance_variable_get(:@display)).to eq(report_display)
+        expect(controller.instance_variable_get(:@filters)).to eq(report_filters)
+        expect(controller.instance_variable_get(:@showtype)).to eq(report_showtype)
+      end
+    end
+
+    describe '#set_session_data' do
+      it "Sets session correctly" do
+        controller.instance_variable_set(:@report_tab, report_tab)
+        controller.instance_variable_set(:@report_result_id, report_result_id)
+        controller.instance_variable_set(:@menu, menu)
+        controller.instance_variable_set(:@folders, folders)
+        controller.instance_variable_set(:@ght_type, ght_type)
+        controller.instance_variable_set(:@report_groups, report_groups)
+        controller.instance_variable_set(:@catinfo, catinfo)
+        controller.instance_variable_set(:@grid_folders, grid_folders)
+        controller.instance_variable_set(:@lastaction, report_lastaction)
+        controller.instance_variable_set(:@display, report_display)
+        controller.instance_variable_set(:@filters, report_filters)
+        controller.instance_variable_set(:@showtype, report_showtype)
+        controller.instance_variable_set(:@panels, panels)
+        controller.send(:set_session_data)
+
+        expect(controller.session[:report_tab]).to eq(report_tab)
+        expect(controller.session[:report_result_id]).to eq(report_result_id)
+        expect(controller.session[:report_menu]).to eq(menu)
+        expect(controller.session[:report_folders]).to eq(folders)
+        expect(controller.session[:ght_type]).to eq(ght_type)
+        expect(controller.session[:report_groups]).to eq(report_groups)
+        expect(controller.session[:vm_catinfo]).to eq(catinfo)
+        expect(controller.session[:report_grid_folders]).to eq(grid_folders)
+        expect(controller.session[:report_lastaction]).to eq(report_lastaction)
+        expect(controller.session[:report_display]).to eq(report_display)
+        expect(controller.session[:report_filters]).to eq(report_filters)
+        expect(controller.session[:report_showtype]).to eq(report_showtype)
+        expect(controller.session[:panels]).to eq(panels)
+      end
+    end
+  end
+
+  context 'saved reports' do
+    describe '#accordion_select?' do
+      subject { controller.send(:accordion_select?, param) }
+
+      context 'an accord' do
+        let(:param) { "foo_accord" }
+        it { is_expected.to be_truthy }
+      end
+
+      context 'a number' do
+        let(:param) { "1234" }
+        it { is_expected.to be_falsey }
+      end
+    end
+  end
+
+  context 'displaying reports' do
+    before do
+      stub_user(:features => :all)
+      EvmSpecHelper.create_guid_miq_server_zone
+      allow(controller).to receive(:server_timezone).and_return('UTC')
+      @user2 = create_user_with_group('User-2', "Group-1", MiqUserRole.find_by(:name => "EvmRole-operator"))
+    end
+
+    describe "#print_report" do
+      render_views
+
+      let(:report_result_id) do
+        report = create_and_generate_report_for_user("Vendor and Guest OS", @user2)
+        report.miq_report_results.first.id
+      end
+
+      it 'renders the print layout' do
+        get :print_report, :params => {:id => report_result_id}
+        expect(response).to render_template('layouts/print/report')
+      end
+    end
+
+    describe "report_print_options" do
+      it 'returns the print options' do
+        report = create_and_generate_report_for_user("Vendor and Guest OS", @user2)
+        result = report.miq_report_results.first
+
+        expect(controller.send(:report_print_options, report, result)).to match(
+          :page_layout => 'landscape',
+          :page_size   => report.page_size || 'a4',
+          :run_date    => format_timezone(result.last_run_on, result.user_timezone, "gtl"),
+          :title       => result.name
+        )
+      end
     end
   end
 end

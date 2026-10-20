@@ -1,0 +1,54 @@
+import { useMemo } from 'react';
+import { Grid, Column } from '@carbon/react';
+import PropTypes from 'prop-types';
+import classNames from 'classnames';
+
+const isFontIcon = (value, family) => value.selectorText && value.selectorText.includes(`.${family}-`) && value.cssText.includes('content:');
+
+const clearRule = (rule, family) => {
+  // eslint-disable-next-line no-useless-escape
+  const re = new RegExp(`.*(${family}-[a-z0-9_-]+).*`);
+  return rule.replace(re, '$1');
+};
+
+const findIcons = (family) => _.chain(document.styleSheets)
+  .map((oneSheet) => oneSheet.cssRules)
+  .map((rule) => _.filter(rule, (value) => isFontIcon(value, family)))
+  .filter((rules) => rules.length !== 0)
+  .map((rules) => _.map(rules, (value) => clearRule(value.selectorText, family)))
+  .flatten()
+  .value()
+  .map((icon) => `${family} ${icon}`);
+
+const IconList = ({
+  type, activeIcon, setState,
+}) => {
+  const icons = useMemo(() => findIcons(type), [type]);
+
+  return (
+    <Grid className="fonticon-grid">
+      {icons.map((icon) => (
+        <Column
+          key={`${icon}-${Math.random()}`}
+          sm={2}
+          md={2}
+          lg={2}
+          className="fonticon"
+          onClick={() => setState((state) => ({ ...state, activeIcon: icon }))}
+        >
+          <span className={classNames({ active: icon === activeIcon })}>
+            <i className={icon} title={icon.replace(' ', '.')} />
+          </span>
+        </Column>
+      ))}
+    </Grid>
+  );
+};
+
+IconList.propTypes = {
+  type: PropTypes.string.isRequired,
+  activeIcon: PropTypes.string,
+  setState: PropTypes.func.isRequired,
+};
+
+export default IconList;

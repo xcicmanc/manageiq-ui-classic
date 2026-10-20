@@ -1,17 +1,15 @@
 require_relative 'shared_network_manager_context'
 
 shared_examples :shared_examples_for_cloud_network_controller do |providers|
-  include CompressedIds
-
   render_views
-  before :each do
-    stub_user(:features => :all)
-    setup_zone
-  end
 
   providers.each do |t|
     context "for #{t}" do
       include_context :shared_network_manager_context, t
+      before do
+        stub_user(:features => :all)
+        setup_zone
+      end
 
       describe "#show_list" do
         it "renders index" do
@@ -41,8 +39,6 @@ shared_examples :shared_examples_for_cloud_network_controller do |providers|
                                                 :url  => "/cloud_network/show_list?page=&refresh=y"},
                                                {:name => "Cloud Network (Summary)",
                                                 :url  => "/cloud_network/show/#{@cloud_network.id}"}])
-
-          is_expected.to render_template(:partial => "layouts/listnav/_cloud_network")
         end
 
         it "show associated cloud_subnets" do
@@ -60,7 +56,7 @@ shared_examples :shared_examples_for_cloud_network_controller do |providers|
 
       describe "#test_toolbars" do
         it 'edit Cloud Network tags' do
-          post :button, :params => {:miq_grid_checks => to_cid(@cloud_network.id), :pressed => "cloud_network_tag"}
+          post :button, :params => {:miq_grid_checks => @cloud_network.id, :pressed => "cloud_network_tag"}
           expect(response.status).to eq(200)
         end
       end

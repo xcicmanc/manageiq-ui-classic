@@ -5,20 +5,21 @@ module ContainerBuildHelper::TextualSummary
   #
 
   def textual_group_properties
-    TextualGroup.new(_("Properties"), %i(name creation_timestamp resource_version))
+    TextualGroup.new(_("Properties"), %i[name creation_timestamp resource_version])
   end
 
   def textual_group_relationships
-    TextualGroup.new(_("Relationships"), %i(ems container_project))
+    TextualGroup.new(_("Relationships"), %i[ems container_project])
   end
 
   def textual_group_smart_management
-    TextualTags.new(_("Smart Management"), %i(tags))
+    TextualTags.new(_("Smart Management"), %i[tags])
   end
 
   def textual_group_build_instances
     TextualMultilabel.new(
       _("Build Instances"),
+      :wide                   => true,
       :additional_table_class => "table-fixed",
       :values                 => collect_build_pods,
       :labels                 => [
@@ -33,7 +34,9 @@ module ContainerBuildHelper::TextualSummary
   end
 
   def collect_build_pods
-    builds = @record.container_build_pods.collect do |build_pod|
+    @record.container_build_pods
+           .order('completion_timestamp desc')
+           .collect do |build_pod|
       [
         build_pod.name,
         build_pod.phase,
@@ -46,14 +49,13 @@ module ContainerBuildHelper::TextualSummary
         parse_duration(build_pod.duration),
       ]
     end
-    builds.sort! { |a, b| Time.parse(b[7] || Time.current.to_s).to_i <=> Time.parse(a[7] || Time.current.to_s).to_i }
   end
 
   #
   # Items
   #
   def textual_creation_timestamp
-    format_timezone(@record.ems_created_on)
+    {:label => _('Creation Timestamp'), :value => format_timezone(@record.ems_created_on)}
   end
 
   def textual_resource_version
@@ -75,16 +77,16 @@ module ContainerBuildHelper::TextualSummary
       seconds /= 1_000_000_000
     end
 
-    minutes, seconds = seconds.divmod 60
+    minutes, seconds = seconds.divmod(60)
     "#{minutes}m#{seconds}s"
   end
 
   def link_to_pod(container_group)
     if container_group
-      link_to(container_group.name,
-              :action     => 'show',
-              :controller => 'container_group',
-              :id         => container_group.id)
+      {:value => container_group.name,
+       :link  => url_for_only_path(:action     => 'show',
+                                   :controller => 'container_group',
+                                   :id         => container_group.id)}
     else
       _("No Pod")
     end

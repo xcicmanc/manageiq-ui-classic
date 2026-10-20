@@ -1,0 +1,3 @@
+- towhat_options = Condition::TOWHAT_APPLIES_TO_CLASSES.map { |model, label| [label, model] }.sort_by(&:first)
+#main-div
+  = react('ConditionForm', :towhatOptions => towhat_options)

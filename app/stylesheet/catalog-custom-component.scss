@@ -1,0 +1,68 @@
+.catalog-custom-component-wrapper {
+  padding-left: 15px;
+  border-top: 1px solid lightgray;
+
+  .custom-component-title {
+    font-weight: 400;
+    padding: 0.770rem 0;
+    margin: 0;
+  }
+
+  .form-horizontal {
+    font-size: 12px;
+  }
+
+  .custom-image-wrapper {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+
+    .custom-image {
+      height: 100px;
+      min-width: 180px;
+      margin: 0 15px 0 0;
+
+      img {
+        max-height: 100%;
+      }
+    }
+  }
+}
+.key-value-list-component-wrapper {
+  .key-value-list-pair {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+
+    .key-value-delete {
+      height: 20px;
+      top: 20px;
+    }
+  }
+}
+
+.markdown-wrapper {
+  display: flex;
+  gap: 10px;
+  flex-grow: 1;
+  padding: 10px;
+  min-height: 550px;
+  box-sizing: border-box;
+
+  .markdown-section {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid lightgray;
+    width: 50%;
+
+    .markdown-section-title {
+      padding: 10px;
+      background: lightgray;
+      font-size: 16px;
+    }
+  }
+
+  #preview .markdown-section-content {
+      padding: 10px;
+  }
+}

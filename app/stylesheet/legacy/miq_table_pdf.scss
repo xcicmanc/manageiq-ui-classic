@@ -1,0 +1,27 @@
+.miq_table_pdf{
+    table.miq-data-table{
+        thead tr {
+            th {
+                background: #e0e0e0 !important;
+                height: auto !important;
+                font-size: 0.75rem !important;
+                padding: 5px !important;
+            }
+        }
+        tbody tr {
+            td {
+                word-break: break-all;
+                text-align: left !important;
+                padding-left: 4px !important;
+            }
+
+            td.group {
+                background: lightgray !important;
+                font-weight: bold;
+            }
+            td.group_spacer {
+                background: #FFF !important;
+            }
+        }
+    } 
+}

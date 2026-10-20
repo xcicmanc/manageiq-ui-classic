@@ -4,11 +4,15 @@ module AnsiblePlaybookHelper::TextualSummary
   include TextualMixins::TextualDescription
 
   def textual_group_properties
-    TextualGroup.new(_("Properties"), %i(name description created updated))
+    TextualGroup.new(_("Properties"), %i[name description created updated])
   end
 
   def textual_group_relationships
-    TextualGroup.new(_("Relationships"), %i(provider repository))
+    TextualGroup.new(_("Relationships"), %i[provider repository])
+  end
+
+  def textual_group_smart_management
+    TextualTags.new(_("Smart Management"), %i[tags])
   end
 
   def textual_created
@@ -20,7 +24,7 @@ module AnsiblePlaybookHelper::TextualSummary
   end
 
   def textual_provider
-    @record.manager.try(:name)
+    {:label => _("Provider"), :value => @record.manager.try(:name)}
   end
 
   def textual_repository

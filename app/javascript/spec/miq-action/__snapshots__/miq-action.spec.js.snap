@@ -1,0 +1,449 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`MiqActionStructuredList should render action info structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_action_info"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="0"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          D
+          e
+          s
+          c
+          r
+          i
+          p
+          t
+          i
+          o
+          n
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              bar
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="1"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          A
+          c
+          t
+          i
+          o
+          n
+           
+          T
+          y
+          p
+          e
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              Default
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MiqActionStructuredList should render action policies structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_action"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row clickable"
+        role="row"
+        tabindex="0"
+        title="View this Alert"
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title="View this Alert"
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MiqActionStructuredList should render action type 1 structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_action_info"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="0"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          N
+          a
+          m
+          e
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              Snapshot name
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MiqActionStructuredList should render action type 2 structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_action_info"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="0"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          O
+          b
+          j
+          e
+          c
+          t
+           
+          D
+          e
+          t
+          a
+          i
+          l
+          s
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="1"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          S
+          t
+          a
+          r
+          t
+          i
+          n
+          g
+           
+          M
+          e
+          s
+          s
+          a
+          g
+          e
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              Message
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="2"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          R
+          e
+          q
+          u
+          e
+          s
+          t
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="expand wrap_text"
+            >
+              Request
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--structured-list-row not-clickable"
+        role="row"
+        tabindex="3"
+        title=""
+      >
+        <div
+          class="cds--structured-list-td label_header"
+          dir="auto"
+          role="cell"
+        >
+          A
+          t
+          t
+          r
+          i
+          b
+          u
+          t
+          e
+          /
+          V
+          a
+          l
+          u
+          e
+           
+          P
+          a
+          i
+          r
+          s
+        </div>
+        <div
+          class="cds--structured-list-td content_value object_item"
+          dir="auto"
+          role="cell"
+          title=""
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="multi_row_cell"
+            >
+              <div
+                class="sub_row_item"
+                title=""
+              >
+                <div
+                  class="sub_value"
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    pair1
+                  </div>
+                </div>
+              </div>
+              <div
+                class="sub_row_item"
+                title=""
+              >
+                <div
+                  class="sub_value"
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    pair2
+                  </div>
+                </div>
+              </div>
+              <div
+                class="sub_row_item"
+                title=""
+              >
+                <div
+                  class="sub_value"
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    pair3
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MiqActionStructuredList should render action type 3 structured list 1`] = `
+<div>
+  <div
+    aria-label="Structured list"
+    class="cds--structured-list miq-structured-list miq_action_info"
+    role="table"
+  >
+    <div
+      class="cds--structured-list-tbody"
+      role="rowgroup"
+    >
+      <div
+        class="cds--structured-list-row clickable"
+        role="row"
+        tabindex="0"
+        title="View this Alert"
+      >
+        <div
+          class="cds--structured-list-td label_header object_item"
+          dir="auto"
+          role="cell"
+          title="View this Alert"
+        >
+          <div
+            class="content"
+          >
+            <div
+              class="wrap_text"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

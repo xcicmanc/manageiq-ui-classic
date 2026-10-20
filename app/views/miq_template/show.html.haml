@@ -5,20 +5,16 @@
     = render :partial => "vm_common/right_size"
   - elsif @reconfigure
     = render :partial => "vm_common/reconfigure"
-  - elsif request.parameters[:action] == "provision"
-    = render :partial => "vm_common/provision"
   - else
     - case @showtype
     - when "details"
       = render :partial => "layouts/gtl", :locals => {:action_url => @lastaction}
-    - when "miq_proxies", "storage_extents", "storage_systems"
+    - when "miq_proxies", "storage_extents", "storage_systems", "custom_button_events"
       = render :partial => "layouts/gtl", :locals => {:action_url => "show/#{@miq_template.id}"}
     - when "compare"
       = render :partial => "layouts/compare"
     - when "drift_history"
       = render :partial => "layouts/drift_history"
-    - when "drift"
-      = render :partial => "layouts/drift"
     - when "item"
       = render :partial => "layouts/item"
     - when "performance"

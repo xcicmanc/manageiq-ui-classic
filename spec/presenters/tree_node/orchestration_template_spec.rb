@@ -1,7 +1,5 @@
-require 'shared/presenters/tree_node/common'
-
 describe TreeNode::OrchestrationTemplate do
-  subject { described_class.new(object, nil, {}) }
+  subject { described_class.new(object, nil, nil) }
 
   {
     :orchestration_template_amazon              => %w(ManageIQ::Providers::Amazon::CloudManager::OrchestrationTemplate cfn),
@@ -11,10 +9,10 @@ describe TreeNode::OrchestrationTemplate do
     :orchestration_template_vmware_cloud_in_xml => %w(ManageIQ::Providers::Vmware::CloudManager::OrchestrationTemplate vapp)
   }.each do |factory, config|
     context(config.first) do
-      let(:object) { FactoryGirl.create(factory) }
+      let(:object) { FactoryBot.create(factory) }
 
       include_examples 'TreeNode::Node#key prefix', 'ot-'
-      include_examples 'TreeNode::Node#icon', "ff ff-template"
+      include_examples 'TreeNode::Node#icon', "pficon pficon-template"
     end
   end
 end

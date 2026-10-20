@@ -3,7 +3,7 @@ module ApplicationController::AdvancedSearch
 
   def adv_search_clear_default_search_if_cant_be_seen
     # default search doesnt exist or if it is marked as hidden
-    if @edit && @edit[:expression] && !@edit[:expression][:selected].blank?
+    if @edit && @edit[:expression] && @edit[:expression][:selected].present?
       s = MiqSearch.find_by(:id => @edit[:expression][:selected][:id])
       clear_default_search if s.nil? || s.search_key == "_hidden_"
     end
@@ -13,9 +13,9 @@ module ApplicationController::AdvancedSearch
   def adv_search_build(model)
     # Restore @edit hash if it's saved in @settings
     @expkey = :expression # Reset to use default expression key
-    if session.fetch_path(:adv_search, model.to_s)
+    if session.fetch_path(:adv_search, model.to_s) && %w[tag service_tag].exclude?(@sb[:action])
       adv_search_model = session[:adv_search][model.to_s]
-      @edit = copy_hash(adv_search_model[@expkey] ? adv_search_model : session[:edit])
+      @edit ||= copy_hash(adv_search_model[@expkey] ? adv_search_model : session[:edit])
       adv_search_clear_default_search_if_cant_be_seen
       @edit.delete(:exp_token)                                          # Remove any existing atom being edited
     else                                                                # Create new exp fields
@@ -34,7 +34,7 @@ module ApplicationController::AdvancedSearch
       @edit[:adv_search_open] = false
       @edit[@expkey][:exp_model] = model.to_s
     end
-    @edit[@expkey][:exp_table] = exp_build_table(@edit[@expkey][:expression]) # Build the table to display the exp
+    @edit[@expkey][:exp_table] = exp_build_table(@edit[@expkey][:expression]) if @edit[@expkey] # Build the table to display the exp
     @edit[:in_explorer] = @explorer # Remember if we're in an explorer
 
     if @hist && @hist[:qs_exp] # Override qs exp if qs history button was pressed
@@ -45,16 +45,16 @@ module ApplicationController::AdvancedSearch
 
   def adv_search_button_saveid
     if @edit[:new_search_name].nil? || @edit[:new_search_name] == ""
-      add_flash(_("Search Name is required"), :error)
+      add_flash(_("Search Name is required"), :error) if params[:button] == 'saveit'
       false
     else
-      s = @edit[@expkey].build_search(@edit[:new_search_name], @edit[:search_type], session[:userid])
+      s = @edit[@expkey].build_search(@edit[:new_search_name], role_allows?(:feature => 'add_global_filter') ? @edit[:search_type] : nil, session[:userid])
       s.filter = MiqExpression.new(@edit[:new][@expkey]) # Set the new expression
       if s.save
         add_flash(_("%{model} search \"%{name}\" was saved") %
           {:model => ui_lookup(:model => @edit[@expkey][:exp_model]),
-           :name => @edit[:new_search_name]})
-        @edit[@expkey].select_filter(s)
+           :name  => @edit[:new_search_name]})
+        @edit[@expkey].last_loaded_filter(s) # Save the last search loaded
         @edit[:new_search_name] = @edit[:adv_search_name] = @edit[@expkey][:exp_last_loaded][:description] unless @edit[@expkey][:exp_last_loaded].nil?
         @edit[@expkey][:expression] = copy_hash(@edit[:new][@expkey])
         # Build the expression table
@@ -64,8 +64,8 @@ module ApplicationController::AdvancedSearch
         @edit[@expkey][:exp_token] = nil
         true
       else
-        s.errors.each do |field, msg|
-          add_flash("#{field.to_s.capitalize} #{msg}", :error)
+        s.errors.each do |error|
+          add_flash("#{error.attribute.to_s.capitalize} #{error.message}", :error)
         end
         false
       end
@@ -100,7 +100,7 @@ module ApplicationController::AdvancedSearch
     sname = s.description
     begin
       s.destroy
-    rescue => bang
+    rescue StandardError => bang
       add_flash(_("Search \"%{name}\": Error during 'delete': %{error_message}") %
         {:name => sname, :error_message => bang.message}, :error)
     else
@@ -108,7 +108,7 @@ module ApplicationController::AdvancedSearch
         if id.to_i == def_search.to_i
           user_settings = current_user.settings || {}
           user_settings[:default_search].delete(@edit[@expkey][:exp_model].to_s.to_sym)
-          current_user.update_attributes(:settings => user_settings)
+          current_user.update(:settings => user_settings)
           @edit[:adv_search_applied] = nil # clearing up applied search results
         end
       end
@@ -129,7 +129,7 @@ module ApplicationController::AdvancedSearch
     @edit[:adv_search_applied][:exp] = {}
     adv_search_set_text # Set search text filter suffix
     @edit[:selected] = true
-    @edit[:adv_search_applied][:exp] = @edit[:new][@expkey]   # Save the expression to be applied
+    @edit[:adv_search_applied][:exp] = copy_hash(@edit[:new][@expkey]) # Save the expression to be applied
     @edit[@expkey].exp_token = nil                            # Remove any existing atom being edited
     @edit[:adv_search_open] = false                           # Close the adv search box
     if MiqExpression.quick_search?(@edit[:adv_search_applied][:exp])
@@ -144,19 +144,23 @@ module ApplicationController::AdvancedSearch
       self.x_node = "root" # Position on root node
       replace_right_cell
     else
-      javascript_redirect :action => 'show_list' # redirect to build the list screen
+      javascript_redirect(:action => 'show_list') # redirect to build the list screen
     end
   end
 
   def adv_search_button_reset_fields
-    @edit[@expkey][:expression] = {"???" => "???"}            # Set as new exp element
-    @edit[:new][@expkey] = @edit[@expkey][:expression]        # Copy to new exp
+    @edit[@expkey][:exp_last_loaded] = nil                    # Clear the last search loaded
+    @edit[@expkey][:selected] = nil                           # Clear selected search
+    search_expression_reset_fields
+  end
+
+  def search_expression_reset_fields
+    @edit[@expkey][:expression] = {"???" => "???"}                            # Set as new exp element
+    @edit[:new][@expkey] = @edit[@expkey][:expression]                        # Copy to new exp
     @edit[@expkey].history.reset(@edit[@expkey][:expression])
     @edit[@expkey][:exp_table] = exp_build_table(@edit[@expkey][:expression]) # Rebuild the expression table
-    @edit[@expkey][:exp_last_loaded] = nil                    # Clear the last search loaded
-    @edit[:adv_search_name] = nil                             # Clear search name
-    @edit[:adv_search_report] = nil                           # Clear the report name
-    @edit[@expkey][:selected] = nil                           # Clear selected search
+    @edit[:adv_search_name] = @edit[:new_search_name] = nil                   # Clear search name
+    @edit[:adv_search_report] = nil                                           # Clear the report name
   end
 
   def adv_search_redraw_tree_and_main(tree)
@@ -165,8 +169,8 @@ module ApplicationController::AdvancedSearch
     render :update do |page|
       page << javascript_prologue
       page.replace("#{tree_name}_div",  :partial => "shared/tree",               :locals => {:tree => tree, :name => tree_name})
-      page.replace("adv_search_body",   :partial => "layouts/adv_search_body",   :locals => {:mode => display_mode})
-      page.replace("adv_search_footer", :partial => "layouts/adv_search_footer", :locals => {:mode => display_mode})
+      page.replace("adv_search_body",   :partial => "layouts/adv_search_body",   :locals => {:mode => display_mode, :force => true})
+      page.replace("adv_search_footer", :partial => "layouts/adv_search_footer", :locals => {:mode => display_mode, :force => true})
     end
   end
 
@@ -175,23 +179,24 @@ module ApplicationController::AdvancedSearch
     render :update do |page|
       page << javascript_prologue
       page.replace(:listnav_div, :partial => "layouts/listnav")
-      page.replace("adv_search_body",   :partial => "layouts/adv_search_body",   :locals => {:mode => display_mode})
-      page.replace("adv_search_footer", :partial => "layouts/adv_search_footer", :locals => {:mode => display_mode})
+      page.replace("adv_search_body",   :partial => "layouts/adv_search_body",   :locals => {:mode => display_mode, :force => true})
+      page.replace("adv_search_footer", :partial => "layouts/adv_search_footer", :locals => {:mode => display_mode, :force => true})
     end
   end
 
   def adv_search_redraw_left_div
-    if x_active_tree.to_s == "configuration_manager_cs_filter_tree"
-      build_configuration_manager_tree(:configuration_manager_cs_filter, x_active_tree)
-      build_accordions_and_trees
-      load_or_clear_adv_search
-    elsif @edit[:in_explorer] || %w(storage_tree configuration_scripts_tree svcs_tree).include?(x_active_tree.to_s)
+    if @edit[:in_explorer] || %w[storage_tree configuration_scripts_tree].include?(x_active_tree.to_s)
       tree_type = x_active_tree.to_s.sub(/_tree/, '').to_sym
       builder = TreeBuilder.class_for_type(tree_type)
-      tree = builder.new(x_active_tree, tree_type, @sb)
-      adv_search_redraw_tree_and_main(tree)
-      return
-    elsif %w(ems_cloud ems_infra).include?(@layout)
+      tree = builder.new(x_active_tree, @sb)
+      if tree_for_building_accordions?
+        @explorer = true
+        build_accordions_and_trees
+      else
+        adv_search_redraw_tree_and_main(tree)
+        return
+      end
+    elsif %w[ems_cloud ems_infra].include?(@layout)
       build_listnav_search_list(@view.db)
     else
       build_listnav_search_list(@edit[@expkey][:exp_model])
@@ -200,15 +205,27 @@ module ApplicationController::AdvancedSearch
     adv_search_redraw_listnav_and_main
   end
 
+  def tree_for_building_accordions?
+    %w[automation_manager_cs_filter_tree
+       configuration_scripts_tree
+       images_filter_tree
+       instances_filter_tree
+       storage_tree
+       templates_filter_tree
+       templates_images_filter_tree
+       vms_filter_tree
+       vms_instances_filter_tree].include?(x_active_tree.to_s)
+  end
+
   def adv_search_redraw_search_partials(display_mode = nil)
     render :update do |page|
       page << javascript_prologue
-      unless %w(load save).include?(display_mode)
+      unless %w[load save].include?(display_mode)
         @edit[@expkey][:exp_chosen_report] = nil
         @edit[@expkey][:exp_chosen_search] = nil
       end
-      page.replace("adv_search_body",   :partial => "layouts/adv_search_body",   :locals => {:mode => display_mode})
-      page.replace("adv_search_footer", :partial => "layouts/adv_search_footer", :locals => {:mode => display_mode})
+      page.replace("adv_search_body",   :partial => "layouts/adv_search_body",   :locals => {:mode => display_mode, :force => true})
+      page.replace("adv_search_footer", :partial => "layouts/adv_search_footer", :locals => {:mode => display_mode, :force => true})
     end
   end
 
@@ -295,22 +312,22 @@ module ApplicationController::AdvancedSearch
     respond_to do |format|
       format.js do
         @explorer = true
-        if (x_active_tree.to_s =~ /_filter_tree$/ || x_active_tree.to_s == "svcs_tree") &&
-           !%w(Vm MiqTemplate).include?(TreeBuilder.get_model_for_prefix(@nodetype))
+        if x_active_tree.to_s =~ /_filter_tree$/ &&
+           !%w[Vm MiqTemplate].include?(TreeBuilder.get_model_for_prefix(@nodetype))
           search_id = 0
           adv_search_build(model_from_active_tree(x_active_tree))
           session[:edit] = @edit # Set because next method will restore @edit from session
         end
         listnav_search_selected(search_id) # Clear or set the adv search filter
         # no root node for My Services
-        self.x_node = x_active_tree.to_s == "svcs_tree" ? "xx-asrv" : "root"
+        self.x_node = "root"
         replace_right_cell
       end
       format.html do
         @edit = session[:edit]
         @view = session[:view]
         @edit[:adv_search_applied] = nil
-        @edit[:expression][:exp_last_loaded] = nil
+        @edit[:expression][:exp_last_loaded] = @edit[:expression][:selected] = nil
         session[:adv_search] ||= {}                                         # Create/reuse the adv search hash
         session[:adv_search][@edit[@expkey][:exp_model]] = copy_hash(@edit) # Save by model name in settings
         default_search = settings(:default_search, @view.db.to_s.to_sym)

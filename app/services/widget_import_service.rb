@@ -17,14 +17,16 @@ class WidgetImportService
   def import_widget_from_hash(widget)
     new_or_existing_widget = MiqWidget.where(:description => widget["description"]).first_or_create
     new_or_existing_widget.title ||= widget["title"]
-    new_or_existing_widget.content_type ||= "rss"
+    new_or_existing_widget.content_type ||= "report"
     new_or_existing_widget.resource = build_report_contents(widget)
-    new_or_existing_widget.miq_schedule = build_miq_schedule(widget)
     widget.delete("resource_id")
+    schedule_from_widget = widget.delete("MiqSchedule")
 
     log_widget_import_message(new_or_existing_widget)
 
-    new_or_existing_widget.update_attributes(widget)
+    new_or_existing_widget.update(widget)
+    new_or_existing_widget.update(:miq_schedule => build_miq_schedule(schedule_from_widget.merge("widget_id" => new_or_existing_widget.id))) if schedule_from_widget
+    new_or_existing_widget
   end
 
   def import_widgets(import_file_upload, widgets_to_import)
@@ -77,14 +79,10 @@ class WidgetImportService
       report_attributes = report_contents.first["MiqReport"]
       name = report_attributes.delete("menu_name")
       new_or_existing_report = MiqReport.where(:name => name).first_or_initialize
-    elsif report_contents.first["RssFeed"]
-      report_attributes = report_contents.first["RssFeed"]
-      name = report_attributes["name"]
-      new_or_existing_report = RssFeed.where(:name => name).first_or_initialize
     end
 
     if new_or_existing_report.new_record?
-      new_or_existing_report.update_attributes(report_attributes)
+      new_or_existing_report.update(report_attributes)
       $log.info("Created a new MiqReport [#{name}] for MiqWidget import")
     else
       $log.info("Not importing existing MiqReport [#{name}]")
@@ -93,16 +91,20 @@ class WidgetImportService
     new_or_existing_report
   end
 
-  def build_miq_schedule(widget)
-    schedule_contents = widget.delete("MiqSchedule")
-
+  def build_miq_schedule(schedule_contents)
     return if schedule_contents.blank?
+    new_widget_id = schedule_contents.delete("widget_id")
 
     new_or_existing_schedule = MiqSchedule.where(
-      :name   => schedule_contents["name"],
-      :towhat => schedule_contents["towhat"]
+      :name          => schedule_contents["name"],
+      :resource_type => schedule_contents["resource_type"]
     ).first_or_initialize
-    new_or_existing_schedule.update_attributes(schedule_contents) if new_or_existing_schedule.new_record?
+    new_or_existing_schedule.update(schedule_contents) if new_or_existing_schedule.new_record?
+
+    if new_or_existing_schedule
+      filter = MiqExpression.new("=" => {"field" => "MiqWidget-id", "value" => new_widget_id})
+      new_or_existing_schedule.update(:filter => filter)
+    end
 
     new_or_existing_schedule
   end

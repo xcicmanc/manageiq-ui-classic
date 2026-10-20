@@ -2,11 +2,11 @@ module CloudObjectStoreObjectHelper::TextualSummary
   include TextualMixins::TextualGroupTags
 
   def textual_group_properties
-    TextualGroup.new(_("Properties"), %i(key content_length last_modified etag))
+    TextualGroup.new(_("Properties"), %i[key content_length last_modified etag])
   end
 
   def textual_group_relationships
-    TextualGroup.new(_("Relationships"), %i(parent_ems_cloud ems cloud_tenant cloud_object_store_container))
+    TextualGroup.new(_("Relationships"), %i[parent_ems_cloud ems cloud_tenant cloud_object_store_container])
   end
 
   def textual_parent_ems_cloud
@@ -53,8 +53,8 @@ module CloudObjectStoreObjectHelper::TextualSummary
     if object_store_container && role_allows?(:feature => "cloud_object_store_container_show")
       h[:title] = _("Show this Cloud Object's parent Cloud Object Store Container")
       h[:link]  = url_for_only_path(:controller => 'cloud_object_store_container',
-                          :action     => 'show',
-                          :id         => object_store_container)
+                                    :action     => 'show',
+                                    :id         => object_store_container)
     end
     h
   end

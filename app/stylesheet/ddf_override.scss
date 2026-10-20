@@ -1,0 +1,635 @@
+@use '@carbon/styles/scss/components/button';
+@use '@carbon/react/scss/spacing' as *;
+
+form .miq-validation-button, .miq-async-action-button {
+  display: flex;
+  align-items: center;
+}
+// Override margin-bottom from carbon-component-mapper tabs component
+[class*="tab-"] > .miq-validation-button:not(:last-child),
+[class*="tab-"] > .cds--fieldset:not(:last-child) {
+  margin-bottom: 0;
+}
+#code-section {
+  .cds--form-item {
+    margin-bottom: 15px;
+  }
+}
+
+#dateSelectors {
+  display: flex;
+  gap: 2%;
+}
+
+#managementEvents {
+  display: flex;
+  gap: 2%;
+  flex-direction: row;
+
+  .cds--multi-select__wrapper.cds--list-box__wrapper {
+    flex-grow: 1;
+  }
+}
+
+#policyEvents {
+  .cds--multi-select__wrapper.cds--list-box__wrapper {
+    margin-bottom: 2rem;
+  }
+}
+
+#dual-list-sub-form-catalog {
+  fieldset {
+    .cds--css-grid.cds--css-grid--condensed {
+      .buttonWrapper-0-2-7 {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .cds--lg\:col-span-5 {
+        border: 1px solid lightgray;
+        margin-top: 8px;
+        h6 {
+          margin: 0;
+          padding: 10px 20px;
+        }
+      }
+    }
+  }
+
+  #move-right,
+  #move-all-right,
+  #move-all-left,
+  #move-left {
+    svg {
+      position: unset;
+    }
+
+    max-width: 100%;
+  }
+}
+
+// Overriding grid with flex here because long labels break the layout and the
+// checkmark SVG ends up between the text so we’re switching to flex with min-width
+// TODO: c-11: A better approach would be to fix this at the DDF library level
+.miq-dual-list-common-grid-container {
+  .cds--structured-list {
+    .cds--structured-list-row {
+      .cds--subgrid--condensed {
+        display: flex;
+        width: 100%;
+        .cds--sm\:col-span-3 {
+          min-width: 70%;
+        }
+      }
+    }
+  }
+}
+// For dual-list compoenent in action, alert-set, policy-profile, vm-edit forms
+.miq-common-dual-list-buttons-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.form-react {
+  .cds--css-grid.miq-pwd-field-grid {
+    padding-left: 0;
+    .cds--css-grid-column.miq-pwd-field-grid-col {
+      padding-right: 1rem;
+    }
+    .cds--css-grid-column.miq-pwd-field-edit-icon-grid-col {
+      padding-left: 1rem;
+    }
+  }
+
+  .cds--form-item {
+    margin-bottom: 2rem;
+  }
+
+  .cds--btn-set {
+    margin-bottom: 48px;
+
+    .cds--btn--secondary {
+      margin-left: 10px;
+    }
+  }
+}
+
+.miq-common-tree-view-selector {
+  .cds--css-grid.miq-tree-view-selector-grid {
+    padding-left: 0;
+    padding-right: 0;
+
+    .cds--css-grid-column.miq-tree-view-selector-input-grid-column {
+      padding-right: 1rem;
+    }
+  }
+}
+
+#CheckboxDays,
+#CheckboxHours {
+  margin-bottom: 0;
+
+  .cds--fieldset {
+    display: inline-flex;
+    margin-bottom: 0;
+
+    .cds--checkbox-label-text {
+      padding-left: 2px;
+      padding-right: 20px;
+    }
+  }
+}
+
+#hoursWarning {
+  color: #da1e28;
+  font-size: 14px;
+}
+
+#dateWarning {
+  color: #da1e28;
+  font-size: 14px;
+}
+
+#dateInfo {
+  margin-top: -25px;
+  margin-bottom: 25px;
+}
+
+.cds--fieldset {
+  legend.cds--label {
+    font-size: 16px;
+  }
+}
+
+#file_section {
+  .file-upload {
+    .file-upload-input {
+      display: none;
+    }
+
+    .file-upload-label {
+      margin: 0;
+      font-size: 0.875rem;
+      font-weight: 400;
+      line-height: 1.29;
+      letter-spacing: 0.16px;
+      outline: 2px solid transparent;
+      outline-offset: -2px;
+      width: 90%;
+      height: 2.5rem;
+      padding: 0 1rem;
+      color: #161616;
+      background-color: #f4f4f4;
+      border: 10px solid #f4f4f4;
+      border-bottom: 1px solid #8d8d8d;
+    }
+
+    .file-button {
+      color: #ffffff;
+      background-color: #0f62fe;
+      font-size: 0.875rem;
+      display: inline-block;
+      position: absolute;
+      height: 2.5rem;
+      width: 10%;
+      min-width: fit-content;
+      text-align: center;
+      border: 10px solid #0f62fe;
+
+      .file-button-label {
+        -webkit-box-shadow: none;
+        box-shadow: none;
+        color: #ffffff;
+        background-color: #0f62fe;
+        border-color: transparent;
+        border-style: solid;
+        border-width: 1px;
+        padding: 0;
+        border: 0;
+        background-image: none;
+      }
+    }
+
+    .file-button:hover {
+      background-color: button.$button-primary-hover;
+      border-color: button.$button-primary-hover;
+
+      .file-button-label {
+        background-color: button.$button-primary-hover;
+      }
+    }
+
+    .file-button:active {
+      background-color: button.$button-primary-active;
+      border-color: button.$button-primary-active;
+
+      .file-button-label {
+        background-color: button.$button-primary-active;
+      }
+    }
+
+    .file-button:focus {
+      outline: 1px solid #ffffff;
+      outline-offset: -3px;
+    }
+  }
+}
+
+#subform-4,
+#alert-profile {
+  #move-right,
+  #move-all-right,
+  #move-all-left,
+  #move-left {
+    white-space: nowrap;
+    text-align: center;
+    width: 80%;
+  }
+}
+
+#edit_section {
+  .edit-div {
+    position: relative;
+
+    .edit-image {
+      margin-right: 2px;
+      max-width: 125px;
+      max-height: 125px;
+      object-fit: contain;
+    }
+
+    .edit-button {
+      position: absolute;
+      bottom: 0;
+    }
+  }
+}
+
+.tasks-form {
+  form > div {
+    margin-bottom: 32px;
+  }
+
+  #TaskStatus {
+    margin-bottom: 0;
+
+    .cds--fieldset {
+      display: inline-flex;
+
+      .cds--form-item {
+        .cds--checkbox-label-text {
+          #icon {
+            span {
+              padding-left: 5px;
+            }
+          }
+
+          padding-left: 2px;
+          padding-right: 20px;
+        }
+      }
+    }
+  }
+
+  .custom-button-wrapper {
+    margin-top: 10px;
+
+    #submit {
+      margin-right: 8px;
+    }
+
+    #reset {
+      margin-right: 8px;
+    }
+  }
+}
+
+.service-request-form {
+  form > div {
+    margin-bottom: 32px;
+  }
+
+  #approval_state {
+    margin-bottom: 0;
+
+    .cds--fieldset {
+      display: inline-flex;
+
+      .cds--form-item {
+        .cds--checkbox-label-text {
+          #icon {
+            span {
+              padding-left: 5px;
+            }
+          }
+
+          padding-left: 2px;
+          padding-right: 20px;
+        }
+      }
+    }
+  }
+
+  .custom-button-wrapper {
+    margin-top: 10px;
+
+    #submit {
+      margin-right: 8px;
+    }
+
+    #reset {
+      margin-right: 8px;
+    }
+  }
+}
+
+.ddorg__carbon-dual-list-body {
+  .cds--structured-list-td {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+.buttonWrapper-0-2-7 {
+  .cds--btn--primary {
+    width: 150px;
+    padding-right: 20px;
+  }
+}
+
+.dualListBody-0-2-6 {
+  .cds--structured-list-td {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+}
+
+.loadingSpinner {
+  margin-left: 15rem;
+}
+
+#provider-modal {
+  .cds--modal-container {
+    .cds--modal-footer {
+      .modal-pull-right {
+        display: inline-flex;
+
+        .Cancel {
+          background-color: #393939;
+          width: 200px;
+        }
+
+        .Delete {
+          background-color: #da1e28;
+        }
+      }
+    }
+  }
+}
+
+#firewall_rules {
+  .cds--form-item {
+    display: inline-flex;
+    margin-right: 2rem;
+  }
+
+  .remove-0-2-8 {
+    margin-top: 2.2rem;
+    margin-bottom: 100px;
+  }
+}
+
+#generic-objects-field-array-methods,
+#generic-objects-field-array-attributes {
+  .cds--form-item {
+    display: inline-flex;
+    margin-right: 2rem;
+    width: 400px;
+  }
+
+  .remove-0-2-8 {
+    margin-top: 2.15rem;
+  }
+}
+
+#generic-objects-field-array-associations {
+  .cds--list-box__wrapper {
+    width: 400px;
+    display: inline-flex;
+
+    .cds--combo-box {
+      margin-top: 1.5rem;
+      margin-left: -2rem;
+    }
+  }
+
+  .cds--form-item {
+    display: inline-flex;
+    margin-right: 2rem;
+    width: 400px;
+  }
+
+  .remove-0-2-8 {
+    margin-top: 2.2rem;
+    margin-left: 32px;
+  }
+}
+
+#addButtonProps.addButtonProps {
+  display: flex;
+  padding-right: 30px;
+}
+
+#removeButtonProps.removeButtonProps {
+  display: flex;
+  padding-right: 30px;
+}
+
+#workflow_credentials_section {
+  display: flex;
+  gap: 2%;
+
+  .cds--form-item {
+    flex-basis: 0;
+  }
+}
+
+.cds--tabs .cds--tabs__nav-link {
+  min-width: 10rem;
+  width: fit-content;
+}
+
+.miq-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+
+  .miq-fieldset-legend {
+    font-size: 14px;
+    padding: 0;
+    border: 0;
+    margin: 0;
+    width: 100%;
+    font-weight: 400;
+    color: #000;
+    background: inherit;
+  }
+
+  .miq-fieldset-content {
+    display: flex;
+    flex-direction: row;
+    margin-top: -23px;
+    flex-grow: 1;
+  }
+}
+
+.loadSettings {
+  margin-top: 3rem;
+  margin-left: 15rem;
+}
+
+.attribute_value_pair_wrapper fieldset {
+  .cds--form-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+
+    label {
+      margin-bottom: 0;
+    }
+  }
+
+  div > div {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    align-items: center;
+
+    .attribute_value_field_wrapper {
+      flex-grow: 1;
+    }
+  }
+}
+
+.dialog-provision-form {
+  .custom-button-wrapper {
+    display: flex;
+    flex-direction: row;
+
+    .btnRight {
+      margin-right: 8px;
+    }
+
+    .cds--btn {
+      margin-right: 8px;
+    }
+  }
+
+  .cds--form-item {
+    margin-bottom: $spacing-06;
+  }
+
+  #code-section {
+    margin-top: 40px;
+    margin-bottom: 30px;
+  }
+}
+
+.object-attribute {
+  display: inline-flex;
+  width: 100%;
+
+  .attribute-label {
+    margin-left: 25%;
+    margin-right: 5%;
+  }
+}
+
+#listnav_div {
+  .list-group {
+    .list-group-item {
+      white-space: pre;
+    }
+  }
+}
+
+.user-form {
+  #passwordWarning {
+    color: #da1e28;
+    font-size: 14px;
+  }
+
+  .custom-button-wrapper {
+    margin-top: 10px;
+
+    .submit-button {
+      margin-right: 8px;
+    }
+  }
+}
+
+.git-domain-refresh-form {
+  .cds--form-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    
+    .cds--label {
+      margin-bottom: 0.5rem;
+    }
+    
+    .cds--select,
+    .cds--dropdown,
+    .cds--list-box__wrapper {
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+}
+
+.domains-priority-form {
+  .cds--btn-set {
+    .cds--btn {
+      margin-right: 20px;
+      
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+  }
+}
+
+.role-form {
+  .access-restriction-orchestration, .access-restriction-catalog {
+    margin-top: 3%;
+  }
+
+  .access-restriction-catalog {
+    margin-bottom: 3%;
+  }
+  
+  .role-information {
+    font-size: x-large;
+    font-weight: lighter;
+    margin-top: 2%;
+    margin-bottom: 2%;
+  }
+  
+  .custom-button-wrapper {
+    margin-top: 2%;
+    padding-bottom: 5%;
+  
+    .cds--btn--primary, .cds--btn--secondary {
+        margin-right: 3%;
+        width: 20%;
+    }
+  }
+}
+
+.vm-right-size-back-button {
+  margin-bottom: 1rem;
+}

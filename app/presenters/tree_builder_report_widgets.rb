@@ -3,18 +3,13 @@ class TreeBuilderReportWidgets < TreeBuilder
   WIDGET_TYPES = {
     "r"  => N_('Reports'),
     "c"  => N_('Charts'),
-    "rf" => N_('RSS Feeds'),
     "m"  => N_('Menus')
   }.freeze
 
   private
 
-  def tree_init_options(tree_name)
-    {:leaf => 'Widgets', :full_ids => true}
-  end
-
-  def set_locals_for_render
-    super.merge!(:autoload => true)
+  def tree_init_options
+    {:full_ids => true, :lazy => true}
   end
 
   def root_options
@@ -25,12 +20,12 @@ class TreeBuilderReportWidgets < TreeBuilder
   end
 
   # Get root nodes count/array for explorer tree
-  def x_get_tree_roots(count_only, _options)
+  def x_get_tree_roots
     objects = WIDGET_TYPES.collect { |k, v| {:id => k, :text => _(v), :icon => 'pficon pficon-folder-close', :tip => _(v)} }
-    count_only_or_objects(count_only, objects)
+    count_only_or_objects(false, objects)
   end
 
-  def x_get_tree_custom_kids(object, count_only, _options)
+  def x_get_tree_custom_kids(object, count_only)
     widgets = MiqWidget.where(:content_type => ReportController::Widgets::WIDGET_CONTENT_TYPE[object[:id].split('-').last])
     count_only_or_objects(count_only, widgets, 'title')
   end

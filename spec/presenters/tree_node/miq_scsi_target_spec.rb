@@ -1,8 +1,6 @@
-require 'shared/presenters/tree_node/common'
-
 describe TreeNode::MiqScsiTarget do
-  subject { described_class.new(object, nil, {}) }
-  let(:object) { FactoryGirl.create(:miq_scsi_target) }
+  subject { described_class.new(object, nil, nil) }
+  let(:object) { FactoryBot.create(:miq_scsi_target) }
 
   include_examples 'TreeNode::Node#key prefix', 'sg-'
   include_examples 'TreeNode::Node#icon', 'ff ff-network-card'

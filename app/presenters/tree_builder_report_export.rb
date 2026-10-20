@@ -1,17 +1,8 @@
 class TreeBuilderReportExport < TreeBuilder
   private
 
-  def tree_init_options(tree_name)
-    {
-      :leaf     => 'Export',
-      :full_ids => true,
-      :open_all => true
-    }
-  end
-
-  def set_locals_for_render
-    locals = super
-    locals.merge!(:autoload => true)
+  def tree_init_options
+    {:full_ids => true, :open_all => true}
   end
 
   def root_options
@@ -23,15 +14,15 @@ class TreeBuilderReportExport < TreeBuilder
   end
 
   # Get root nodes count/array for explorer tree
-  def x_get_tree_roots(count_only, _options)
+  def x_get_tree_roots
     nodes = [
-      {:id    => 'exportcustomreports',
-       :text  => _('Custom Reports'),
-       :icon  => 'fa fa-file-text-o'},
-      {:id    => 'exportwidgets',
-       :text  => _('Widgets'),
-       :icon  => 'fa fa-file-text-o'}
+      {:id   => 'exportcustomreports',
+       :text => _('Custom Reports'),
+       :icon => 'fa fa-file-text-o'},
+      {:id   => 'exportwidgets',
+       :text => _('Widgets'),
+       :icon => 'fa fa-file-text-o'}
     ]
-    count_only_or_objects(count_only, nodes)
+    count_only_or_objects(false, nodes)
   end
 end

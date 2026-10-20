@@ -1,0 +1,316 @@
+.footer-button-left {
+  text-align: right;
+  margin: 10px;
+  border: none;
+}
+
+.footer-button-right {
+  text-align: left;
+  margin: 10px;
+  border: none;
+}
+
+#notifications-toggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  width: 140px;
+  border-color: #bbb;
+  background-color: transparent;
+  color: #4d5258;
+
+  svg {
+    margin-bottom: 0 !important; // adding !important since the MiqIcon component has margin defined as an inline style
+    margin-left: 0.3rem;
+  }
+
+  &:hover {
+    color: #4d5258;
+    background-color: transparent;
+  }
+
+  &.unread {
+    svg {
+      fill: #39a5dc;
+    }
+  }
+}
+
+#toastnotification {
+  position: fixed;
+  z-index: 900;
+  right: 50px;
+  top: 50px;
+}
+
+#breadcrumbs .breadcrumb {
+  display: inline-block;
+  margin-bottom: 0;
+  width: calc(100% - 140px);
+}
+
+.backgrounded-icon {
+  display: inline-block;
+  height: 20px;
+  width: 20px;
+  text-align: center;
+
+  i {
+    align-self: center;
+    color: #fff;
+  }
+}
+
+.notification-drawer {
+  background-color: #fafafa;
+  border: 1px solid #d1d1d1;
+  -webkit-box-shadow: 0 6px 12px rgb(3 3 3 / 18%);
+  box-shadow: 0 6px 12px rgb(3 3 3 / 18%);
+  position: absolute;
+  right: 10px;
+  width: 450px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 10px;
+  top: 5px;
+  height: calc(100% - 44px);
+
+  .panel-header {
+    background-color: #fafafa;
+    border-bottom: 1px solid #d1d1d1;
+    position: absolute;
+    width: 100%;
+    background-image: linear-gradient(to bottom, #fafafa 0%, #ededed 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    button {
+      cursor: pointer;
+      background: none;
+      color: #252525;
+
+      &:focus,
+      &.cds--btn--primary:focus,
+      svg {
+        outline: 0 !important;
+        border-color: #fafafa;
+        box-shadow: none;
+      }
+      &:hover {
+        background: lightgray;
+      }
+    }
+
+    .notification-title {
+      display: flex;
+      flex-grow: 1;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+    }
+  }
+
+  .cds--accordion--start .cds--accordion__heading {
+    background-image: linear-gradient(to bottom, #fafafa 0%, #ededed 100%);
+  }
+
+  .cds--accordion__wrapper {
+    padding: 0;
+
+    .cds--accordion__content {
+      margin: 0;
+      padding: 0;
+      flex: 1 1 auto;
+      overflow-y: hidden;
+      flex-direction: column;
+      min-height: 0;
+
+      .cds--actionable-notification {
+        margin-top: 0;
+        padding-top: 0;
+        margin-bottom: 0;
+        min-height: 100px;
+        height: auto;
+        max-inline-size: none;
+
+        .cds--btn--ghost:hover,
+        .cds--btn--ghost:active {
+          background-color: #e5e5e5;
+        }
+
+        .cds--actionable-notification__details {
+          display: flex;
+          flex-grow: 1;
+
+          .cds--actionable-notification__text-wrapper {
+            flex-wrap: unset;
+            flex-grow: 1;
+
+            .cds--actionable-notification__content {
+              flex-wrap: unset;
+              width: 100%;
+
+              .cds--actionable-notification__title {
+                margin-bottom: 20px;
+                display: flex;
+                flex-grow: 1;
+                width: 85%;
+              }
+              .cds--actionable-notification__subtitle {
+                width: 15%;
+                padding-top: 0.4rem
+              }
+
+              .subtitle-div {
+                height: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+
+                .subtitle-div-notification-time {
+                  .notification-time {
+                    left: 55px;
+                    position: absolute;
+                    bottom: 3px;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      .read {
+        .cds--actionable-notification__title {
+          font-weight: 400;
+        }
+
+        .cds--actionable-notification__subtitle {
+          font-weight: 200;
+        }
+      }
+    }
+  }
+}
+
+.notification-module {
+  display: inline;
+  margin: 10px 0 0 0;
+}
+
+.notification-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  bottom: 0;
+  margin-bottom: 0;
+  position: absolute;
+  top: 47px;
+  width: 100%;
+}
+
+.events-count {
+  display: flex;
+  flex-direction: column;
+}
+
+.maxnotifications-text {
+  margin-left: 60px;
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+
+  button {
+    background: none !important;
+    border: none;
+    padding: 0 !important;
+    font-family: arial, sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+    color: #0f62fe;
+  }
+}
+
+@media (min-width: 767px) {
+  .notification-drawer.notification-drawer-expanded {
+    left: 480px;
+    width: inherit;
+
+    .notification-footer {
+      width: 100%;
+      padding-left: 450px;
+    }
+
+    .notification-time {
+      padding-top: 0 !important;
+    }
+  }
+}
+
+.notification-accordion-content {
+  overflow-y: auto;
+  height: 100%;
+
+  .notification-content-messages {
+    position: absolute;
+    overflow-y: scroll;
+    height: calc(100% - 90px);
+    width: 100%;
+  }
+
+  .notification-footer {
+    bottom: -65px;
+    position: absolute;
+    width: 450px;
+    height: 115px;
+    border-top: 1px solid #d1d1d1;
+
+    button {
+      width: 225px;
+      padding: calc(0.875rem - 3px) 35px;
+    }
+  }
+}
+
+.refresh-notifications {
+  display: flex;
+  margin-bottom: 10px;
+
+  .last-refresh-notification {
+    margin-top: 0;
+    margin-left: 10px;
+  }
+
+  .date-notification {
+    margin-left: 20px;
+  }
+}
+
+.toast-notification {
+  .miq-notification-toast-item {
+    margin-bottom: .5rem;
+    .cds--toast-notification__details {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0;
+      .cds--toast-notification__subtitle {
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+    }
+  }
+
+  .miq-notification-toast-item-with-link {
+    margin-bottom: .5rem;
+    .cds--actionable-notification__text-wrapper {
+      padding-bottom: 0;
+      .miq-notification-toast-details-link-wrap {
+        margin-top: 5px;
+      }
+    }
+  }
+}

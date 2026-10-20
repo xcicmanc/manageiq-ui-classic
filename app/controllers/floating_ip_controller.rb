@@ -9,55 +9,47 @@ class FloatingIpController < ApplicationController
   include Mixins::GenericSessionMixin
   include Mixins::GenericShowMixin
   include Mixins::GenericFormMixin
+  include Mixins::BreadcrumbsMixin
 
   def self.display_methods
-    %w()
+    %w[]
   end
 
   menu_section :net
+  feature_for_actions "#{controller_name}_show_list", *ADV_SEARCH_ACTIONS
 
   def button
     @edit = session[:edit] # Restore @edit for adv search box
-    params[:display] = @display if %w(vms instances images).include?(@display)
+    params[:display] = @display if %w[vms instances images].include?(@display)
     params[:page] = @current_page unless @current_page.nil? # Save current page for list refresh
 
     @refresh_div = "main_div"
 
     case params[:pressed]
-    when "floating_ip_tag"
-      tag("FloatingIp")
     when 'floating_ip_delete'
       delete_floating_ips
     when "floating_ip_edit"
-      javascript_redirect :action => "edit", :id => checked_item_id(params)
+      javascript_redirect(:action => "edit", :id => checked_item_id(params))
     when "floating_ip_new"
-      javascript_redirect :action => "new"
+      javascript_redirect(:action => "new")
     else
-      if !flash_errors? && @refresh_div == "main_div" && @lastaction == "show_list"
-        replace_gtl_main_div
-      else
-        render_flash
-      end
+      super
     end
   end
 
   def create
     assert_privileges("floating_ip_new")
     case params[:button]
-    when "cancel"
-      javascript_redirect :action    => 'show_list',
-                          :flash_msg => _("Add of new Floating IP was cancelled by the user")
     when "add"
-      @floating_ip = FloatingIp.new
       options = form_params
       ems = ExtManagementSystem.find(options[:ems_id])
-      if FloatingIp.class_by_ems(ems).supports_create?
+
+      if FloatingIp.class_by_ems(ems)&.supports?(:create)
         options.delete(:ems_id)
         task_id = ems.create_floating_ip_queue(session[:userid], options)
 
         unless task_id.kind_of?(Integer)
-          add_flash(_("Floating IP creation failed: Task start failed: ID [%{id}]") %
-            {:id => task_id.to_s}, :error)
+          add_flash(_("Floating IP creation failed: Task start failed"), :error)
         end
 
         if @flash_array
@@ -68,44 +60,33 @@ class FloatingIpController < ApplicationController
       else
         @in_a_form = true
         add_flash(_(FloatingIp.unsupported_reason(:create)), :error)
-        drop_breadcrumb(:name => _("Add New Floating Ip "), :url => "/floating_ip/new")
+        drop_breadcrumb(:name => _("Add New Floating IP "), :url => "/floating_ip/new")
         javascript_flash
       end
     end
   end
 
   def create_finished
-    task_id = session[:async][:params][:task_id]
-    floating_ip_address = session[:async][:params][:floating_ip_address]
+    task_id = params[:task_id]
+    floating_ip_address = params[:address]
     task = MiqTask.find(task_id)
     if MiqTask.status_ok?(task.status)
       add_flash(_("Floating IP \"%{address}\" created") % { :address => floating_ip_address })
     else
-      add_flash(
-        _("Unable to create Floating IP \"%{address}\": %{details}") % { :address => floating_ip_address,
-                                                                         :details => task.message }, :error)
+      add_flash(_("Unable to create Floating IP \"%{address}\": %{details}") % {:address => floating_ip_address,
+                                                                                :details => task.message}, :error)
     end
 
-    @breadcrumbs.pop if @breadcrumbs
+    @breadcrumbs&.pop
     session[:edit] = nil
-    session[:flash_msgs] = @flash_array.dup if @flash_array
-
-    javascript_redirect :action => "show_list"
+    flash_to_session
+    javascript_redirect(:action => "show_list")
   end
 
   def delete_floating_ips
     assert_privileges("floating_ip_delete")
-    floating_ips = if @lastaction == "show_list" || (@lastaction == "show" && @layout != "floating_ip")
-                     find_checked_records_with_rbac(FloatingIp)
-                   else
-                     [find_record_with_rbac(FloatingIp, params[:id])]
-                   end
-
-    if floating_ips.empty?
-      add_flash(_("No Floating IPs were selected for deletion."), :error)
-    else
-      process_floating_ips(floating_ips, "destroy")
-    end
+    floating_ips = find_records_with_rbac(FloatingIp, checked_or_params)
+    process_floating_ips(floating_ips, "destroy")
 
     # refresh the list if applicable
     if @lastaction == "show_list"
@@ -116,7 +97,8 @@ class FloatingIpController < ApplicationController
       if @flash_array.nil?
         add_flash(_("The selected Floating IP was deleted"))
       else # or (if we deleted what we were showing) we redirect to the listing
-        javascript_redirect :action => 'show_list', :flash_msg => @flash_array[0][:message]
+        flash_to_session
+        javascript_redirect(:action => 'show_list')
       end
     end
   end
@@ -125,124 +107,41 @@ class FloatingIpController < ApplicationController
     assert_privileges("floating_ip_edit")
     @floating_ip = find_record_with_rbac(FloatingIp, params[:id])
     @in_a_form = true
-    drop_breadcrumb(
-      :name => _("Associate Floating IP \"%{address}\"") % { :address => @floating_ip.address },
-      :url  => "/floating_ip/edit/#{@floating_ip.id}")
-  end
-
-  def floating_ip_form_fields
-    assert_privileges("floating_ip_edit")
-    floating_ip = find_record_with_rbac(FloatingIp, params[:id])
-    network_port_ems_ref = if floating_ip.network_port
-                             floating_ip.network_port.ems_ref
-                           else
-                             ""
-                           end
-    # TODO: router field is missing!
-    # :router_id            => floating_ip.router.id,
-    render :json => {
-      :fixed_ip_address     => floating_ip.fixed_ip_address,
-      :floating_ip_address  => floating_ip.address,
-      :cloud_network_name   => floating_ip.cloud_network.try(:name),
-      :network_port_ems_ref => network_port_ems_ref,
-      :cloud_tenant_name    => floating_ip.cloud_tenant.try(:name),
-    }
-  end
-
-  def networks_by_ems
-    assert_privileges("floating_ip_new")
-    networks = []
-    available_networks = CloudNetwork.where(:ems_id => params[:id], :external_facing => true).find_each
-    available_networks.each do |network|
-      networks << { 'name' => network.name, 'id' => network.id }
-    end
-    render :json => {
-      :available_networks => networks
-    }
+    drop_breadcrumb(:name => _("Associate Floating IP \"%{address}\"") % { :address => @floating_ip.address },
+                    :url  => "/floating_ip/edit/#{@floating_ip.id}")
   end
 
   def new
     assert_privileges("floating_ip_new")
     @floating_ip = FloatingIp.new
     @in_a_form = true
-    @ems_choices = {}
-    network_managers.each do |network_manager|
-      @ems_choices[network_manager.name] = network_manager.id
-    end
-    drop_breadcrumb(
-      :name => _("Add New Floating IP"),
-      :url  => "/floating_ip/new"
-    )
+    drop_breadcrumb(:name => _("Add New Floating IP"), :url => "/floating_ip/new")
   end
 
-  def update
-    assert_privileges("floating_ip_edit")
-    @floating_ip = find_record_with_rbac(FloatingIp, params[:id])
-
-    case params[:button]
-    when "cancel"
-      cancel_action(_("Edit of Floating IP \"%{address}\" was cancelled by the user") % { :address => @floating_ip.address })
-
-    when "save"
-      if @floating_ip.supports_update?
-        options = form_params
-        options.delete(:ems_id)
-        task_id = @floating_ip.update_floating_ip_queue(session[:userid], options)
-
-        unless task_id.kind_of?(Integer)
-          add_flash(_("Floating IP update failed: Task start failed: ID [%{id}]") %
-            {:id => task_id.to_s}, :error)
-        end
-
-        if @flash_array
-          javascript_flash(:spinner_off => true)
-        else
-          initiate_wait_for_task(:task_id => task_id, :action => "update_finished")
-        end
-      else
-        add_flash(_("Couldn't initiate update of Floating IP \"%{address}\": %{details}") % {
-          :address => @floating_ip.address,
-          :details => @floating_ip.unsupported_reason(:update)
-        }, :error)
-      end
-    end
+  def download_data
+    assert_privileges('floating_ip_show_list')
+    super
   end
 
-  def update_finished
-    task_id = session[:async][:params][:task_id]
-    floating_ip_id = session[:async][:params][:id]
-    floating_ip_address = session[:async][:params][:floating_ip_address]
-    task = MiqTask.find(task_id)
-    if MiqTask.status_ok?(task.status)
-      add_flash(_("Floating IP \"%{address}\" updated") % { :address => floating_ip_address })
-    else
-      add_flash(_("Unable to update Floating IP \"%{address}\": %{details}") % {
-        :address => floating_ip_address,
-        :details => task.message }, :error)
-    end
-
-    @breadcrumbs.pop if @breadcrumbs
-    session[:edit] = nil
-    session[:flash_msgs] = @flash_array.dup if @flash_array
-
-    javascript_redirect :action => "show", :id => floating_ip_id
+  def download_summary_pdf
+    assert_privileges('floating_ip_show')
+    super
   end
 
   private
 
   def textual_group_list
-    [%i(properties relationships), %i(tags)]
+    [%i[properties relationships], %i[tags]]
   end
   helper_method :textual_group_list
 
   def form_params
     options = {}
+    copy_params_if_present(options, params, %i[address cloud_network_id cloud_tenant_id])
     options[:ems_id] = params[:ems_id] if params[:ems_id] && params[:ems_id] != 'new'
-    options[:floating_ip_address] = params[:floating_ip_address] if params[:floating_ip_address]
-    options[:cloud_network_id] = params[:cloud_network_id] if params[:cloud_network_id]
-    options[:cloud_tenant] = find_record_with_rbac(CloudTenant, params[:cloud_tenant_id]) if params[:cloud_tenant_id]
-    options[:network_port_ems_ref] = params[:network_port_ems_ref] if params[:network_port_ems_ref]
-    options[:router_id] = params[:router_id] if params[:router_id]
+    if params[:network_port] && params[:network_port][:ems_ref]
+      options[:network_port_ems_ref] = params[:network_port][:ems_ref]
+    end
     options
   end
 
@@ -266,5 +165,18 @@ class FloatingIpController < ApplicationController
                    "Delete initiated for %{number} Floating IPs.",
                    floating_ips.length) % {:number => floating_ips.length})
     end
+  end
+
+  def breadcrumbs_options
+    record_info = @record || @floating_id
+    record_name = :address
+    {
+      :breadcrumbs  => [
+        breadcrumbs_menu_section,
+        {:title => _("Floating IPs"), :url => controller_url},
+      ],
+      :record_info  => record_info,
+      :record_title => record_name,
+    }
   end
 end

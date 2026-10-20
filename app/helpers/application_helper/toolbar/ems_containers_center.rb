@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::EmsContainersCenter < ApplicationHelper::Toolb
   button_group('ems_container_vmdb', [
     select(
       :ems_container_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -16,6 +16,18 @@ class ApplicationHelper::Toolbar::EmsContainersCenter < ApplicationHelper::Toolb
           :url_parms    => "main_div",
           :send_checked => true,
           :onwhen       => "1+"),
+        button(
+          :ems_container_capture_metrics,
+          'pficon pficon-import fa-lg',
+          N_('Capture metrics for selected Containers Providers'),
+          N_('Capture metrics'),
+          :confirm      => N_("Capture metrics for selected Containers Providers?"),
+          :enabled      => false,
+          :url_parms    => "main_div",
+          :send_checked => true,
+          :onwhen       => "1+",
+          :klass        => ApplicationHelper::Button::EmsCaptureMetrics,
+        ),
         separator,
         button(
           :ems_container_new,
@@ -25,13 +37,6 @@ class ApplicationHelper::Toolbar::EmsContainersCenter < ApplicationHelper::Toolb
           :url   => "/new",
           :klass => ApplicationHelper::Button::ButtonNewDiscover),
         button(
-          :ems_container_deployment,
-          'pficon pficon-add-circle-o fa-lg',
-          t = N_('Create Containers Provider'),
-          t,
-          :data   => {'function' => 'sendDataWithRx', 'function-data' => '{ "name": "showListener", "controller": "containers.deployProviderController" }'},
-          :hidden => ContainerDeploymentService.hide_deployment_wizard?),
-        button(
           :ems_container_edit,
           'pficon pficon-edit fa-lg',
           N_('Select a single Containers Provider to edit'),
@@ -40,25 +45,6 @@ class ApplicationHelper::Toolbar::EmsContainersCenter < ApplicationHelper::Toolb
           :send_checked => true,
           :enabled      => false,
           :onwhen       => "1"),
-        button(
-          :ems_container_resume,
-          'pficon pficon-trend-up fa-lg',
-          t = N_('Resume selected Containers Providers'),
-          t,
-          :confirm   => N_("Resume these Containers Providers?"),
-          :enabled   => false,
-          :url_parms => "main_div",
-          :onwhen    => "1+"),
-        button(
-          :ems_container_pause,
-          'pficon pficon-trend-down fa-lg',
-          t = N_('Pause selected Containers Providers'),
-          t,
-          :confirm   => N_("Warning: While these providers are paused no data will be collected from them. " \
-                           "This may cause gaps in inventory, metrics and events!"),
-          :enabled   => false,
-          :url_parms => "main_div",
-          :onwhen    => "1+"),
         button(
           :ems_container_delete,
           'pficon pficon-delete fa-lg',
@@ -75,7 +61,7 @@ class ApplicationHelper::Toolbar::EmsContainersCenter < ApplicationHelper::Toolb
   button_group('ems_container_policy', [
     select(
       :ems_container_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :enabled => false,
@@ -115,7 +101,7 @@ class ApplicationHelper::Toolbar::EmsContainersCenter < ApplicationHelper::Toolb
   button_group('ems_container_authentication', [
     select(
       :ems_container_authentication_choice,
-      'fa fa-lock fa-lg',
+      nil,
       t = N_('Authentication'),
       t,
       :enabled => false,

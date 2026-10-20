@@ -1,6 +1,6 @@
 describe ContainerTemplateController do
   render_views
-  before(:each) do
+  before do
     stub_user(:features => :all)
   end
 
@@ -12,12 +12,12 @@ describe ContainerTemplateController do
 
   it "renders show screen" do
     EvmSpecHelper.create_guid_miq_server_zone
-    ems = FactoryGirl.create(:ems_openshift)
+    ems = FactoryBot.create(:ems_openshift)
     container_template = ContainerTemplate.create(:ext_management_system => ems, :name => "Test Template")
     get :show, :params => { :id => container_template.id }
     expect(response.status).to eq(200)
     expect(response.body).to_not be_empty
-    expect(response).to render_template('shared/summary/_textual_multilabel')
+    expect(response).to render_template('layouts/_textual_groups_generic')
     expect(assigns(:breadcrumbs)).to eq([{:name => "Container Templates",
                                           :url  => "/container_template/show_list?page=&refresh=y"},
                                          {:name => "Test Template (Summary)",
@@ -38,7 +38,7 @@ describe ContainerTemplateController do
 
   it "renders grid view" do
     EvmSpecHelper.create_guid_miq_server_zone
-    ems = FactoryGirl.create(:ems_openshift)
+    ems = FactoryBot.create(:ems_openshift)
     container_template = ContainerTemplate.create(:ext_management_system => ems, :name => "Test Template")
 
     session[:settings] = {
@@ -46,16 +46,7 @@ describe ContainerTemplateController do
     }
 
     post :show_list, :params => {:controller => 'container_template', :id => container_template.id}
-    expect(response).to render_template('layouts/angular/_gtl')
+    expect(response).to render_template('layouts/react/_gtl')
     expect(response.status).to eq(200)
-  end
-
-  it "Controller method is called with correct parameters" do
-    controller.params[:type] = "tile"
-    controller.instance_variable_set(:@settings, :views => {:containertemplate => "list"})
-    expect(controller).to receive(:get_view_calculate_gtl_type).with(:containertemplate) do
-      expect(controller.instance_variable_get(:@settings)).to include(:views => {:containertemplate => "tile"})
-    end
-    controller.send(:get_view, "ContainerTemplate", :gtl_dbname => :containertemplate)
   end
 end

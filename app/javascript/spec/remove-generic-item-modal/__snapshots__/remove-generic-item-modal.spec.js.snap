@@ -1,0 +1,54 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`RemoveGenericItemModal should correctly render modal for multiple items 1`] = `
+<div>
+  <div
+    class="cds--layer-two cds--modal-content cds--modal-scroll-content--no-fade warning-modal-body"
+  >
+    <div>
+      <h4>
+        TEXT
+      </h4>
+      <ul>
+        <li>
+          <h4>
+            <strong>
+              name123
+            </strong>
+          </h4>
+        </li>
+        <li>
+          <h4>
+            <strong>
+              name456
+            </strong>
+          </h4>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`RemoveGenericItemModal should correctly render modal for single item 1`] = `
+<div>
+  <div
+    class="cds--layer-two cds--modal-content cds--modal-scroll-content--no-fade warning-modal-body"
+  >
+    <div>
+      <h4>
+        TEXT
+      </h4>
+      <ul>
+        <li>
+          <h4>
+            <strong>
+              name123
+            </strong>
+          </h4>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+`;

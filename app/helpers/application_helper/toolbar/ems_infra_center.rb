@@ -7,7 +7,7 @@ class ApplicationHelper::Toolbar::EmsInfraCenter < ApplicationHelper::Toolbar::B
       nil),
     select(
       :ems_infra_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -16,7 +16,8 @@ class ApplicationHelper::Toolbar::EmsInfraCenter < ApplicationHelper::Toolbar::B
           'fa fa-refresh fa-lg',
           N_('Refresh relationships and power states for all items related to this Infrastructure Provider'),
           N_('Refresh Relationships and Power States'),
-          :confirm => N_("Refresh relationships and power states for all items related to this Infrastructure Provider?")),
+          :confirm => N_("Refresh relationships and power states for all items related to this Infrastructure Provider?"),
+          :klass   => ApplicationHelper::Button::EmsRefresh),
         button(
           :host_register_nodes,
           'pficon pficon-add-circle-o fa-lg',
@@ -57,7 +58,7 @@ class ApplicationHelper::Toolbar::EmsInfraCenter < ApplicationHelper::Toolbar::B
   button_group('ems_infra_policy', [
     select(
       :ems_infra_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :items => [
@@ -83,7 +84,7 @@ class ApplicationHelper::Toolbar::EmsInfraCenter < ApplicationHelper::Toolbar::B
   button_group('ems_infra_monitoring', [
     select(
       :ems_infra_monitoring_choice,
-      'ff ff-monitoring fa-lg',
+      nil,
       t = N_('Monitoring'),
       t,
       :items => [
@@ -100,7 +101,7 @@ class ApplicationHelper::Toolbar::EmsInfraCenter < ApplicationHelper::Toolbar::B
   button_group('ems_infra_authentication', [
     select(
       :ems_infra_authentication_choice,
-      'fa fa-lock fa-lg',
+      nil,
       t = N_('Authentication'),
       t,
       :items => [
@@ -129,6 +130,27 @@ class ApplicationHelper::Toolbar::EmsInfraCenter < ApplicationHelper::Toolbar::B
           :url     => "open_admin_ui",
           :klass   => ApplicationHelper::Button::GenericFeatureButton,
           :options => {:feature => :admin_ui}),
+      ]
+    ),
+  ])
+  button_group('ems_native_console', [
+    select(
+      :ems_native_console,
+      nil,
+      N_('Remote Access'),
+      N_('Access'),
+      :items => [
+        button(
+          :ems_native_console,
+          'pficon pficon-screen fa-lg',
+          N_('Open a native console for this infrastructure provider'),
+          N_('Native Console'),
+          :keepSpinner => true,
+          :url         => "launch_console",
+          :confirm     => N_("Open native console for this provider"),
+          :klass       => ApplicationHelper::Button::NativeConsole,
+          :popup       => true
+        )
       ]
     ),
   ])

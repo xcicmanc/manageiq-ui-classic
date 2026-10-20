@@ -22,6 +22,7 @@
         :prefix                     => "/miq_request/",
         :keys                       => keys})
   - when :purpose
+    - (defined? isDisabled) ? @tags[:isDisabled] = isDisabled : @tags[:isDisabled] = false
     - keys = [:vm_tags]
     = render(:partial => "/miq_request/prov_dialog_fieldset",
       :locals         => {:workflow => wf,
@@ -30,8 +31,8 @@
         :prefix                     => "/miq_request/",
         :keys                       => keys})
   - when :service
-    - keys = wf.kind_of?(ManageIQ::Providers::Redhat::InfraManager::ProvisionWorkflow) ? [:src_vm_id, :provision_type, :linked_clone, :seal_template] : [:vm_filter, :src_vm_id, :provision_type, :linked_clone, :snapshot]
-    - label = wf.kind_of?(ManageIQ::Providers::Redhat::InfraManager::ProvisionWorkflow) ? _("Selected VM") : _("Select")
+    - keys = wf.kind_of?(ManageIQ::Providers::Ovirt::InfraManager::ProvisionWorkflow) ? [:src_vm_id, :provision_type, :linked_clone, :seal_template] : [:vm_filter, :src_vm_id, :provision_type, :linked_clone, :snapshot]
+    - label = wf.kind_of?(ManageIQ::Providers::Ovirt::InfraManager::ProvisionWorkflow) ? _("Selected VM") : _("Select")
     = render(:partial => "/miq_request/prov_dialog_fieldset",
       :locals         => {:workflow => wf,
         :dialog                     => dialog,
@@ -70,7 +71,7 @@
         :prefix                     => "/miq_request/",
         :keys                       => keys})
   - when :volumes
-    - keys = [:name, :size, :delete_on_terminate]
+    - keys = wf.volume_dialog_keys
     = render(:partial => "/miq_request/prov_dialog_volume_fieldset",
       :locals         => {:workflow => wf,
         :dialog                     => dialog,
@@ -98,7 +99,7 @@
         = render(:partial => "/miq_request/prov_dialog_fieldset",
           :locals         => {:workflow => wf,
             :dialog                     => dialog,
-            :label                      => title_for_cluster,
+            :label                      => _("Cluster"),
             :prefix                     => "/miq_request/",
             :keys                       => keys})
       - if wf.kind_of?(ManageIQ::Providers::Vmware::InfraManager::ProvisionWorkflow)
@@ -120,7 +121,7 @@
       = render(:partial => "/miq_request/prov_dialog_fieldset",
         :locals         => {:workflow => wf,
           :dialog                     => dialog,
-          :label                      => title_for_host,
+          :label                      => _("Host"),
           :prefix                     => "/miq_request/",
           :keys                       => keys})
       - unless wf.kind_of?(ManageIQ::Providers::CloudManager::ProvisionWorkflow)
@@ -132,7 +133,9 @@
             :prefix                     => "/miq_request/",
             :keys                       => keys})
       - if wf.kind_of?(ManageIQ::Providers::CloudManager::ProvisionWorkflow)
-        - keys = [:cloud_tenant, :availability_zone_filter, :placement_availability_zone, :cloud_network, :cloud_subnet, :security_groups, :floating_ip_address, :resource_group]
+        - has_cloud_network = (@edit && @edit[:new] && (!@edit[:new][:cloud_network_selection_method] || @edit[:new][:cloud_network_selection_method][0] == "network")) || (@options && (!@options[:cloud_network_selection_method] || @options[:cloud_network_selection_method][0] == "network"))
+        - has_network_port = (@edit && @edit[:new] && @edit[:new][:cloud_network_selection_method] && @edit[:new][:cloud_network_selection_method][0] == "port") || (@options && @options[:cloud_network_selection_method] && @options[:cloud_network_selection_method][0] == "port")
+        - keys = [:cloud_tenant, :availability_zone_filter, :placement_availability_zone, :cloud_network_selection_method, has_cloud_network ? :cloud_network : nil, has_network_port ? :network_port : nil, :cloud_subnet, :security_groups, :floating_ip_address, :resource_group, :public_network].compact
         = render(:partial => "/miq_request/prov_dialog_fieldset",
           :locals         => {:workflow => wf,
             :dialog                     => dialog,
@@ -140,9 +143,13 @@
             :prefix                     => "/miq_request/",
             :keys                       => keys})
   - when :hardware
-    - keys = [:instance_type, :number_of_cpus, :number_of_sockets, :cores_per_socket,
-              :vm_memory, :network_adapters, :disk_format, :guest_access_key_pair, :monitoring,
-              :vm_dynamic_memory, :vm_minimum_memory, :vm_maximum_memory, :boot_disk_size, :is_preemptible]
+    - keys = [:instance_type, :sys_type, :storage_type, :cloud_volumes,
+              :number_of_cpus, :entitled_processors, :number_of_sockets,
+              :cores_per_socket, :vm_memory, :network_adapters, :disk_format,
+              :allocated_disk_storage, :disk_sparsity, :guest_access_key_pair,
+              :monitoring, :vm_dynamic_memory, :vm_minimum_memory,
+              :vm_maximum_memory, :boot_disk_size, :is_preemptible,
+              :cpu_hot_add, :cpu_hot_remove, :memory_hot_add, :ssh_public_key]
     - label = wf.kind_of?(ManageIQ::Providers::CloudManager::ProvisionWorkflow) ? _("Properties") : _("Hardware")
     = render(:partial => "/miq_request/prov_dialog_fieldset",
       :locals         => {:workflow => wf,
@@ -172,7 +179,7 @@
           :prefix                     => "/miq_request/",
           :keys                       => keys})
   - when :network
-    - keys = [:vlan, :mac_address]
+    - keys = [:vlan, :mac_address, :public_network]
     - keys << :subnet if wf.kind_of?(ManageIQ::Providers::Microsoft::InfraManager::ProvisionWorkflow)
     = render(:partial => "/miq_request/prov_dialog_fieldset",
       :locals         => {:workflow => wf,
@@ -181,7 +188,9 @@
         :prefix                     => "/miq_request/",
         :keys                       => keys})
   - when :customize
+
     - if select_check?(wf)
+      - edit_or_options = (@edit && @edit[:new] && @edit[:new][:sysprep_enabled]) || (@options && @options[:sysprep_enabled]) || []
       - keys = [:sysprep_enabled]
       = render(:partial => "/miq_request/prov_dialog_fieldset",
         :locals         => {:workflow => wf,
@@ -189,44 +198,82 @@
           :label                      => _("Basic Options"),
           :prefix                     => "/miq_request/",
           :keys                       => keys})
-      - if (@edit && @edit[:new] && @edit[:new][:sysprep_enabled] && @edit[:new][:sysprep_enabled][0] == "fields") || (@options && @options[:sysprep_enabled] && @options[:sysprep_enabled][0] == "fields")
-        - if wf.kind_of?(ManageIQ::Providers::Redhat::InfraManager::ProvisionWorkflow)
-          - keys = [:root_username, :root_password]
-          = render(:partial => "/miq_request/prov_dialog_fieldset",
-            :locals         => {:workflow => wf,
-              :dialog                     => dialog,
-              :label                      => _("Credentials"),
-              :prefix                     => "/miq_request/",
-              :keys                       => keys})
-          - keys = [:addr_mode, :hostname, :ip_addr, :subnet_mask, :gateway]
-          = render(:partial => "/miq_request/prov_dialog_fieldset",
-            :locals         => {:workflow => wf,
-              :dialog                     => dialog,
-              :label                      => _("IP Address Information"),
-              :prefix                     => "/miq_request/",
-              :keys                       => keys})
-          - keys = [:dns_servers, :dns_suffixes]
-          = render(:partial => "/miq_request/prov_dialog_fieldset",
-            :locals         => {:workflow => wf,
-              :dialog                     => dialog,
-              :label                      => _("DNS"),
-              :prefix                     => "/miq_request/",
-              :keys                       => keys})
-          - keys = [:customization_template_id]
-          = render(:partial => "/miq_request/prov_dialog_fieldset",
-            :locals         => {:workflow => wf,
-              :dialog                     => dialog,
-              :label                      => _("Customize Template"),
-              :prefix                     => "/miq_request/",
-              :keys                       => keys})
-          - show_customization_template_script = (@edit && @edit[:new] && @edit[:new][:customization_template_script]) || (@options && @options[:customization_template_script])
-          - keys = [show_customization_template_script ? :customization_template_script : nil].compact
-          = render(:partial => "/miq_request/prov_dialog_fieldset",
-            :locals         => {:workflow => wf,
-              :dialog                     => dialog,
-              :label                      => _("Selected Template Contents"),
-              :prefix                     => "/miq_request/",
-              :keys                       => keys})
+      - if edit_or_options[0] == "fields"
+        - if wf.kind_of?(ManageIQ::Providers::Ovirt::InfraManager::ProvisionWorkflow)
+          - if edit_or_options[1] == "Sysprep Specification"
+            - keys = [:sysprep_computer_name, :sysprep_organization, :sysprep_admin_password, :sysprep_product_key]
+            = render(:partial => "/miq_request/prov_dialog_fieldset",
+              :locals         => {:workflow => wf,
+                :dialog                     => dialog,
+                :label                      => _("Computer Details"),
+                :prefix                     => "/miq_request/",
+                :keys                       => keys})
+            - keys = [:sysprep_domain, :sysprep_domain_admin, :sysprep_domain_password, :sysprep_machine_object_ou]
+            = render(:partial => "/miq_request/prov_dialog_fieldset",
+                :locals         => {:workflow => wf,
+                  :dialog                     => dialog,
+                  :label                      => _("Domain Information"),
+                  :prefix                     => "/miq_request/",
+                  :keys                       => keys})
+            - keys = [:sysprep_timezone, :sysprep_locale_ui, :sysprep_locale_system, :sysprep_locale_input, :sysprep_locale_user]
+            = render(:partial => "/miq_request/prov_dialog_fieldset",
+                :locals         => {:workflow => wf,
+                  :dialog                     => dialog,
+                  :label                      => _("Localization"),
+                  :prefix                     => "/miq_request/",
+                  :keys                       => keys})
+            - keys = [:customization_template_id]
+            = render(:partial => "/miq_request/prov_dialog_fieldset",
+              :locals         => {:workflow => wf,
+                :dialog                     => dialog,
+                :label                      => _("Customize Template"),
+                :prefix                     => "/miq_request/",
+                :keys                       => keys})
+            - show_customization_template_script = (@edit && @edit[:new] && @edit[:new][:customization_template_script]) || (@options && @options[:customization_template_script])
+            - keys = [show_customization_template_script ? :customization_template_script : nil].compact
+            = render(:partial => "/miq_request/prov_dialog_fieldset",
+              :locals         => {:workflow => wf,
+                :dialog                     => dialog,
+                :label                      => _("Selected Template Contents"),
+                :prefix                     => "/miq_request/",
+                :keys                       => keys})
+          - else
+            - keys = [:root_username, :root_password]
+            = render(:partial => "/miq_request/prov_dialog_fieldset",
+              :locals         => {:workflow => wf,
+                :dialog                     => dialog,
+                :label                      => _("Credentials"),
+                :prefix                     => "/miq_request/",
+                :keys                       => keys})
+            - keys = [:addr_mode, :hostname, :ip_addr, :subnet_mask, :gateway]
+            = render(:partial => "/miq_request/prov_dialog_fieldset",
+              :locals         => {:workflow => wf,
+                :dialog                     => dialog,
+                :label                      => _("IP Address Information"),
+                :prefix                     => "/miq_request/",
+                :keys                       => keys})
+            - keys = [:dns_servers, :dns_suffixes]
+            = render(:partial => "/miq_request/prov_dialog_fieldset",
+              :locals         => {:workflow => wf,
+                :dialog                     => dialog,
+                :label                      => _("DNS"),
+                :prefix                     => "/miq_request/",
+                :keys                       => keys})
+            - keys = [:customization_template_id]
+            = render(:partial => "/miq_request/prov_dialog_fieldset",
+              :locals         => {:workflow => wf,
+                :dialog                     => dialog,
+                :label                      => _("Customize Template"),
+                :prefix                     => "/miq_request/",
+                :keys                       => keys})
+            - show_customization_template_script = (@edit && @edit[:new] && @edit[:new][:customization_template_script]) || (@options && @options[:customization_template_script])
+            - keys = [show_customization_template_script ? :customization_template_script : nil].compact
+            = render(:partial => "/miq_request/prov_dialog_fieldset",
+              :locals         => {:workflow => wf,
+                :dialog                     => dialog,
+                :label                      => _("Selected Template Contents"),
+                :prefix                     => "/miq_request/",
+                :keys                       => keys})
         - else
           - keys = [:sysprep_custom_spec, :sysprep_spec_override]
           = render(:partial => "/miq_request/prov_dialog_fieldset",
@@ -295,7 +342,7 @@
                 :label                      => _("Naming"),
                 :prefix                     => "/miq_request/",
                 :keys                       => keys})
-      - elsif (@edit && @edit[:new] && @edit[:new][:sysprep_enabled] && @edit[:new][:sysprep_enabled][0] == "file") || (@options && @options[:sysprep_enabled] && @options[:sysprep_enabled][0] == "file")
+      - elsif edit_or_options[0] == "file"
         - keys = [:sysprep_custom_spec, :sysprep_spec_override]
         = render(:partial => "/miq_request/prov_dialog_fieldset",
           :locals         => {:workflow => wf,
@@ -328,7 +375,7 @@
               :label                      => label,
               :prefix                     => "/miq_request/",
               :keys                       => keys})
-      - elsif (@edit && @edit[:new] && @edit[:new][:sysprep_enabled] && @edit[:new][:sysprep_enabled][0] == "customspec") || (@options && @options[:sysprep_enabled] && @options[:sysprep_enabled][0] == "customspec")
+      - elsif edit_or_options[0] == "customspec"
         - keys = [:sysprep_custom_spec]
         = render(:partial => "/miq_request/prov_dialog_fieldset",
           :locals         => {:workflow => wf,
@@ -360,6 +407,52 @@
               :prefix                     => "/miq_request/",
               :keys                       => keys})
     - else
+      - if (@edit && @edit[:new] && @edit[:new][:user_script_text]) || (@options && @options[:user_script_text])
+        - file_name = (@edit && @edit[:new]) ? @edit[:new][:user_script] : @options[:user_script]
+        - label = _("Uploaded File '%{filename}'") % {:filename => file_name}
+        - keys = %i[user_script_text]
+        = render(:partial => "/miq_request/prov_dialog_fieldset",
+            :locals         => {:workflow => wf,
+              :dialog                     => dialog,
+              :label                      => label,
+              :prefix                     => "/miq_request/",
+              :keys                       => keys})
+      - if @edit && @edit[:new]
+        - keys = [:user_script]
+        = render(:partial => "/miq_request/prov_dialog_fieldset",
+            :locals         => {:workflow => wf,
+              :dialog                     => dialog,
+              :label                      => _("Upload File"),
+              :prefix                     => "/miq_request/",
+              :keys                       => keys})
+      - keys = [:placement_group]
+      = render(:partial => "/miq_request/prov_dialog_fieldset",
+        :locals         => {:workflow => wf,
+            :dialog                   => dialog,
+            :label                    => _("Placement Groups"),
+            :prefix                   => "/miq_request/",
+            :keys                     => keys})
+      - keys = [:shared_processor_pool]
+      = render(:partial => "/miq_request/prov_dialog_fieldset",
+        :locals         => {:workflow => wf,
+            :dialog                   => dialog,
+            :label                    => _("Shared Processor Pools"),
+            :prefix                   => "/miq_request/",
+            :keys                     => keys})
+      - keys = [:colocation_policy]
+      = render(:partial => "/miq_request/prov_dialog_fieldset",
+        :locals         => {:workflow => wf,
+            :dialog                   => dialog,
+            :label                    => _("Colocation Policy"),
+            :prefix                   => "/miq_request/",
+            :keys                     => keys})
+      - keys = %i[migratable pin_policy]
+      = render(:partial => "/miq_request/prov_dialog_fieldset",
+        :locals         => {:workflow => wf,
+            :dialog                   => dialog,
+            :label                    => _("Other"),
+            :prefix                   => "/miq_request/",
+            :keys                     => keys})
       - keys = [:root_username, :root_password]
       = render(:partial => "/miq_request/prov_dialog_fieldset",
         :locals         => {:workflow => wf,

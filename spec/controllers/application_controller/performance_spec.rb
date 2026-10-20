@@ -1,25 +1,4 @@
 describe ApplicationController do
-  context "#perf_planning_gen_data" do
-    it "should not get nil error when submitting up Manual Input data" do
-      _enterprise = FactoryGirl.create(:miq_enterprise)
-      allow(MiqServer).to receive(:my_zone).and_return("default")
-      sb = {
-        :options => {
-          :target_typ => "EmsCluster",
-          :vm_mode    => :manual,
-          :values     => {
-            :cpu => 2
-          }
-        },
-        :vm_opts => {
-          :cpu => 2
-        }
-      }.with_indifferent_access
-      controller.instance_variable_set(:@sb, sb)
-      allow(controller).to receive(:initiate_wait_for_task)
-      controller.send(:perf_planning_gen_data)
-    end
-  end
 
   describe '#skip_days_from_time_profile' do
     subject { ->(l) { described_class.new.send(:skip_days_from_time_profile, l) } }
@@ -38,24 +17,22 @@ describe ApplicationController do
   end
 
   context 'peformance charts generation' do
-    before(:each) do
+    before do
       EvmSpecHelper.create_guid_miq_server_zone
     end
 
     describe 'perf_gen_tag_data_before_wait' do
       %w(Hourly Daily).each do |type|
         it "calls initiate_wait_for_task for '#{type}'" do
-          controller.instance_variable_set(:@perf_record, FactoryGirl.create(:host))
+          controller.instance_variable_set(:@perf_record, FactoryBot.create(:host))
           controller.instance_variable_set(
             :@perf_options,
-            {
-              :typ          => type,
-              :daily_date   => '12/12/2017',
-              :hourly_date  => '12/12/2017',
-              :tz           => TimeProfile.rollup_daily_metrics.all_timezones.first,
-              :cat          => 'foobar',
-              :time_profile => 'bar'
-            }
+            :typ          => type,
+            :daily_date   => '12/12/2017',
+            :hourly_date  => '12/12/2017',
+            :tz           => TimeProfile.rollup_daily_metrics.all_timezones.first,
+            :cat          => 'foobar',
+            :time_profile => 'bar'
           )
           expect(controller).to receive(:initiate_wait_for_task)
           controller.send(:perf_gen_tag_data_before_wait)
@@ -64,7 +41,7 @@ describe ApplicationController do
     end
 
     describe 'perf_gen_tag_data_after_wait' do
-      it 'calls Classification.find_by_name and other specific methods' do
+      it 'calls Classification.lookup_by_name and other specific methods' do
         task = double(:task)
         allow(task).to receive_message_chain(:miq_report_result, :report_results)
         expect(task).to receive(:destroy)
@@ -73,17 +50,15 @@ describe ApplicationController do
 
         cat = double(:cat)
         allow(cat).to receive(:description)
-        expect(Classification).to receive(:find_by_name).with('cat').and_return(cat)
+        expect(Classification).to receive(:lookup_by_name).with('cat').and_return(cat)
 
         controller.instance_variable_set(:@sb, {})
-        controller.instance_variable_set(:@perf_record, FactoryGirl.create(:host))
+        controller.instance_variable_set(:@perf_record, FactoryBot.create(:host))
         controller.instance_variable_set(
           :@perf_options,
-          {
-            :typ   => 'Hourly',
-            :cat   => 'cat',
-            :model => 'Host',
-          }
+          :typ   => 'Hourly',
+          :cat   => 'cat',
+          :model => 'Host',
         )
         expect(controller).to receive(:prepare_perf_tag_chart).at_least(:once)
         expect(controller).to receive(:gen_perf_chart).at_least(:once)

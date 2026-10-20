@@ -1,74 +1,80 @@
 class ApplicationHelper::Toolbar::MiqPolicyCenter < ApplicationHelper::Toolbar::Basic
-  button_group('policy_vmdb', [
+  button_group('miq_policy_vmdb', [
     select(
-      :policy_vmdb_choice,
-      'fa fa-cog fa-lg',
+      :miq_policy_vmdb_choice,
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
         button(
-          :policy_edit,
+          :miq_policy_edit,
           'pficon pficon-edit fa-lg',
           t = N_('Edit Basic Info, Scope, and Notes'),
           t,
-          :url_parms => "?typ=basic",
-          :klass     => ApplicationHelper::Button::PolicyEdit,
-          :options   => {:feature => 'policy_edit'}),
+          :url     => "/edit",
+          :klass   => ApplicationHelper::Button::PolicyEdit,
+          :options => {:feature => 'miq_policy_edit'}
+        ),
         button(
-          :policy_copy,
+          :miq_policy_copy,
           'fa fa-files-o fa-lg',
           proc do
             _('Copy this Policy to new Policy [%{new_policy_description}]') % {
-              :new_policy_description => truncate("Copy of #{@policy.description}", :length => 255, :omission => "")
+              :new_policy_description => truncate("Copy of #{@record.description}", :length => 255, :omission => "")
             }
           end,
           proc do
-            _('Copy this %{policy_type} Policy') % {:policy_type => ui_lookup(:model => @policy.towhat)}
+            _('Copy this %{policy_type} Policy') % {:policy_type => ui_lookup(:model => @record.towhat)}
           end,
           :confirm   => proc do
                           _("Are you sure you want to create Policy [%{new_policy_description}] from this Policy?") % {
-                            :new_policy_description => truncate("Copy of #{@policy.description}", :length => 255, :omission => "")
+                            :new_policy_description => truncate("Copy of #{@record.description}", :length => 255, :omission => "")
                           }
                         end,
-          :url_parms    => "main_div",
-          :send_checked => true,
-          :klass        => ApplicationHelper::Button::PolicyCopy),
+          :url    => "/copy",
+          :send_checked => true),
         button(
-          :policy_delete,
+          :miq_policy_delete,
           'pficon pficon-delete fa-lg',
           t = proc do
-            _('Delete this %{policy_type} Policy') % {:policy_type => ui_lookup(:model => @policy.towhat)}
+            _('Delete this %{policy_type} Policy') % {:policy_type => ui_lookup(:model => @record.towhat)}
           end,
           t,
-          :url_parms    => "main_div",
-          :send_checked => true,
-          :klass        => ApplicationHelper::Button::PolicyDelete,
-          :confirm      => proc { _("Are you sure you want to delete this %{policy_type} Policy?") % {:policy_type => ui_lookup(:model => @policy.towhat)} },
-          :options      => {:feature => 'policy_delete'}),
+          :klass   => ApplicationHelper::Button::PolicyDelete,
+          :options => {:feature => 'miq_policy_delete'},
+          :data    => {'function'      => 'sendDataWithRx',
+                       'function-data' => {:api_url        => 'policies',
+                                           :component_name => 'RemoveGenericItemModal',
+                                           :controller     => 'provider_dialogs',
+                                           :redirect_url   => '/miq_policy/show_list',
+                                           :display_field  => 'description'}}),
         button(
-          :condition_edit,
-          'pficon pficon-add-circle-o fa-lg',
-          t = N_('Create a new Condition assigned to this Policy'),
-          t,
-          :url_parms => "?typ=new",
-          :klass     => ApplicationHelper::Button::PolicyEdit,
-          :options   => {:feature => 'condition_edit'}),
-        button(
-          :policy_edit_conditions,
+          :miq_policy_edit_conditions,
           'pficon pficon-edit fa-lg',
           t = N_('Edit this Policy\'s Condition assignments'),
           t,
-          :url_parms => "?typ=conditions",
+          :url       => "/miq_policy_edit_conditions",
           :klass     => ApplicationHelper::Button::PolicyEditConditions,
-          :options   => {:feature => 'policy_edit_conditions'}),
+          :options   => {:feature => 'miq_policy_edit_conditions'}
+        ),
         button(
-          :policy_edit_events,
+          :miq_policy_edit_events,
           'pficon pficon-edit fa-lg',
           t = N_('Edit this Policy\'s Event assignments'),
           t,
-          :url_parms => "?typ=events",
+          :url       => "/miq_policy_edit_events",
           :klass     => ApplicationHelper::Button::PolicyEditEvents,
-          :options   => {:feature => 'policy_edit'}),
+          :options   => {:feature => 'miq_policy_edit_events'}
+        ),
+        button(
+          :miq_policy_event_edit,
+          'pficon pficon-edit fa-lg',
+          t = N_('Edit Actions for this Policy\'s Event'),
+          t,
+          :url          => "/miq_event_edit",
+          :send_checked => true,
+          :klass        => ApplicationHelper::Button::MiqActionModify
+        ),
       ]
     ),
   ])

@@ -4,19 +4,12 @@ class TreeBuilderCatalogsClass < TreeBuilder
 
   private
 
-  def x_get_tree_roots(count_only, options)
-    objects = count_only_or_objects_filtered(count_only, ServiceTemplateCatalog.all, "name")
-    case options[:type]
-    when :stcat
-      objects
-    when :sandt
-      if count_only
-        objects + 1
-      else
-        objects.unshift(ServiceTemplateCatalog.new(
-          :name        => 'Unassigned',
-          :description => 'Unassigned Catalogs'))
-      end
-    end
+  def node_by_tree_id(id)
+    # Creating empty record to show items under unassigned catalogs
+    super(id) || ServiceTemplateCatalog.new
+  end
+
+  def x_get_tree_roots
+    count_only_or_objects_filtered(false, ServiceTemplateCatalog.all, "name")
   end
 end

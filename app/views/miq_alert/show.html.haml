@@ -1,0 +1,28 @@
+#alert-details-div
+
+  = render :partial => "layouts/flash_msg"
+  = miq_summary_alert_info(@alert, @event, @sb)
+  
+  -# Expression
+  - if @alert.expression.kind_of?(MiqExpression)
+    = miq_summary_alert_expression(@expression_table)
+
+  - elsif @alert.expression[:eval_method] != "nothing"
+    = miq_summary_alert_parameters(@alert, @expression_options, @sb, @perf_column_unit, @ems)
+
+  -# E-mail, SNMP, Timeline Event, Mgmt Event show
+  = miq_summary_alert_send_email(@alert, @email_to)
+
+  - if @alert.options && @alert.options[:notifications] && @alert.options[:notifications][:snmp].present?
+    = miq_summary_alert_send_sms(@alert)
+    = miq_summary_alert_variable(@alert)
+
+  = miq_summary_alert_timeline_event(@alert)
+
+  = miq_summary_alert_management_event(@alert)
+
+  -# Alert Profiles alert is assigned to
+  = miq_summary_belongs_to_alert_profile(@alert_profiles)
+
+  -# Show any owning actions
+  = miq_summary_alert_referenced(@alert)

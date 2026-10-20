@@ -1,0 +1,367 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Simple Table renders just fine... 1`] = `
+<div>
+  <ul
+    class="cds--accordion miq-structured-list-accordion simple_table cds--accordion--start"
+  >
+    <li
+      class="cds--accordion__item cds--accordion__item--active"
+    >
+      <button
+        aria-controls="accordion-item-_r_0_"
+        aria-expanded="true"
+        class="cds--accordion__heading"
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          class="cds--accordion__arrow"
+          fill="currentColor"
+          focusable="false"
+          height="16"
+          preserveAspectRatio="xMidYMid meet"
+          viewBox="0 0 16 16"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M11 8 6 13 5.3 12.3 9.6 8 5.3 3.7 6 3z"
+          />
+        </svg>
+        <div
+          class="cds--accordion__title"
+          dir="auto"
+        >
+          Firewall Rules
+        </div>
+      </button>
+      <div
+        class="cds--accordion__wrapper"
+      >
+        <div
+          class="cds--accordion__content"
+          id="accordion-item-_r_0_"
+        >
+          <div
+            aria-label="Structured list"
+            class="cds--structured-list miq-structured-list simple_table"
+            role="table"
+          >
+            <div
+              class="cds--structured-list-thead"
+              role="rowgroup"
+            >
+              <div
+                class="cds--structured-list-row cds--structured-list-row--header-row"
+                role="row"
+                tabindex="0"
+              >
+                <span
+                  class="cds--structured-list-th list_header"
+                  dir="auto"
+                  role="columnheader"
+                >
+                  Network Protocol
+                </span>
+                <span
+                  class="cds--structured-list-th list_header"
+                  dir="auto"
+                  role="columnheader"
+                >
+                  Host Protocol
+                </span>
+                <span
+                  class="cds--structured-list-th list_header"
+                  dir="auto"
+                  role="columnheader"
+                >
+                  Direction
+                </span>
+                <span
+                  class="cds--structured-list-th list_header"
+                  dir="auto"
+                  role="columnheader"
+                >
+                  Port
+                </span>
+                <span
+                  class="cds--structured-list-th list_header"
+                  dir="auto"
+                  role="columnheader"
+                >
+                  End Port
+                </span>
+                <span
+                  class="cds--structured-list-th list_header"
+                  dir="auto"
+                  role="columnheader"
+                >
+                  Source
+                </span>
+              </div>
+            </div>
+            <div
+              class="cds--structured-list-tbody"
+              role="rowgroup"
+            >
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="0"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="wrap_text"
+                  />
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    -1
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    outbound
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    0
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    0
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    0.0.0.0/0
+                  </div>
+                </div>
+              </div>
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="1"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="wrap_text"
+                  />
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    TCP
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    inbound
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    22
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    22
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    0.0.0.0/0
+                  </div>
+                </div>
+              </div>
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="2"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="wrap_text"
+                  />
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="some_link"
+                    to="some_link"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="multi_row_cell"
+                      >
+                        <div
+                          class="sub_row_item"
+                          title=""
+                        >
+                          <div
+                            class="sub_value"
+                          >
+                            <div
+                              class="wrap_text"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    inbound
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    80
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    80
+                  </div>
+                </div>
+                <div
+                  class="cds--structured-list-td content_value array_item"
+                  dir="auto"
+                  role="cell"
+                  title=""
+                >
+                  <div
+                    class="expand wrap_text"
+                  >
+                    0.0.0.0/0
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </li>
+  </ul>
+</div>
+`;

@@ -9,14 +9,14 @@ module NetworkPortHelper::TextualSummary
   def textual_group_properties
     TextualGroup.new(
       _("Properties"),
-      %i(name mac_address type device_owner floating_ip_addresses fixed_ip_addresses)
+      %i[name mac_address type device_owner floating_ip_addresses fixed_ip_addresses]
     )
   end
 
   def textual_group_relationships
     TextualGroup.new(
       _("Relationships"),
-      %i(parent_ems_cloud ems_network cloud_tenant device cloud_subnets floating_ips security_groups host)
+      %i[parent_ems_cloud ems_network cloud_tenant device cloud_subnets floating_ips security_groups host]
     )
   end
 
@@ -36,15 +36,15 @@ module NetworkPortHelper::TextualSummary
   end
 
   def textual_fixed_ip_addresses
-    @record.fixed_ip_addresses.join(", ") if @record.fixed_ip_addresses
+    @record.fixed_ip_addresses&.join(", ")
   end
 
   def textual_floating_ip_addresses
-    @record.floating_ip_addresses.join(", ") if @record.floating_ip_addresses
+    @record.floating_ip_addresses&.join(", ")
   end
 
   def textual_parent_ems_cloud
-    @record.ext_management_system.try(:parent_manager)
+    textual_link(@record.ext_management_system.try(:parent_manager), :label => _("Parent Cloud Provider"))
   end
 
   def textual_device
@@ -59,6 +59,8 @@ module NetworkPortHelper::TextualSummary
         h[:title] = _("Show Instance")
       end
       h
+    elsif device.kind_of?(LoadBalancer)
+      device.name
     else
       device
     end
@@ -83,8 +85,8 @@ module NetworkPortHelper::TextualSummary
   def textual_host
     return nil unless @record.device_type == "Host"
     {
-      :icon  => "pficon pficon-screen",
-      :value => @record.device,
+      :icon  => "pficon pficon-container-node",
+      :value => @record.device.name,
       :link  => url_for_only_path(
         :controller => "host",
         :action     => "show",

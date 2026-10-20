@@ -4,13 +4,12 @@ describe "shared/views/ems_common/show" do
     TestSetup.new(:ems_openstack, EmsCloudHelper::TextualSummary),
     TestSetup.new(:ems_vmware,    EmsInfraHelper::TextualSummary),
   ].each do |setup|
-    let(:zone) { FactoryGirl.create(:zone) }
-    let(:ems) { FactoryGirl.create(setup.ems_type, :hostname => '1.1.1.1', :zone => zone) }
+    let!(:server) { EvmSpecHelper.local_miq_server }
+    let(:ems) { FactoryBot.create(setup.ems_type) }
     let(:action) { 'index' }
 
     before do
       view.extend setup.helper
-      allow(MiqServer).to receive(:my_zone).and_return("default")
       allow(controller).to receive(:controller_name).and_return("ems_cloud")
       creds = {}
       creds[:amqp] = {:userid => "amqp_user", :password => "amqp_password"}
@@ -34,6 +33,26 @@ describe "shared/views/ems_common/show" do
         render
         expect(rendered).to include('AMQP Credentials')
       end
+    end
+  end
+
+  context "when display is 'cloud_volumes'" do
+    before do
+      allow(controller).to receive(:controller_name).and_return("ems_storage")
+      assign(:record, ems)
+      assign(:ems, ems)
+      assign(:display, display)
+      assign(:showtype, showtype)
+      allow(view).to receive(:render_gtl_outer)
+    end
+
+    let(:showtype) { "main" }
+    let(:display) { 'cloud_volumes' }
+    let(:ems) { FactoryBot.create(:ext_management_system) }
+
+    it "should show render gtl for list of cloud_volumes" do
+      render
+      expect(view).to render_template(:partial => 'layouts/gtl', :locals => {:action_url => "show/#{ems.id}"})
     end
   end
 end

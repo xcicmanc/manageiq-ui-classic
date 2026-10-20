@@ -1,0 +1,235 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`vm resize form component should render a resize form 1`] = `
+<div>
+  <div
+    class="cds--css-grid"
+  >
+    <div
+      class="cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-16 cds--css-grid-column"
+    >
+      <form
+        class="cds--form form-0-2-3 form-react"
+        novalidate=""
+      >
+        <div
+          class="cds--form-item cds--text-input-wrapper"
+        >
+          <div
+            class="cds--text-input__label-wrapper"
+          >
+            <label
+              class="cds--label"
+              dir="auto"
+              for="memory"
+            >
+              <span
+                aria-hidden="true"
+                class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+              >
+                *
+              </span>
+              Memory (GiB)
+            </label>
+          </div>
+          <div
+            class="cds--text-input__field-outer-wrapper"
+          >
+            <div
+              class="cds--text-input__field-wrapper"
+            >
+              <input
+                class="cds--text-input"
+                id="memory"
+                name="memory"
+                type="text"
+                value="2"
+              />
+              <span
+                aria-atomic="true"
+                aria-live="assertive"
+                class="cds--text-input__counter-alert"
+                role="alert"
+              />
+            </div>
+          </div>
+        </div>
+        <div
+          class="cds--btn-set"
+        >
+          <button
+            class="cds--btn cds--btn--primary cds--btn--disabled"
+            disabled=""
+            type="submit"
+            variant="primary"
+          >
+            Save
+          </button>
+          <button
+            class="cds--btn cds--btn--secondary"
+            type="button"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`vm resize form component should render form 1`] = `
+<div>
+  <div
+    class="cds--css-grid"
+  >
+    <div
+      class="cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-16 cds--css-grid-column"
+    >
+      <form
+        class="cds--form form-0-2-3 form-react"
+        novalidate=""
+      >
+        <div
+          class="cds--form-item cds--text-input-wrapper"
+        >
+          <div
+            class="cds--text-input__label-wrapper"
+          >
+            <label
+              class="cds--label"
+              dir="auto"
+              for="memory"
+            >
+              <span
+                aria-hidden="true"
+                class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+              >
+                *
+              </span>
+              Memory (GiB)
+            </label>
+          </div>
+          <div
+            class="cds--text-input__field-outer-wrapper"
+          >
+            <div
+              class="cds--text-input__field-wrapper"
+            >
+              <input
+                class="cds--text-input"
+                id="memory"
+                name="memory"
+                type="text"
+                value="2"
+              />
+              <span
+                aria-atomic="true"
+                aria-live="assertive"
+                class="cds--text-input__counter-alert"
+                role="alert"
+              />
+            </div>
+          </div>
+        </div>
+        <div
+          class="cds--btn-set"
+        >
+          <button
+            class="cds--btn cds--btn--primary cds--btn--disabled"
+            disabled=""
+            type="submit"
+            variant="primary"
+          >
+            Save
+          </button>
+          <button
+            class="cds--btn cds--btn--secondary"
+            type="button"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`vm resize form component should submit resize API call 1`] = `
+<div>
+  <div
+    class="cds--css-grid"
+  >
+    <div
+      class="cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-16 cds--css-grid-column"
+    >
+      <form
+        class="cds--form form-0-2-3 form-react"
+        novalidate=""
+      >
+        <div
+          class="cds--form-item cds--text-input-wrapper"
+        >
+          <div
+            class="cds--text-input__label-wrapper"
+          >
+            <label
+              class="cds--label"
+              dir="auto"
+              for="memory"
+            >
+              <span
+                aria-hidden="true"
+                class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+              >
+                *
+              </span>
+              Memory (GiB)
+            </label>
+          </div>
+          <div
+            class="cds--text-input__field-outer-wrapper"
+          >
+            <div
+              class="cds--text-input__field-wrapper"
+            >
+              <input
+                class="cds--text-input"
+                id="memory"
+                name="memory"
+                type="text"
+                value="2"
+              />
+              <span
+                aria-atomic="true"
+                aria-live="assertive"
+                class="cds--text-input__counter-alert"
+                role="alert"
+              />
+            </div>
+          </div>
+        </div>
+        <div
+          class="cds--btn-set"
+        >
+          <button
+            class="cds--btn cds--btn--primary cds--btn--disabled"
+            disabled=""
+            type="submit"
+            variant="primary"
+          >
+            Save
+          </button>
+          <button
+            class="cds--btn cds--btn--secondary"
+            type="button"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+`;

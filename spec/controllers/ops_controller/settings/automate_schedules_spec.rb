@@ -1,17 +1,14 @@
 describe OpsController do
   let(:params) { {} }
   let(:session) { {} }
-  let(:zone) { double("Zone", :name => "foo") }
-  let(:server) { double("MiqServer", :logon_status => :ready, :id => 1, :my_zone => zone) }
-  let(:schedule) { FactoryGirl.create(:miq_automate_schedule) }
+  let(:schedule) { FactoryBot.create(:miq_automate_schedule) }
   let(:schedule_new) { MiqSchedule.new }
   let(:user) { stub_user(:features => :all) }
 
   include_context "valid session"
 
   before do
-    allow(MiqServer).to receive(:my_server).and_return(server)
-    allow(server).to receive(:zone_id).and_return(1)
+    EvmSpecHelper.local_miq_server
     stub_user(:features => :all)
   end
 
@@ -21,6 +18,7 @@ describe OpsController do
 
     before do
       session = instance_double('ApplicationController', :session => {:userid => user.userid})
+      ops.instance_variable_set(:@_params, {})
       ops.instance_variable_set(:@current_user, user)
       ops.instance_variable_set(:@_request, session)
     end
@@ -66,7 +64,7 @@ describe OpsController do
     let(:ops) { OpsController.new }
 
     before do
-      ops.instance_variable_set(:@params, {})
+      ops.params = {}
     end
 
     [nil, 'null'].each do |target|
@@ -74,6 +72,18 @@ describe OpsController do
         ops.params = {:target_class => target }
         expect(ops).to receive(:render).once
         expect(Rbac).to receive(:filtered).never
+        ops.fetch_target_ids
+      end
+    end
+
+    context 'setting targets' do
+      before do
+        allow(ops).to receive(:render)
+        ops.params = {:target_class => 'some_class'}
+      end
+
+      it 'calls targets_from_class to set appropriate targets' do
+        expect(ops).to receive(:targets_from_class).with('some_class')
         ops.fetch_target_ids
       end
     end
@@ -85,6 +95,7 @@ describe OpsController do
 
     before do
       session = instance_double('ApplicationController', :session => {:userid => user.userid})
+      ops.instance_variable_set(:@_params, {})
       ops.instance_variable_set(:@current_user, user)
       ops.instance_variable_set(:@_request, session)
     end
@@ -106,6 +117,29 @@ describe OpsController do
       automate_request = ops.fetch_automate_request_vars(schedule_new)
       expect(schedule_new.filter).to be_nil
       expect(automate_request[:object_request]).to eq ""
+    end
+
+    context 'setting targets' do
+      let(:schedule) { MiqSchedule.new(:filter => {:parameters => {}, :ui => {:ui_object => {:target_class => 'some_class'}}, :uri_parts => {}}) }
+
+      it 'calls targets_from_class to set appropriate targets' do
+        expect(ops).to receive(:targets_from_class).with('some_class')
+        ops.fetch_automate_request_vars(schedule)
+      end
+    end
+  end
+
+  describe '#targets_from_class' do
+    include OpsController::Settings::AutomateSchedules
+    let(:ops) { OpsController.new }
+
+    ['MiqGroup', 'User', 'Tenant'].each do |klass|
+      context "#{klass} class" do
+        it 'sets targets according to the target class' do
+          targets = klass.safe_constantize.all.sort_by { |t| t.name.downcase }.collect { |t| [t.name, t.id.to_s] }
+          expect(ops.targets_from_class(klass)).to eq(targets)
+        end
+      end
     end
   end
 end

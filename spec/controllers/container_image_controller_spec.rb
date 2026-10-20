@@ -1,6 +1,6 @@
 describe ContainerImageController do
   render_views
-  before(:each) do
+  before do
     stub_user(:features => :all)
   end
 
@@ -15,11 +15,8 @@ describe ContainerImageController do
   it "when Check Compliance is pressed with no images" do
     ApplicationController.handle_exceptions = true
 
-    expect(controller).to receive(:check_compliance).and_call_original
-    expect(controller).to receive(:add_flash).with("Error: Record no longer exists in the database", :error, true)
-    expect(controller).to receive(:add_flash).with("Container Image no longer exists", :error)
-    expect(controller).to receive(:add_flash).with("No Container Images were selected for Compliance Check", :error)
     post :button, :params => { :pressed => 'container_image_check_compliance', :format => :js }
+    expect(response.body).to match(/Can.+t access records without an id/)
   end
 
   it 'renders edit container image tags' do
@@ -38,7 +35,7 @@ describe ContainerImageController do
 
   it "renders show screen" do
     EvmSpecHelper.create_guid_miq_server_zone
-    ems = FactoryGirl.create(:ems_kubernetes)
+    ems = FactoryBot.create(:ems_kubernetes)
     container_image = ContainerImage.create(:ext_management_system => ems, :name => "Test Image")
     get :show, :params => { :id => container_image.id }
     expect(response.status).to eq(200)
@@ -52,19 +49,18 @@ describe ContainerImageController do
   describe "#show" do
     before do
       EvmSpecHelper.create_guid_miq_server_zone
-      login_as FactoryGirl.create(:user)
-      @image = FactoryGirl.create(:container_image)
+      login_as FactoryBot.create(:user_with_group)
+      @image = FactoryBot.create(:container_image)
     end
 
-    subject { get :show, :id => @image.id }
+    subject { get :show, :params => { :id => @image.id } }
 
     context "render" do
       render_views
 
       it do
         is_expected.to have_http_status 200
-        is_expected.to render_template(:partial => "layouts/listnav/_container_image")
-        is_expected.to render_template('shared/summary/_textual_multilabel')
+        is_expected.to render_template('layouts/_textual_groups_generic')
       end
     end
   end

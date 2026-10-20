@@ -1,0 +1,35 @@
+import PropTypes from 'prop-types';
+import LineChartGraph from './lineChart';
+import AreaChartGraph from './areaChart';
+import GroupBarChart from './groupChart';
+import { getConvertedData, getLineConvertedData } from '../carbon-charts/helpers';
+import EmptyChart from '../dashboard-widgets/dashboard-charts/emptyChart';
+
+const PerformanceChartWidget = ({
+  data = null,
+  _id = null,
+  size = '400px',
+  title = '',
+}) => {
+  let convertedData = getLineConvertedData(data);
+  if (data.miq && data.miq.empty) {
+    return (<EmptyChart />);
+  }
+  if (data.miqChart === 'Area') {
+    return (<AreaChartGraph data={convertedData} format={data.miq.format} size={size} title={title} />);
+  }
+  if ((data.miqChart === 'StackedColumn' || data.miqChart === 'Column') && !data.data.groups) {
+    convertedData = getConvertedData(data);
+    return (<GroupBarChart data={convertedData} format={data.miq.format} size={size} title={title} />);
+  }
+  return (<LineChartGraph data={convertedData} format={data.miq.format} size={size} title={title} />);
+};
+
+PerformanceChartWidget.propTypes = {
+  data: PropTypes.instanceOf(Object),
+  _id: PropTypes.string,
+  size: PropTypes.string,
+  title: PropTypes.string,
+};
+
+export default PerformanceChartWidget;

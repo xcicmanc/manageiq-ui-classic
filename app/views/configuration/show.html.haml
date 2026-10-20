@@ -1,11 +1,10 @@
 #main_div
   - case @tabform
   - when 'ui_1'
-    = render :partial => 'ui_1'
-  - when 'ui_2'
-    = render :partial => 'ui_2'
+    %div{:id => @labels[0], 'role' => 'tabpanel', 'aria-labelledby' => '1'}
+      = render :partial => "layouts/flash_msg"
+      = react 'VisualSettingsForm', :recordId => current_user.id.to_s
   - when 'ui_3'
     = render :partial => 'ui_3'
   - when 'ui_4'
     = render :partial => 'ui_4'
-

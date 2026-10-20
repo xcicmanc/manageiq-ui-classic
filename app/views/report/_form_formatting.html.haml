@@ -4,7 +4,7 @@
     = _('PDF Output')
   .form-horizontal
     .form-group
-      %label.control-label.col-md-2
+      %label.control-label.col-md-2.report-col
         = _('Page Size')
       .col-md-8
         = select_tag('pdf_page_size',
@@ -40,7 +40,7 @@
             - ci = MiqReport.get_col_info(f.last.split("__").first)
             - unless ci[:available_formats].blank?
               -# need to gsub the period out of the field name for pull down or observe doesn't work, replacing with "__"
-              - opts = [["<#{_('None')}>", "_none_"], ["<#{_('Reset to Default')}>", nil]] + Array(ci[:available_formats].invert).sort_by(&:first)
+              - opts = [["<#{_('None')}>", "_none_"], ["<#{_('Reset to Default')}>", nil]] + Array(ci[:available_formats].invert).sort_by(&:first).map{|format| [_(format[0]), format[1]]}
               = select_tag("fmt_#{f.last.gsub(".", "___")}",
                 options_for_select(opts, @edit[:new][:col_formats][f.last] || ci[:default_format]),
                 "data-miq_sparkle_on" => true,

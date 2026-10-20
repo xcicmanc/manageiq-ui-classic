@@ -1,0 +1,934 @@
+import {
+  SELECT_OPTIONS,
+  TAB_LABELS,
+  VALIDATION_MESSAGES,
+  PROVIDER_TYPES,
+  REGION_OPTIONS,
+  FLASH_MESSAGES,
+  getProviderFactoryConfig,
+} from '../../e2e/ui/Compute/Clouds/Providers/provider-factory';
+import { flashClassMap } from '../assertions/assertion_constants';
+
+/**
+ * Transforms any text string into a slug format using the given seperator('-', '_')
+ * @param {*} text
+ * @param {*} separator
+ * @example slugifyWith("Cloud Provider Name", "_")
+ * will return "cloud_provider_name"
+ */
+function slugifyWith(text, separator) {
+  return text.toLowerCase().replace(/\s+/g, separator);
+}
+
+/**
+ * Fills common form fields that are present in all provider forms
+ * @param {Object} providerConfig - The provider configuration object
+ */
+function fillCommonFormFields(providerConfig) {
+  const commonValues = providerConfig.formValues.common;
+  cy.getFormSelectFieldById({ selectId: 'type' }).select(commonValues.type);
+  cy.getFormInputFieldByIdAndType({ inputId: 'name' }).type(commonValues.name);
+  cy.getFormSelectFieldById({ selectId: 'zone_id' }).select(commonValues.zone_id);
+}
+
+/**
+ * Fills form fields based on field definitions and values
+ * @param {Array} fields - Array of field definition objects
+ * @param {Object} values - Object containing field values
+ */
+function fillFormFields(fields, values) {
+  fields.forEach((field) => {
+    if (!values[field.id]) return;
+
+    switch (field.type) {
+      case 'select':
+        cy.getFormSelectFieldById({ selectId: field.id }).select(
+          values[field.id]
+        );
+        break;
+      case 'text':
+        cy.getFormInputFieldByIdAndType({ inputId: field.id }).type(
+          values[field.id]
+        );
+        break;
+      case 'number':
+        cy.getFormInputFieldByIdAndType({
+          inputId: field.id,
+          inputType: 'number',
+        })
+          .clear()
+          .type(values[field.id]);
+        break;
+      case 'password':
+        cy.getFormInputFieldByIdAndType({
+          inputId: field.id,
+          inputType: 'password',
+        }).type(values[field.id]);
+        break;
+      case 'textarea':
+        cy.getFormTextareaById({ textareaId: field.id }).type(values[field.id]);
+        break;
+      case 'toggle_button':
+        if (values[field.id]) {
+          cy.getFormToggleButtonById({ toggleId: field.id }).click();
+        }
+        break;
+      default:
+        break;
+    }
+  });
+}
+
+/**
+ * Fills a provider form based on provider configuration
+ * @param {Object} providerConfig - The provider configuration object
+ */
+Cypress.Commands.add(
+  'fillProviderForm',
+  (providerConfig) => {
+    fillCommonFormFields(providerConfig);
+    const defaultTabKey = slugifyWith(TAB_LABELS.DEFAULT, '_');
+    const defaultTabFormFields = providerConfig.formFields[defaultTabKey];
+    const defaultTabFormValues = providerConfig.formValues[defaultTabKey];
+    if (defaultTabFormFields && defaultTabFormValues) {
+      fillFormFields(defaultTabFormFields, defaultTabFormValues);
+    }
+  }
+);
+
+/**
+ * Validates common form fields that are present in all provider forms
+ * @param {Object} providerConfig - The provider configuration object
+ * @param {boolean} isEdit - Whether the form is in edit mode
+ */
+function validateCommonFormFields(providerConfig, isEdit) {
+  const commonFields = providerConfig.formFields.common;
+
+  commonFields.forEach((field) => {
+    const labelElement = cy.getFormLabelByForAttribute({ forValue: field.id })
+      .should('be.visible')
+      .and('contain.text', field.label);
+
+    // Validate required field indicator (asterisk)
+    if (field.required) {
+      labelElement.find('span.ddorg__carbon-component-mapper_is-required')
+        .should('be.visible')
+        .and('contain.text', '*');
+    }
+
+    switch (field.type) {
+      case 'select':
+        if (field.id === 'type' && isEdit) {
+          // Type field is disabled in edit mode
+          cy.getFormSelectFieldById({ selectId: field.id })
+            .should('be.visible')
+            .and('be.disabled')
+            .find('option:selected')
+            .should('have.text', providerConfig.type);
+        } else {
+          cy.getFormSelectFieldById({ selectId: field.id })
+            .should('be.visible')
+            .and('be.enabled');
+          // Select the type if it's the type field in add mode
+          if (field.id === 'type' && !isEdit) {
+            cy.interceptApi({
+              alias: 'providerOptionsApi',
+              method: 'OPTIONS',
+              urlPattern: '/api/providers?type=*',
+              triggerFn: () => {
+                cy.getFormSelectFieldById({ selectId: field.id }).select(
+                  providerConfig.type
+                );
+                // Ensure add button stays disabled immediately after type selection
+                cy.getFormButtonByTypeWithText({
+                  buttonText: 'Add',
+                  buttonType: 'submit',
+                }).then((addButton) => {
+                  expect(addButton).to.be.disabled;
+                });
+              },
+              onApiResponse: () => {
+                // Verify add button remains disabled after API completes
+                cy.getFormButtonByTypeWithText({
+                  buttonText: 'Add',
+                  buttonType: 'submit',
+                }).then((addButton) => {
+                  expect(addButton).to.be.disabled;
+                });
+              },
+            });
+          }
+        }
+        break;
+      case 'text':
+        cy.getFormInputFieldByIdAndType({ inputId: field.id })
+          .should('be.visible')
+          .and('be.enabled');
+        break;
+      default:
+        break;
+    }
+  });
+}
+
+/**
+ * Validates form fields based on field definitions
+ * @param {Array} fields - Array of field definition objects
+ * @param {boolean} isEdit - Whether the form is in edit mode
+ */
+function validateFormFields(fields, isEdit) {
+  fields.forEach((field) => {
+    // Skip label validation for placeholder fields in edit mode
+    if (!(isEdit && field.isPlaceholderInEditMode)) {
+      const labelElement = cy.getFormLabelByForAttribute({ forValue: field.id })
+        .scrollIntoView()
+        .should('be.visible')
+        .and('contain.text', field.label);
+
+      // Validate required field indicator (asterisk)
+      if (field.required) {
+        labelElement.find('.ddorg__carbon-component-mapper_is-required')
+          .should('be.visible')
+          .and('contain.text', '*');
+      }
+    }
+
+    switch (field.type) {
+      case 'select':
+        cy.getFormSelectFieldById({ selectId: field.id })
+          .should('be.visible')
+          .and('be.enabled');
+        break;
+      case 'text':
+        cy.getFormInputFieldByIdAndType({ inputId: field.id })
+          .should('be.visible')
+          .and('be.enabled');
+        break;
+      case 'number':
+        cy.getFormInputFieldByIdAndType({
+          inputId: field.id,
+          inputType: 'number',
+        })
+          .should('be.visible')
+          .and('be.enabled');
+        break;
+      case 'password':
+        // Password fields appear as disabled placeholders in edit mode
+        // with a legend instead of a label, and have a different ID format
+        if (isEdit && field.isPlaceholderInEditMode) {
+          cy.getFormLegendByText({ legendText: field.label });
+          cy.getFormInputFieldByIdAndType({
+            inputId: `${field.id}-password-placeholder`,
+            inputType: 'password',
+          })
+            .should('be.visible')
+            .and('be.disabled');
+        } else {
+          cy.getFormInputFieldByIdAndType({
+            inputId: field.id,
+            inputType: 'password',
+          })
+            .should('be.visible')
+            .and('be.enabled');
+        }
+        break;
+      case 'textarea':
+        // Similar to password fields, Auth key fields appear as disabled
+        // placeholders with a legend instead of a label
+        if (isEdit && field.isPlaceholderInEditMode) {
+          cy.getFormLegendByText({ legendText: field.label });
+          cy.getFormInputFieldByIdAndType({
+            inputId: `${field.id}-password-placeholder`,
+            inputType: 'password',
+          })
+            .should('be.visible')
+            .and('be.disabled');
+        } else {
+          cy.getFormTextareaById({ textareaId: field.id })
+            .should('be.visible')
+            .and('be.enabled');
+        }
+        break;
+      case 'toggle_button':
+        cy.getFormToggleButtonById({ toggleId: field.id })
+          .should('be.enabled');
+        break;
+      default:
+        break;
+    }
+  });
+}
+
+/**
+ * Validates form buttons (validate, add/save, reset, cancel)
+ * @param {string} providerType - Type of provider to be validated
+ * @param {boolean} isEdit - Whether the form is in edit mode
+ */
+function validateProviderFormButtons(providerType, isEdit) {
+  cy.getFormButtonByTypeWithText({
+    buttonText: 'Validate',
+  })
+    .scrollIntoView()
+    .should('be.visible')
+    .and('be.disabled');
+  // TODO: Confirm why the Save button for "IBM Cloud VPC" is enabled in edit mode even when no changes are made
+  const saveButtonAssertionText =
+    isEdit && providerType === PROVIDER_TYPES.IBM_CLOUD_VPC
+      ? 'be.enabled'
+      : 'be.disabled';
+  cy.getFormButtonByTypeWithText({
+    buttonText: isEdit ? 'Save' : 'Add',
+    buttonType: 'submit',
+  })
+    .should('be.visible')
+    .and(saveButtonAssertionText);
+  if (isEdit) {
+    const resetButtonEnabledProviderTypes = [
+      PROVIDER_TYPES.VMWARE_VCLOUD,
+      PROVIDER_TYPES.IBM_CLOUD_VPC,
+      PROVIDER_TYPES.IBM_CIC,
+      PROVIDER_TYPES.OPENSTACK,
+    ];
+    const resetButtonAssertionText = resetButtonEnabledProviderTypes.includes(
+      providerType
+    )
+      ? 'be.enabled'
+      : 'be.disabled';
+    cy.getFormButtonByTypeWithText({ buttonText: 'Reset' })
+      .should('be.visible')
+      .and(resetButtonAssertionText);
+  }
+  cy.getFormButtonByTypeWithText({ buttonText: 'Cancel' })
+    .should('be.visible')
+    .and('be.enabled');
+}
+
+/**
+ * Handles special tab setup requirements before validation
+ * Some tabs require selecting specific values in dropdowns before other fields become visible
+ * @param {string} tab - The tab name
+ * @param {Object} providerConfig - The provider configuration
+ */
+function setupTabForValidation(tab, providerConfig) {
+  if (tab === TAB_LABELS.DEFAULT) {
+    if (providerConfig.fieldSelectionValues.default) {
+      const eventStreamValues =
+        providerConfig.fieldSelectionValues.default.event_stream_selection;
+      cy.getFormSelectFieldById({
+        selectId: 'api_version',
+      }).select(providerConfig.fieldSelectionValues.default.api_version);
+      cy.getFormSelectFieldById({
+        selectId: 'event_stream_selection',
+        // TODO: Enhance to sequentially select values and validate their associated
+        // fields before moving to the next(like in IBM CIC & Openstack)
+      }).select(eventStreamValues[0]);
+    }
+  } else if (tab === TAB_LABELS.EVENTS) {
+    if (providerConfig.fieldSelectionValues.events) {
+      if (providerConfig.fieldSelectionValues.events.event_stream_selection) {
+        const eventStreamValues =
+          providerConfig.fieldSelectionValues.events.event_stream_selection;
+        cy.getFormSelectFieldById({
+          selectId: 'event_stream_selection',
+          // TODO: Enhance to sequentially select values and validate their
+          // associated fields, if necessary in events tab
+        }).select(eventStreamValues[0]);
+      } else if (providerConfig.fieldSelectionValues.events.events_selection) {
+        cy.getFormSelectFieldById({
+          selectId: 'events_selection',
+        }).select(providerConfig.fieldSelectionValues.events.events_selection);
+      }
+    }
+  } else if (tab === TAB_LABELS.METRICS) {
+    // For IBM Cloud VPC and other providers with metrics_selection
+    if (providerConfig.fieldSelectionValues.metrics) {
+      if (providerConfig.fieldSelectionValues.metrics.metrics_selection) {
+        cy.getFormSelectFieldById({ selectId: 'metrics_selection' }).select(
+          providerConfig.fieldSelectionValues.metrics.metrics_selection
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Validates a provider form based on provider configuration
+ * @param {Object} providerConfig - The provider configuration object
+ * @param {boolean} isEdit - Whether the form is in edit mode
+ */
+Cypress.Commands.add('validateProviderFormFields', (providerConfig, isEdit) => {
+  validateCommonFormFields(providerConfig, isEdit);
+  providerConfig.tabs.forEach((tab) => {
+    // If not on the default tab, switch to it
+    if (tab !== TAB_LABELS.DEFAULT) {
+      cy.tabs({ tabLabel: tab });
+    }
+    // Set up the tab for validation (select required dropdown values)
+    setupTabForValidation(tab, providerConfig);
+    const tabKeyCorrespondingToTabName = slugifyWith(tab, '_');
+    if (providerConfig.formFields[tabKeyCorrespondingToTabName]) {
+      validateFormFields(
+        providerConfig.formFields[tabKeyCorrespondingToTabName],
+        isEdit
+      );
+    }
+  });
+  // Switch back to default tab
+  if (providerConfig.tabs.length > 1) {
+    cy.tabs({ tabLabel: TAB_LABELS.DEFAULT });
+  }
+  validateProviderFormButtons(providerConfig.type, isEdit);
+});
+
+/**
+ * Updates provider fields for edit validation tests based on provider type
+ * @param {Object} providerType - The provider type
+ */
+function updateProviderFieldsForEdit(providerType) {
+  // Different providers need different fields updated for validation
+  switch (providerType) {
+    case PROVIDER_TYPES.VMWARE_VCLOUD:
+      cy.getFormSelectFieldById({ selectId: 'api_version' }).select(
+        SELECT_OPTIONS.API_VERSION_V9
+      );
+      break;
+    case PROVIDER_TYPES.ORACLE_CLOUD:
+      cy.getFormSelectFieldById({ selectId: 'provider_region' }).select(
+        REGION_OPTIONS.MELBOURNE
+      );
+      break;
+    case PROVIDER_TYPES.IBM_CLOUD_VPC:
+      cy.getFormSelectFieldById({ selectId: 'provider_region' }).select(
+        REGION_OPTIONS.SPAIN
+      );
+      break;
+    case PROVIDER_TYPES.IBM_POWER_SYSTEMS:
+      cy.getFormInputFieldByIdAndType({ inputId: 'uid_ems' }).type('-xr4q');
+      break;
+    case PROVIDER_TYPES.GOOGLE_COMPUTE:
+      cy.getFormInputFieldByIdAndType({ inputId: 'project' }).type('-76g1');
+      break;
+    case PROVIDER_TYPES.AZURE_STACK:
+    case PROVIDER_TYPES.IBM_POWERVC:
+    case PROVIDER_TYPES.IBM_CIC:
+    case PROVIDER_TYPES.OPENSTACK:
+      cy.getFormSelectFieldById({
+        selectId: 'endpoints.default.security_protocol',
+      }).select(SELECT_OPTIONS.SECURITY_PROTOCOL_NON_SSL);
+      break;
+    case PROVIDER_TYPES.AZURE:
+      cy.getFormSelectFieldById({ selectId: 'provider_region' }).select(
+        REGION_OPTIONS.CENTRAL_US
+      );
+      break;
+    case PROVIDER_TYPES.AMAZON_EC2:
+      cy.getFormSelectFieldById({ selectId: 'provider_region' }).select(
+        REGION_OPTIONS.ASIA_PACIFIC
+      );
+      break;
+    default:
+  }
+}
+
+/**
+ * Selects a created provider from the data table
+ * @param {string} providerName - The name of the provider to select
+ */
+function selectCreatedProvider(providerName) {
+  // Set pagination to 200 items per page to include the target provider despite pending deletions
+  cy.get(
+    '.miq-fieldset-content .miq-pagination .cds--pagination__left select'
+  ).select('200');
+  cy.selectTableRowsByText({ textArray: [providerName] });
+}
+
+/**
+ * Intercepts the API call when adding a provider and handles special case for Azure Stack
+ *
+ * This command intercepts the POST request to '/api/providers' that occurs when adding a provider.
+ * For Azure Stack providers, it allows the request to reach the server (so data is created) but then
+ * overrides the response status code to 200 (OK). This is necessary because the server would normally
+ * return a 500 error when using mock values for fields like host, port, etc. in test environments.
+ *
+ * The command automatically triggers the form submission by clicking the 'Add' button.
+ *
+ * @param {Object} options - Options for the interception
+ * @param {boolean} [options.isAzureStack=false] - Whether the provider is Azure Stack, which requires
+ *                                                special response handling
+ */
+Cypress.Commands.add(
+  'interceptAddProviderApi',
+  ({ isAzureStack = false } = {}) => {
+    cy.interceptApi({
+      alias: 'addProviderApi',
+      urlPattern: '/api/providers',
+      triggerFn: () =>
+        cy
+          .getFormButtonByTypeWithText({
+            buttonText: 'Add',
+            buttonType: 'submit',
+          })
+          .click()
+          .then((addButton) => {
+            // Immediately check button state after click to verify it's disabled during API call
+            expect(addButton).to.be.disabled;
+          }),
+      responseInterceptor: (req) => {
+        if (isAzureStack) {
+          // Let the request go through to the server(so that the data is created) and then override
+          // the response statusCode to 200, server will return internal_server_error(500) since we are
+          // using mock values for fields like host, port, etc.
+          req.continue((res) => {
+            // Delay is required to validate button state, otherwise response is returned immediately
+            res.setDelay(500);
+            res.send(200);
+          });
+        } else {
+          req.on('response', (res) => {
+            // Delay is required to validate button state, otherwise response is returned immediately
+            res.setDelay(500);
+          });
+        }
+      },
+    });
+  }
+);
+
+/**
+ * Opens the edit form for a provider that was created
+ * @param {Object} providerConfig - The provider configuration object
+ * @param {boolean} isAzureStack - Whether the provider is Azure Stack, which requires special handling when opening edit form
+ */
+function openEditFormForCreatedProvider(
+  providerConfig,
+  isAzureStack
+) {
+  const nameValue = providerConfig.formValues.common.name;
+  selectCreatedProvider(nameValue);
+  // Azure-Stack needs to be handled differently, add similar cases if needed
+  // These APIs help populate the form fields
+  if (isAzureStack) {
+    const hostValue = providerConfig.formValues.default?.['endpoints.default.hostname'];
+    // TODO: Switch to cy.interceptApi once its enhanced to support multiple api intercepts from a single event
+    cy.intercept(
+      'GET',
+      /\/api\/providers\/(\d+)\?attributes=endpoints,authentications/,
+      (req) => {
+        const providerId = req.url.match(/\/api\/providers\/(\d+)\?/)[1];
+        req.continue((res) => {
+          res.send(200, {
+            id: providerId,
+            type: 'ManageIQ::Providers::AzureStack::CloudManager',
+            name: nameValue,
+            zone_id: '2',
+            uid_ems: providerConfig.formValues.default.uid_ems,
+            subscription: providerConfig.formValues.default.subscription,
+            api_version: providerConfig.formValues.default.api_version,
+            endpoints: [
+              {
+                role: 'default',
+                hostname: hostValue,
+                port: providerConfig.formValues.default[
+                  'endpoints.default.port'
+                ],
+                security_protocol:
+                  providerConfig.formValues.default[
+                    'endpoints.default.security_protocol'
+                  ],
+              },
+            ],
+            authentications: [
+              {
+                authtype: 'default',
+                userid:
+                  providerConfig.formValues.default[
+                    'authentications.default.userid'
+                  ],
+              },
+            ],
+          });
+        });
+      }
+    ).as('getProviderFieldValuesApi');
+    cy.intercept(
+      'GET',
+      '/api/zones?expand=resources&attributes=id,name,visible&filter[]=visible!=false&sort_by=name',
+      (req) => {
+        req.continue((res) => {
+          res.send(200, {
+            name: 'zones',
+            count: 2,
+            subcount: 1,
+            subquery_count: 1,
+            pages: 1,
+            resources: [
+              {
+                href: 'http://localhost:3000/api/zones/2',
+                id: '2',
+                name: SELECT_OPTIONS.ZONE_DEFAULT,
+                visible: true,
+              },
+            ],
+          });
+        });
+      }
+    ).as('getZoneDropdownOptionsApi');
+    cy.toolbar('Configuration', 'Edit Selected Cloud Provider');
+    cy.wait('@getProviderFieldValuesApi');
+    cy.wait('@getZoneDropdownOptionsApi');
+  } else {
+    cy.toolbar('Configuration', 'Edit Selected Cloud Provider');
+  }
+}
+
+/**
+ * Asserts validation failure message
+ */
+function assertValidationFailureMessage() {
+  cy.contains('.ddorg__carbon-error-helper-text', VALIDATION_MESSAGES.FAILED);
+}
+
+/**
+ * Asserts validation success message
+ */
+function assertValidationSuccessMessage() {
+  return cy.contains('.cds--form__helper-text', VALIDATION_MESSAGES.SUCCESSFUL);
+}
+
+/**
+ * Asserts name already exists error
+ */
+function assertNameAlreadyExistsError() {
+  return cy.expect_inline_field_errors({
+    containsText: VALIDATION_MESSAGES.NAME_ALREADY_EXISTS,
+  });
+}
+
+/**
+ * Performs validation with optional error response stubbing
+ * @param {boolean} stubErrorResponse - Whether to stub an error response
+ * @param {string} errorMessage - The error message to show
+ */
+Cypress.Commands.add(
+  'providerValidation',
+  ({ stubErrorResponse, errorMessage }) => {
+    cy.contains(
+      '.ddorg__carbon-error-helper-text',
+      VALIDATION_MESSAGES.VALIDATION_REQUIRED
+    ).should('be.visible');
+    let response = { state: 'Finished', status: 'Error' };
+    if (stubErrorResponse) {
+      response = {
+        ...response,
+        message: errorMessage,
+      };
+    } else {
+      response = { ...response, status: 'Ok', task_results: {} };
+    }
+    // not using cy.interceptApi because each validate call requires a fresh alias registration,
+    // reusing the same intercept callback results in it returning the first response object
+    cy.intercept('GET', '/api/tasks/*?attributes=task_results', response).as(
+      'validateApi'
+    );
+    cy.getFormButtonByTypeWithText({
+      buttonText: 'Validate',
+    }).click();
+    cy.wait('@validateApi');
+  }
+);
+
+/**
+ * Deletes a provider with optional flash message check
+ * @param {string} createdProviderName - The name of the provider to delete
+ * @param {boolean} assertDeleteFlashMessage - Whether to assert the delete flash message
+ */
+function selectProviderAndDeleteWithOptionalFlashMessage({
+  createdProviderName,
+  assertDeleteFlashMessage,
+}) {
+  selectCreatedProvider(createdProviderName);
+  cy.interceptApi({
+    alias: 'deleteProviderApi',
+    urlPattern: '/ems_cloud/button?pressed=ems_cloud_delete',
+    triggerFn: () =>
+      cy.expect_browser_confirm_with_text({
+        confirmTriggerFn: () =>
+          cy.toolbar('Configuration', 'Remove Cloud Providers from Inventory'),
+        containsText: 'removed',
+      }),
+    onApiResponse: () => {
+      if (assertDeleteFlashMessage) {
+        cy.expect_flash(flashClassMap.success, 'delete');
+      }
+    },
+  });
+}
+
+/**
+ * Provider Test Generator helpers - Generates test cases for cloud providers
+ * These utilities make it easy to create test cases for different provider types
+ */
+
+/**
+ * Generates a test suite for validating the add form of a provider
+ * @param {Object} providerConfig - The provider configuration object
+ * @param {Object} testOptions - Test configuration options
+ * @param {boolean} testOptions.isAzureStack - Whether the provider is Azure Stack (requires special handling)
+ * @param {boolean} testOptions.isAmazonEc2 - Whether the provider is Amazon EC2 (includes refresh operation test)
+ */
+function generateAddFormValidationTests(providerConfig, testOptions = {}) {
+  const { isAzureStack = false, isAmazonEc2 = false } = testOptions;
+
+  describe(`Validate ${providerConfig.type} add form`, () => {
+    beforeEach(() => {
+      cy.menu('Compute', 'Clouds', 'Providers');
+      cy.toolbar('Configuration', 'Add a New Cloud Provider');
+    });
+
+    it('Validate visibility of elements', () => {
+      cy.validateProviderFormFields(providerConfig, false);
+    });
+
+    it('Should show the error message from the task_results API upon validation failure and validate cancel button behavior', () => {
+      cy.fillProviderForm(providerConfig);
+      // Verify submit button stays disabled after required fields are filled
+      // and before validation is triggered
+      cy.getFormButtonByTypeWithText({
+        buttonText: 'Add',
+        buttonType: 'submit',
+      }).should('be.disabled');
+      cy.providerValidation({
+        stubErrorResponse: true,
+        errorMessage: providerConfig.validationError,
+      });
+      assertValidationFailureMessage();
+      // Verify submit button remains disabled when validation fails
+      cy.getFormButtonByTypeWithText({
+        buttonText: 'Add',
+        buttonType: 'submit',
+      }).should('be.disabled');
+      cy.getFormButtonByTypeWithText({ buttonText: 'Cancel' }).click();
+      cy.expect_flash(
+        flashClassMap.success,
+        FLASH_MESSAGES.OPERATION_CANCELLED
+      );
+    });
+
+    it(`Verify successful validate + add/${isAmazonEc2 ? 'refresh/' : ''}delete operations`, () => {
+      const nameValue = providerConfig.formValues.common.name;
+      cy.fillProviderForm(providerConfig);
+      // Verify submit button stays disabled after required fields are filled
+      // and before validation is triggered
+      cy.getFormButtonByTypeWithText({
+        buttonText: 'Add',
+        buttonType: 'submit',
+      }).should('be.disabled');
+      //Add
+      cy.providerValidation({
+        stubErrorResponse: false,
+      });
+      assertValidationSuccessMessage();
+      // Verify submit button is enabled when validation succeeds
+      cy.getFormButtonByTypeWithText({
+        buttonText: 'Add',
+        buttonType: 'submit',
+      }).should('be.enabled');
+      cy.interceptAddProviderApi({ isAzureStack });
+      cy.expect_flash(flashClassMap.success, FLASH_MESSAGES.OPERATION_SAVED);
+
+      if (isAmazonEc2) {
+        // Refresh
+        selectCreatedProvider(nameValue);
+        cy.expect_browser_confirm_with_text({
+          confirmTriggerFn: () =>
+            cy.toolbar(
+              'Configuration',
+              'Refresh Relationships and Power States'
+            ),
+          containsText: FLASH_MESSAGES.REFRESH_OPERATION,
+        });
+        cy.expect_flash(
+          flashClassMap.success,
+          FLASH_MESSAGES.REFRESH_OPERATION
+        );
+      }
+
+      // Delete
+      // FIXME: remove this block once bug is fixed
+      // Bug: After refresh, config option other than add remains disabled and requires any action to be performed to enable it back
+      /* ==================================================================== */
+      cy.toolbar('Configuration', 'Add a New Cloud Provider');
+      cy.getFormButtonByTypeWithText({ buttonText: 'Cancel' }).click();
+      /* ==================================================================== */
+      selectProviderAndDeleteWithOptionalFlashMessage({
+        createdProviderName: nameValue,
+        assertDeleteFlashMessage: true,
+      });
+    });
+
+    after(() => {
+      cy.appDbState('restore');
+    });
+  });
+}
+
+/**
+ * Generates a test suite for validating the edit form of a provider
+ * @param {Object} providerConfig - The provider configuration object
+ * @param {Object} testOptions - Test configuration options
+ * @param {boolean} testOptions.isAzureStack - Whether the provider is Azure Stack (requires special handling)
+ * @param {boolean} testOptions.isAmazonEc2 - Whether the provider is Amazon EC2
+ */
+function generateEditFormValidationTests(providerConfig, testOptions = {}) {
+  const { factoryName, factoryConfig } = getProviderFactoryConfig(providerConfig);
+  const { isAzureStack = false, isAmazonEc2 = false } = testOptions;
+
+  describe(`Validate ${providerConfig.type} edit form`, () => {
+    beforeEach(() => {
+      cy.appFactories([
+        ['create', factoryName, factoryConfig],
+      ]).then((createdProviderData) => {
+        expect(createdProviderData.length).to.equal(1);
+        cy.menu('Compute', 'Clouds', 'Providers');
+      });
+    });
+
+    it('Validate visibility of elements', () => {
+      openEditFormForCreatedProvider(providerConfig, isAzureStack);
+      cy.validateProviderFormFields(providerConfig, true);
+    });
+
+    if (isAmazonEc2) {
+      it("Should show the error message from the task_results API upon validation failure and validate reset & cancel buttons' behavior", () => {
+        openEditFormForCreatedProvider(providerConfig, false);
+        updateProviderFieldsForEdit(providerConfig.type);
+        // Verify submit button stays disabled after a required field is updated
+        // and before validation is triggered
+        cy.getFormButtonByTypeWithText({
+          buttonText: 'Save',
+          buttonType: 'submit',
+        }).should('be.disabled');
+        cy.providerValidation({
+          stubErrorResponse: true,
+          errorMessage: providerConfig.validationError,
+        });
+        assertValidationFailureMessage();
+        // Verify submit button remains disabled when validation fails
+        cy.getFormButtonByTypeWithText({
+          buttonText: 'Save',
+          buttonType: 'submit',
+        }).should('be.disabled');
+        cy.getFormButtonByTypeWithText({ buttonText: 'Reset' })
+          .should('be.enabled')
+          .click();
+        cy.getFormButtonByTypeWithText({
+          buttonText: 'Cancel',
+        }).click();
+        cy.expect_flash(
+          flashClassMap.success,
+          FLASH_MESSAGES.OPERATION_CANCELLED
+        );
+      });
+    }
+
+    it('Verify successful validate + edit operation', () => {
+      openEditFormForCreatedProvider(providerConfig, isAzureStack);
+      // Update fields based on provider type
+      updateProviderFieldsForEdit(providerConfig.type);
+      // Verify submit button stays disabled after a required field is updated
+      // and before validation is triggered
+      cy.getFormButtonByTypeWithText({
+        buttonText: 'Save',
+        buttonType: 'submit',
+      }).should('be.disabled');
+      cy.providerValidation({
+        stubErrorResponse: false,
+      });
+      assertValidationSuccessMessage();
+      // Verify submit button is enabled when validation succeeds
+      cy.getFormButtonByTypeWithText({
+        buttonText: 'Save',
+        buttonType: 'submit',
+      }).should('be.enabled');
+      // Azure Stack needs to be handled differently, add similar cases if needed
+      if (isAzureStack) {
+        cy.interceptApi({
+          method: 'PATCH',
+          alias: 'editAzureStackProviderApi',
+          urlPattern: /\/api\/providers\/\d+/,
+          triggerFn: () =>
+            cy
+              .getFormButtonByTypeWithText({
+                buttonText: 'Save',
+                buttonType: 'submit',
+              })
+              .should('be.enabled')
+              .click(),
+          responseInterceptor: (req) => {
+            req.continue((res) => {
+              res.send(200);
+            });
+          },
+        });
+      } else {
+        cy.getFormButtonByTypeWithText({
+          buttonText: 'Save',
+          buttonType: 'submit',
+        })
+          .should('be.enabled')
+          .click();
+      }
+      cy.expect_flash(flashClassMap.success, FLASH_MESSAGES.OPERATION_SAVED);
+    });
+
+    afterEach(() => {
+      cy.appDbState('restore');
+    });
+  });
+}
+
+/**
+ * Generates a test suite for validating the name uniqueness of a provider
+ * @param {Object} providerConfig - The provider configuration object
+ */
+function generateNameUniquenessTests(providerConfig) {
+  const { factoryName, factoryConfig } = getProviderFactoryConfig(providerConfig);
+
+  describe(`${providerConfig.type} provider name uniqueness validation`, () => {
+    beforeEach(() => {
+      cy.appFactories([
+        ['create', factoryName, factoryConfig],
+      ]).then((createdProviderData) => {
+        expect(createdProviderData.length).to.equal(1);
+        cy.menu('Compute', 'Clouds', 'Providers');
+        cy.toolbar('Configuration', 'Add a New Cloud Provider');
+      });
+    });
+
+    it('Should display error on duplicate name usage', () => {
+      cy.fillProviderForm(providerConfig);
+      assertNameAlreadyExistsError();
+    });
+
+    afterEach(() => {
+      cy.appDbState('restore');
+    });
+  });
+}
+
+/**
+ * Generates all test suites for a provider
+ * @param {Object} providerConfig - The provider configuration object
+ */
+export function generateProviderTests(providerConfig) {
+  const testOptions = {
+    isAzureStack: providerConfig.type === PROVIDER_TYPES.AZURE_STACK,
+    isAmazonEc2: providerConfig.type === PROVIDER_TYPES.AMAZON_EC2,
+  };
+
+  describe(`Validate cloud provider type: ${providerConfig.type}`, () => {
+    generateAddFormValidationTests(providerConfig, testOptions);
+    generateEditFormValidationTests(providerConfig, testOptions);
+    generateNameUniquenessTests(providerConfig, testOptions);
+  });
+}

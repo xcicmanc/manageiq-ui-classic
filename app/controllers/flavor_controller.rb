@@ -6,11 +6,12 @@ class FlavorController < ApplicationController
 
   include Mixins::GenericListMixin
   include Mixins::GenericShowMixin
-  include Mixins::GenericButtonMixin
   include Mixins::GenericSessionMixin
+  include Mixins::EmsCommon
+  include Mixins::BreadcrumbsMixin
 
   def self.display_methods
-    %w(instances)
+    %w[instances]
   end
 
   def new
@@ -20,18 +21,10 @@ class FlavorController < ApplicationController
     @id = 'new'
   end
 
-  def button
-    case params[:pressed]
-    when 'flavor_create' then javascript_redirect(:action => 'new')
-    when 'flavor_delete' then delete_flavors
-    when 'flavor_tag'    then tag(Flavor)
-    end
-  end
-
   def ems_list
     assert_privileges('flavor_create')
-    ems_list = ManageIQ::Providers::CloudManager.select do |ems|
-      ems.class::Flavor.supports?(:create)
+    ems_list = Rbac::Filterer.filtered(ManageIQ::Providers::CloudManager).select do |ems|
+      ems.class::Flavor.supports?(:create) if ems.class.constants.include?(:Flavor)
     end
     ems_list.each do |ems|
       {:name => ems.name, :id => ems.id}
@@ -39,28 +32,46 @@ class FlavorController < ApplicationController
     render :json => {:ems_list => ems_list}
   end
 
+  def cloud_tenants
+    assert_privileges('flavor_create')
+    cloud_tenants = Rbac::Filterer.filtered(CloudTenant)
+    render :json => {:cloud_tenants => cloud_tenants}
+  end
+
+  def download_data
+    assert_privileges('flavor_show_list')
+    super
+  end
+
+  def download_summary_pdf
+    assert_privileges('flavor_show')
+    super
+  end
+
   private
 
   def textual_group_list
-    [%i(properties relationships), %i(tags)]
+    [%i[properties relationships], %i[tags]]
   end
   helper_method :textual_group_list
 
   def delete_flavors
-    assert_privileges('flavor_delete')
-    flavors = find_records_with_rbac(Flavor, checked_or_params)
-    flavors.each do |flavor|
-      begin
-        flavor.delete_flavor_queue(User.current_user.id)
-        add_flash(_("Delete of Flavor \"%{name}\" was successfully initiated.") % {:name => flavor.name})
-      rescue => error
-        add_flash(_("Unable to delete Flavor \"%{name}\": %{details}") % {:name    => flavor.name,
-                                                                          :details => error.message}, :error)
-      end
-    end
+    super
     session[:flash_msgs] = @flash_array
     javascript_redirect(:action => 'show_list')
   end
 
+  def breadcrumbs_options
+    {
+      :breadcrumbs => [
+        {:title => _("Compute")},
+        {:title => _("Clouds")},
+        {:title => _("Flavors"), :url => controller_url},
+      ],
+      :record_info => @flavor,
+    }.compact
+  end
+
   menu_section :clo
+  feature_for_actions "#{controller_name}_show_list", *ADV_SEARCH_ACTIONS
 end

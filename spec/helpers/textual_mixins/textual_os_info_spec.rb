@@ -1,7 +1,7 @@
 describe TextualMixins::TextualOsInfo do
-  let(:host) { FactoryGirl.create(:host) }
+  let(:host) { FactoryBot.create(:host) }
 
-  before(:each) do
+  before do
     assign(:record, host)
   end
 
@@ -14,8 +14,8 @@ describe TextualMixins::TextualOsInfo do
 
     context "with OS" do
       let(:host) do
-        FactoryGirl.create(:host,
-                           :operating_system => FactoryGirl.create(:operating_system,
+        FactoryBot.create(:host,
+                           :operating_system => FactoryBot.create(:operating_system,
                                                                    :product_name => "rhel-7x64"))
       end
 

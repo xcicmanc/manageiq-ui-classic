@@ -1,35 +1,24 @@
 class TreeBuilderComplianceHistory < TreeBuilder
   has_kids_for Compliance, [:x_get_compliance_kids]
-  has_kids_for ComplianceDetail, [:x_get_compliance_detail_kids, :parents]
+  has_kids_for ComplianceDetail, %i[x_get_compliance_detail_kids parents]
 
-  def override(node, _object, _pid, _options)
-    node[:selectable] = false
+  def override(node, _object)
+    node.selectable = false
   end
 
-  def initialize(name, type, sandbox, build = true, root = nil)
-    sandbox[:ch_root] = TreeBuilder.build_node_id(root) if root
-    @root = root
-    unless @root
-      model, id = TreeBuilder.extract_node_model_and_id(sandbox[:ch_root])
-      @root = model.constantize.find_by(:id => id)
-    end
-    super(name, type, sandbox, build)
+  def initialize(name, sandbox, build = true, **params)
+    @root = params[:root]
+    super(name, sandbox, build)
   end
 
   private
 
-  def tree_init_options(_tree_name)
-    {:full_ids => true,
-     :add_root => false,
-     :lazy     => false}
+  def tree_init_options
+    {:full_ids => true}
   end
 
-  def root_options
-    {}
-  end
-
-  def x_get_tree_roots(count_only = false, _options = {})
-    count_only_or_objects(count_only, @root.compliances.order("timestamp DESC").limit(10))
+  def x_get_tree_roots
+    count_only_or_objects(false, @root.compliances.order("timestamp DESC").limit(10))
   end
 
   def x_get_compliance_kids(parent, count_only)
@@ -60,8 +49,7 @@ class TreeBuilderComplianceHistory < TreeBuilder
 
   def x_get_compliance_detail_kids(parent, count_only, parents)
     kids = []
-    model, id = TreeBuilder.extract_node_model_and_id(parents.first)
-    grandpa = model.constantize.find_by(:id => from_cid(id))
+    grandpa = node_by_tree_id(parents.first)
     grandpa.compliance_details.order("miq_policy_desc, condition_desc").each do |node|
       next unless node.miq_policy_id == parent.miq_policy_id
       kids.push(get_policy_elm(parent, node))
@@ -69,7 +57,7 @@ class TreeBuilderComplianceHistory < TreeBuilder
     count_only_or_objects(count_only, kids)
   end
 
-  def x_get_tree_custom_kids(_parent, count_only, _options)
+  def x_get_tree_custom_kids(_parent, count_only)
     count_only ? 0 : []
   end
 end

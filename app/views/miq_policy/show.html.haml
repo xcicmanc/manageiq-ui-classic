@@ -1,3 +1,25 @@
-#main_div
-  - if @lastaction == "policy_logs"
-    = render :partial => "layouts/log_viewer"
+#policy_details_div
+  -  policy_conditions = @record.conditions
+  -  policy_events = @record.miq_event_definitions
+  -  expression_table = build_expression_table(@record.expression)
+  -  policy_profiles = @record.memberof.sort_by { |pp| pp.description.downcase }
+  #policy_info_div
+    = render :partial => "layouts/flash_msg"
+    -# Description and active fields
+    = miq_summary_policy_basic_information(@record)
+
+    -# Scope
+    = miq_summary_policy_scope(expression_table)
+
+    -# Conditions for this policy
+    = miq_summary_policy_conditions(policy_conditions)
+
+    -# Events for this policy
+    = miq_summary_policy_events(policy_events, @record)
+
+    -# Notes field
+    = miq_summary_policy_notes(@record)
+
+    -# Profiles policy is assigned to
+    = miq_summary_profiles(policy_profiles)
+%br

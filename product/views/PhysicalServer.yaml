@@ -14,18 +14,22 @@ cols:
 - type
 - health_state
 - power_state
-- location_led_state
 - hostname
-- product_name
-- manufacturer
+- asset_detail
+- assigned_server_profile
+- associated_server_profile
 
 
 include:
+  asset_detail:
+    columns:
+    - product_name
+    - manufacturer
+    - location_led_state
 
 
 include_for_find:
   :ext_management_system: {}
-  :compliances: {}
   :tags: {}
 
 
@@ -34,10 +38,12 @@ col_order:
 - type
 - health_state
 - power_state
-- location_led_state
+- asset_detail.location_led_state
 - hostname
-- product_name
-- manufacturer
+- asset_detail.product_name
+- asset_detail.manufacturer
+- assigned_server_profile.name
+- associated_server_profile.name
 
 col_formats:
 -
@@ -52,6 +58,8 @@ headers:
 - Hostname
 - Product Name
 - Manufacturer
+- Assigned Profile
+- Associated Profile
 
 
 conditions:

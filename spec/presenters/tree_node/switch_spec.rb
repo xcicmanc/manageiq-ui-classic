@@ -1,8 +1,6 @@
-require 'shared/presenters/tree_node/common'
-
 describe TreeNode::Switch do
-  subject { described_class.new(object, nil, {}) }
-  let(:object) { FactoryGirl.create(:switch, :name => "light") }
+  subject { described_class.new(object, nil, nil) }
+  let(:object) { FactoryBot.create(:switch, :name => "light") }
 
   include_examples 'TreeNode::Node#key prefix', 'sw-'
   include_examples 'TreeNode::Node#icon', 'ff ff-network-switch'

@@ -13,15 +13,23 @@ module OptimizeHelper
     when "root"
       @record = MiqEnterprise.my_enterprise
     when "mr" # Region
-      @record = MiqRegion.find_by(:id => from_cid(nodeid))
+      @record = MiqRegion.find_by(:id => nodeid)
     when "e"  # Mgmt Sys
-      @record = ExtManagementSystem.find_by(:id => from_cid(nodeid))
+      @record = ExtManagementSystem.find_by(:id => nodeid)
     when "c"  # Cluster
-      @record = EmsCluster.find_by(:id => from_cid(nodeid))
+      @record = EmsCluster.find_by(:id => nodeid)
     when "h"  # Host
-      @record = Host.find_by(:id => from_cid(nodeid))
+      @record = Host.find_by(:id => nodeid)
     when "ds" # Storage
-      @record = Storage.find_by(:id => from_cid(nodeid))
+      @record = Storage.find_by(:id => nodeid)
+    end
+  end
+
+  def download_file(typ, report, filename)
+    case typ
+    when 'txt' then send_data(report.to_text, :filename => "#{filename}.txt")
+    when 'csv' then send_data(report.to_csv, :filename => "#{filename}.csv")
+    when 'pdf' then render_pdf_internal(report)
     end
   end
 end

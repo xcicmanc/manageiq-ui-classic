@@ -1,0 +1,35 @@
+// note that every package mentioned here has to be explicitly required (require/import, not a string name)
+// if not, this fails if babel runs in a plugin repo before it manages to load them
+
+const browsers = require('./package.json').browserslist;
+
+module.exports = {
+  presets: [
+    [
+      require('@babel/preset-env').default,
+      {
+        targets: { browsers },
+      },
+    ],
+    require('@babel/preset-typescript').default,
+    [
+      require('@babel/preset-react').default,
+      {
+        runtime: 'automatic',
+      },
+    ],
+  ],
+  plugins: [
+    [
+      require('babel-plugin-polyfill-corejs3').default,
+      {
+        method: 'entry-global',
+      },
+    ],
+    require('@babel/plugin-transform-class-properties').default,
+    require('@babel/plugin-transform-logical-assignment-operators').default,
+    require('@babel/plugin-transform-optional-chaining').default,
+    require('@babel/plugin-transform-nullish-coalescing-operator').default,
+    require('@babel/plugin-transform-numeric-separator').default,
+  ],
+};

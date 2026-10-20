@@ -13,11 +13,9 @@ module ApplicationController::CiProcessing
     include Mixins::Actions::VmActions::Resize
     include Mixins::Actions::VmActions::RightSize
     include Mixins::Actions::VmActions::Reconfigure
-    helper_method :supports_reconfigure_disks?
+    helper_method(:item_supports?)
     include Mixins::Actions::VmActions::PolicySimulation
-    include Mixins::Actions::VmActions::Transform
 
-    include Mixins::Actions::HostActions::Discover
     include Mixins::Actions::HostActions::Power
     include Mixins::Actions::HostActions::Misc
 
@@ -31,44 +29,29 @@ module ApplicationController::CiProcessing
     db = params[:db] if params[:db]
 
     case params[:pressed]
+    when "cloud_tenant_edit"
+      @redirect_controller = "cloud_tenant"
     when "miq_template_edit"
       @redirect_controller = "miq_template"
     when "image_edit", "instance_edit", "vm_edit"
       @redirect_controller = "vm"
     when "host_edit"
       @redirect_controller = "host"
-      session[:host_items] = obj if obj.length > 1
+      session[:host_items] = obj.length > 1 ? obj : nil
     end
-    @redirect_id = obj[0] if obj.length == 1      # not redirecting to an id if multi host are selected for credential edit
-
-    if !["ScanItemSet", "Condition", "Schedule", "MiqAeInstance"].include?(db)
-      @refresh_partial = "edit"
-      @refresh_partial = "edit_set" if params[:db] == "policyprofile"
-    else
-      if db == "ScanItemSet"
-        scan = ScanItemSet.find(obj[0])
-        if !scan.read_only
-          @refresh_partial = "edit"
-        else
-          @refresh_partial = "show_list_set"
-        end
-      elsif db == "Condition"
-        cond = Condition.find(obj[0])
-        if cond.filename.nil?
-          @refresh_partial = "edit"
-        else
-          @refresh_partial = "show_list"
-        end
-      elsif db == "Schedule" && params[:controller] != "report"
-        sched = MiqSchedule.find(obj[0])
-        @refresh_partial = "edit"
-      elsif db == "Schedule" && params[:controller] == "report"
-        sched = MiqSchedule.find(obj[0])
-        @refresh_partial = "schedule_edit"
-      elsif db == "MiqAeInstance"
-        @refresh_partial = "instance_edit"
-      end
-    end
+    @redirect_id = obj[0] if obj.length == 1 # not redirecting to an id if multi host are selected for credential edit
+    @refresh_partial = case db
+                       when 'ScanItemSet'
+                         ScanItemSet.find(obj[0]).read_only ? 'show_list_set' : 'edit'
+                       when 'Condition'
+                         Condition.find(obj[0]).filename.nil? ? 'edit' : 'show_list'
+                       when 'Schedule'
+                         params[:controller] == 'report' ? 'schedule_edit' : 'edit'
+                       when 'MiqAeInstance'
+                         'instance_edit'
+                       else
+                         params[:db] == 'policyprofile' ? 'edit_set' : 'edit'
+                       end
   end
 
   # copy single selected Object # FIXME: dead code?
@@ -83,7 +66,7 @@ module ApplicationController::CiProcessing
       @host = @record = identify_record(params[:id], Host)
     elsif db == "miq_template"
       @miq_template = @record = identify_record(params[:id], MiqTemplate)
-    elsif ["vm_infra", "vm_cloud", "vm", "vm_or_template"].include?(db)
+    elsif %w[vm_infra vm_cloud vm vm_or_template].include?(db)
       @vm = @record = identify_record(params[:id], VmOrTemplate)
     elsif db == "ems_cloud"
       @ems = @record = identify_record(params[:id], EmsCloud)
@@ -102,28 +85,39 @@ module ApplicationController::CiProcessing
 
   private
 
-  def process_elements(elements, klass, task, display_name = nil, order_field = nil)
-    order_field ||= %w(name description title).find do |field|
-                      klass.column_names.include?(field)
-                    end
+  def vm_button_action
+    method(:process_objects)
+  end
 
-    order_by = order_field == "ems_id" ? order_field : "lower(#{order_field})"
+  def cluster_button_action
+    method(:process_clusters)
+  end
+
+  def storage_button_action
+    method(:process_storage)
+  end
+
+  def process_elements(elements, klass, task, display_name = nil, order_field = nil)
+    order_field ||= %w[name description title].find { |field| klass.column_names.include?(field) }
+
+    order_by = order_field == "ems_id" ? order_field : klass.arel_table[order_field].lower
 
     Rbac.filtered(klass.where(:id => elements).order(order_by)).each do |record|
       name = record.send(order_field.to_sym)
       if task == 'destroy'
+        name = record.send(:description) if klass.name == 'MiqPolicy'
         process_element_destroy(record, klass, name)
       else
         begin
           record.send(task.to_sym) if record.respond_to?(task) # Run the task
-        rescue => bang
+        rescue StandardError => bang
           add_flash(
-            _("%{model} \"%{name}\": Error during '%{task}': %{error_msg}") %
+            _("%{model} \"%{name}\": Error during '%{task}': %{error_message}") %
             {
-              :model     => ui_lookup(:model => klass.name),
-              :name      => get_record_display_name(record),
-              :task      => (display_name || task),
-              :error_msg => bang.message
+              :model         => ui_lookup(:model => klass.name),
+              :name          => get_record_display_name(record),
+              :task          => (display_name || task),
+              :error_message => bang.message
             },
             :error
           )
@@ -142,7 +136,7 @@ module ApplicationController::CiProcessing
   end
 
   def explorer_controller?
-    %w(vm_cloud vm_infra vm_or_template infra_networking).include?(controller_name)
+    %w[vm_cloud vm_infra vm_or_template infra_networking].include?(controller_name)
   end
 
   def process_element_destroy(element, klass, name)
@@ -159,7 +153,7 @@ module ApplicationController::CiProcessing
 
     begin
       element.destroy
-    rescue => bang
+    rescue StandardError => bang
       add_flash(_("%{model} \"%{name}\": Error during delete: %{error_msg}") %
                {:model => model_name, :name => record_name, :error_msg => bang.message}, :error)
     else
@@ -167,7 +161,7 @@ module ApplicationController::CiProcessing
         AuditEvent.success(audit)
         add_flash(_("%{model} \"%{name}\": Delete successful") % {:model => model_name, :name => record_name})
       else
-        error_msg = element.errors.collect { |_attr, msg| msg }.join(';')
+        error_msg = element.errors.collect { |error| error.message }.join(';')
         add_flash(_("%{model} \"%{name}\": Error during delete: %{error_msg}") %
                  {:model => model_name, :name => record_name, :error_msg => error_msg}, :error)
       end
@@ -177,39 +171,36 @@ module ApplicationController::CiProcessing
   # find the record that was chosen
   def identify_record(id, klass = self.class.model)
     begin
-      record = find_record_with_rbac(klass, from_cid(id))
-    rescue ActiveRecord::RecordNotFound
-    rescue => @bang
+      record = find_record_with_rbac(klass, id)
+    rescue StandardError => @bang
       self.x_node = "root" if @explorer
-      add_flash(@bang.message, :error, true)
-      session[:flash_msgs] = @flash_array.dup
+      flash_to_session(@bang.message, :error, true)
     end
     record
   end
 
   def process_show_list(options = {})
     session["#{self.class.session_key_prefix}_display".to_sym] = nil
-    @display  = nil
-    @lastaction  = "show_list"
+    @display = nil
+    @lastaction = "show_list"
     @gtl_url = "/show_list"
 
     model = options.delete(:model) # Get passed in model override
-    @view, @pages = get_view(model || self.class.model, options)  # Get the records (into a view) and the paginator
-    if session[:bc] && session[:menu_click]               # See if we came from a perf chart menu click
+    @view, @pages = get_view(model || self.class.model, options) # Get the records (into a view) and the paginator
+    if session[:bc] && session[:menu_click] # See if we came from a perf chart menu click
       drop_breadcrumb(:name => session[:bc],
                       :url  => url_for_only_path(:controller    => self.class.table_name,
-                                       :action        => "show_list",
-                                       :bc            => session[:bc],
-                                       :sb_controller => params[:sb_controller],
-                                       :menu_click    => session[:menu_click],
-                                       :escape        => false))
+                                                 :action        => "show_list",
+                                                 :bc            => session[:bc],
+                                                 :sb_controller => params[:sb_controller],
+                                                 :menu_click    => session[:menu_click],
+                                                 :escape        => false))
     else
       @breadcrumbs = []
       bc_name = breadcrumb_name(model)
       bc_name += " - " + session["#{self.class.session_key_prefix}_type".to_sym].titleize if session["#{self.class.session_key_prefix}_type".to_sym]
-      bc_name += " (filtered)" if @filters && (!@filters[:tags].blank? || !@filters[:cats].blank?)
-      action = %w(service vm_cloud vm_infra vm_or_template storage service_template).include?(self.class.table_name) ? "explorer" : "show_list"
-      @breadcrumbs.clear
+      bc_name += " (filtered)" if @filters && (@filters[:tags].present? || @filters[:cats].present?)
+      action = %w[service vm_cloud vm_infra vm_or_template storage service_template].include?(self.class.table_name) ? "explorer" : "show_list"
       drop_breadcrumb(:name => bc_name, :url => "/#{controller_name}/#{action}")
     end
     @layout = session["#{self.class.session_key_prefix}_type".to_sym] if session["#{self.class.session_key_prefix}_type".to_sym]
@@ -221,96 +212,10 @@ module ApplicationController::CiProcessing
     ui_lookup(:models => self.class.model.name)
   end
 
-  def check_retire_requirements(selected_items)
-    # FIXME: should check model, not controller
-    return true if %w(orchestration_stack service).include?(controller_name)
-
-    if VmOrTemplate.find(selected_items).any? { |vm| !vm.supports_retire? }
-      javascript_flash(:text => _("Retire does not apply to selected item"), :severity => :error, :scroll_top => true)
-      return false
-    end
-    true
-  end
-
-  def check_scan_requirements(selected_items)
-    unless VmOrTemplate.batch_operation_supported?('smartstate_analysis', selected_items)
-      render_flash_not_applicable_to_model('Smartstate Analysis', ui_lookup(:tables => "vm_or_template"))
-      return false
-    end
-    true
-  end
-
-  def check_reset_requirements(selected_items)
-    if VmOrTemplate.find(selected_items).any? { |vm| !vm.supports_reset? }
-      javascript_flash(:text => _("Reset does not apply to at least one of the selected items"), :severity => :error, :scroll_top => true)
-      return false
-    end
-    true
-  end
-
-  def check_non_empty(items, display_name)
-    if items.blank?
-      add_flash(_("No items were selected for %{task}") % {:task => display_name}, :error)
-      return false
-    end
-    true
-  end
-
-  def vm_button_operation_internal(items, task, display_name)
-    return false if task == 'retire_now' && !check_retire_requirements(items)
-    return false if task == 'scan' && !check_scan_requirements(items)
-    return false if task == 'reset' && !check_reset_requirements(items)
-    return false unless check_non_empty(items, display_name)
-
-    process_objects(items, task, display_name)
-    true
-  end
-
-  # Common item button handler routines
-  def vm_button_operation(task, display_name, partial_after_single_selection = nil)
-    klass = get_rec_cls
-
-    # Either a list or coming from a different controller (e.g. from host screen, go to its vms)
-    if @lastaction == "show_list" ||
-       !%w(service vm_cloud vm_infra vm miq_template vm_or_template).include?(controller_name)
-
-      # FIXME: retrieving vms from DB two times
-      items = find_checked_ids_with_rbac(klass, task)
-
-      vm_button_operation_internal(items, task, display_name) || return
-
-      # In non-explorer case, render the list (filling in @view).
-      if @lastaction == "show_list"
-        show_list unless @explorer
-        @refresh_partial = "layouts/gtl"
-      end
-
-    else # showing 1 item
-      items = [find_id_with_rbac_no_exception(klass, params[:id])].compact
-
-      unless check_non_empty(items, display_name)
-        show_list unless @explorer
-        @refresh_partial = "layouts/gtl"
-        return
-      end
-
-      vm_button_operation_internal(items, task, display_name)
-
-      # Tells callers to go back to show_list because this item may be gone.
-      @single_delete = task == 'destroy' && !flash_errors?
-
-      # For Snapshot Trees
-      if partial_after_single_selection && !@explorer
-        show
-        @refresh_partial = partial_after_single_selection
-      end
-    end
-  end
-
   def process_cloud_object_storage_buttons(pressed)
     assert_privileges(pressed)
 
-    klass = get_rec_cls
+    klass = record_class
     task = pressed.sub("#{klass.name.underscore.to_sym}_", "")
 
     return tag(klass) if task == "tag"
@@ -318,99 +223,49 @@ module ApplicationController::CiProcessing
     cloud_object_store_button_operation(klass, task)
   end
 
-  def check_supports_task(items, klass, task, display_name)
-    if klass.find(items).any? { |item| !item.supports?(task) }
-
+  def cloud_object_store_button_operation(klass, task)
+    display_name = _(task.capitalize)
+    method = "#{klass.name.underscore.to_sym}_#{task}"
+    task = method unless task == 'delete'
+    items = find_records_with_rbac(klass, checked_or_params)
+    unless records_support_feature?(items, task)
       message = if items.length == 1
                   _("%{task} does not apply to this item")
                 else
                   _("%{task} does not apply to at least one of the selected items")
                 end
-
       add_flash(message % {:task => display_name}, :error)
-      return false
+      return
     end
-    true
+    process_objects(items.ids.sort, method, display_name)
   end
 
-  def cloud_object_store_button_operation(klass, task)
-    display_name = _(task.capitalize)
-
-    # Map task to instance method name
-    case task
-    when 'delete'
-      method = "#{task}_#{klass.name.underscore.to_sym}"
-    else
-      method = task = "#{klass.name.underscore.to_sym}_#{task}"
-    end
-
-    items = []
-    # Either a list or coming from a different controller
-    if @lastaction == "show_list" || %w(cloud_object_store_containers cloud_object_store_objects).include?(@display)
-      # FIXME retrieving vms from DB two times
-      items = find_checked_ids_with_rbac(klass)
-
-      return unless check_non_empty(items, display_name)
-      return unless check_supports_task(items, klass, task, display_name)
-
-      process_objects(items, method, display_name)
-    else
-      items = [find_id_with_rbac_no_exception(klass, params[:id])].compact
-
-      unless check_non_empty(items, display_name)
-        show_list unless @explorer
-        @refresh_partial = "layouts/gtl"
-        return
-      end
-
-      return unless check_supports_task(items, klass, task, display_name)
-
-      process_objects(items, method, display_name) unless items.empty?
-    end
-  end
-
-  def get_rec_cls
-    # FIXME: the specs for ci_processing rely on setting (and testing) request.parameters['controller'].
-    # That is wrong and needs to be fixed.
-    case request.parameters["controller"] || controller_name
-    when "miq_template"
-      MiqTemplate
-    when "orchestration_stack"
-      params[:display] == "instances" ? VmOrTemplate : OrchestrationStack
-    when "service"
-      Service
-    when "cloud_object_store_container"
-      params[:pressed].starts_with?("cloud_object_store_object") ? CloudObjectStoreObject : CloudObjectStoreContainer
-    when "cloud_object_store_object"
-      CloudObjectStoreObject
-    when "ems_storage"
-      params[:pressed].starts_with?("cloud_object_store_object") ? CloudObjectStoreObject : CloudObjectStoreContainer
-    else
-      VmOrTemplate
-    end
+  def record_class
+    VmOrTemplate
   end
 
   def process_objects(objs, task, display_name = nil)
-    klass = get_rec_cls
+    klass = record_class
     klass_str = klass.to_s
 
     assert_rbac(klass, objs)
 
     display_name ||= task.titleize
     case klass_str
-    when 'OrchestrationStack', 'Service', 'CloudObjectStoreContainer', 'CloudObjectStoreObject'
-      objs, _objs_out_reg = filter_ids_in_region(objs, klass.to_s)
+    when 'CloudObjectStoreContainer', 'CloudObjectStoreObject'
+      objs, _objs_out_reg = filter_ids_in_region(objs, klass_str)
     when 'VmOrTemplate'
       objs, _objs_out_reg = filter_ids_in_region(objs, "VM") unless VmOrTemplate::REMOTE_REGION_TASKS.include?(task)
       klass = Vm
+    when 'OrchestrationStack', 'Service'
+      objs, _objs_out_reg = filter_ids_in_region(objs, klass_str) unless task == "retire_now"
     end
     return if objs.empty?
 
     options = {:ids => objs, :task => task, :userid => session[:userid]}
-    options[:snap_selected] = session[:snap_selected] if task == "remove_snapshot" || task == "revert_to_snapshot"
-
+    options[:snap_selected] = session[:snap_selected] if %w[remove_snapshot revert_to_snapshot].include?(task)
     klass.process_tasks(options)
-  rescue => err
+  rescue StandardError => err
     add_flash(_("Error during '%{task}': %{error_message}") % {:task => task, :error_message => err.message}, :error)
   else
     add_flash(
@@ -428,13 +283,14 @@ module ApplicationController::CiProcessing
         :models  => ui_lookup(:models => klass.to_s)
       }
     )
+    params[:miq_grid_checks] = [] if task == 'destroy' # Making selected checkboxes array empty when those rows are  deleted in table
   end
 
   def manager_button_operation(method, display_name)
     items = params[:id] ? [params[:id]] : find_checked_items
 
     if items.empty?
-      add_flash(_("No providers were selected for %{task}") % {:task  => display_name}, :error)
+      add_flash(_("No providers were selected for %{task}") % {:task => display_name}, :error)
       return
     end
 
@@ -444,8 +300,8 @@ module ApplicationController::CiProcessing
   def process_managers(managers, task)
     controller_class = request.parameters[:controller]
     provider_class = case controller_class
-                     when 'provider_foreman' then ManageIQ::Providers::ConfigurationManager
-                     when 'automation_manager' then ManageIQ::Providers::AutomationManager
+                     when 'ems_automation' then ManageIQ::Providers::AutomationManager
+                     when 'ems_configuration'  then ManageIQ::Providers::ConfigurationManager
                      end
 
     manager_ids, _services_out_region = filter_ids_in_region(managers, provider_class.to_s)
@@ -456,29 +312,36 @@ module ApplicationController::CiProcessing
     options = {:ids => manager_ids, :task => task, :userid => session[:userid]}
     kls = provider_class.find_by(:id => manager_ids.first).class
     kls.process_tasks(options)
-  rescue => err
-    add_flash(_("Error during '%{task}': %{message}") % {:task => task, :message => err.message}, :error)
+  rescue StandardError => err
+    add_flash(_("Error during '%{task}': %{error_message}") % {:task => task, :error_message => err.message}, :error)
   else
     add_flash(n_("%{task} initiated for %{count} provider",
-                 "%{task} initiated for %{count} providers)", manager_ids.length) %
+                 "%{task} initiated for %{count} providers", manager_ids.length) %
                 {:task  => task_name(task),
                  :count => manager_ids.length})
+    if @lastaction == "show_list"
+      params[:miq_grid_checks] = []
+      show_list
+      @refresh_partial = "layouts/gtl"
+    else
+      params[:display] = @display
+    end
   end
 
   # Delete all selected or single displayed VM(s)
   def deletevms
     assert_privileges(params[:pressed])
-    vm_button_operation('destroy', _('Delete'))
+    generic_button_operation('destroy', _('Delete'), vm_button_action)
   end
-  alias_method :image_delete, :deletevms
-  alias_method :instance_delete, :deletevms
-  alias_method :vm_delete, :deletevms
-  alias_method :miq_template_delete, :deletevms
+  alias image_delete deletevms
+  alias instance_delete deletevms
+  alias vm_delete deletevms
+  alias miq_template_delete deletevms
 
   # Import info for all selected or single displayed vm(s)
   def syncvms
     assert_privileges(params[:pressed])
-    vm_button_operation('sync', _('Virtual Black Box synchronization'))
+    generic_button_operation('sync', _('Virtual Black Box synchronization'), vm_button_action)
   end
 
   DEFAULT_PRIVILEGE = Object.new # :nodoc:
@@ -486,169 +349,217 @@ module ApplicationController::CiProcessing
   # Refresh the power states for selected or single VMs
   def refreshvms(privilege = DEFAULT_PRIVILEGE)
     if privilege == DEFAULT_PRIVILEGE
-      ActiveSupport::Deprecation.warn(<<-MSG.strip_heredoc)
+      Vmdb::Deprecation.warn(<<-MSG.strip_heredoc, caller_locations[1..-1])
       Please pass the privilege you want to check for when refreshing
       MSG
       privilege = params[:pressed]
     end
     assert_privileges(privilege)
-    vm_button_operation('refresh_ems', _('Refresh Provider'))
+    generic_button_operation('refresh_ems', _('Refresh Provider'), vm_button_action)
   end
-  alias_method :image_refresh, :refreshvms
-  alias_method :instance_refresh, :refreshvms
-  alias_method :vm_refresh, :refreshvms
-  alias_method :miq_template_refresh, :refreshvms
+  alias image_refresh refreshvms
+  alias instance_refresh refreshvms
+  alias vm_refresh refreshvms
+  alias miq_template_refresh refreshvms
 
   # Import info for all selected or single displayed vm(s)
   def scanvms
     assert_privileges(params[:pressed])
-    vm_button_operation('scan', _('Analysis'))
+    generic_button_operation('scan', _('Analysis'), vm_button_action)
   end
-  alias_method :image_scan, :scanvms
-  alias_method :instance_scan, :scanvms
-  alias_method :vm_scan, :scanvms
-  alias_method :miq_template_scan, :scanvms
+  alias image_scan scanvms
+  alias instance_scan scanvms
+  alias vm_scan scanvms
+  alias miq_template_scan scanvms
 
   # Immediately retire items
   def retirevms_now
     assert_privileges(params[:pressed])
-    vm_button_operation('retire_now', _('Retirement'))
+    redirect = {
+      :redirect => {
+        :controller => 'miq_request',
+        :action     => 'show_list'
+      }
+    }
+    generic_button_operation('retire_now', _('Retirement'), vm_button_action, role_allows?(:feature => "miq_request_show_list") ? redirect : nil)
   end
-  alias_method :instance_retire_now, :retirevms_now
-  alias_method :vm_retire_now, :retirevms_now
-  alias_method :orchestration_stack_retire_now, :retirevms_now
+  alias instance_retire_now retirevms_now
+  alias vm_retire_now retirevms_now
+  alias orchestration_stack_retire_now retirevms_now
+  alias service_retire_now retirevms_now
 
   def check_compliance_vms
     assert_privileges(params[:pressed])
-    vm_button_operation('check_compliance_queue', _('Check Compliance'))
+
+    records = find_records_with_rbac(record_class, checked_or_params)
+    # Check each record if there is any compliance policy assigned to it
+    if records.any? { |record| !record.has_compliance_policies? }
+      javascript_flash(
+        :text       => _('No Compliance Policies assigned to one or more of the selected items'),
+        :severity   => :error,
+      )
+      return
+    end
+
+    generic_button_operation('check_compliance_queue', _('Check Compliance'), vm_button_action)
   end
-  alias_method :image_check_compliance, :check_compliance_vms
-  alias_method :instance_check_compliance, :check_compliance_vms
-  alias_method :vm_check_compliance, :check_compliance_vms
-  alias_method :miq_template_check_compliance, :check_compliance_vms
+  alias image_check_compliance check_compliance_vms
+  alias instance_check_compliance check_compliance_vms
+  alias vm_check_compliance check_compliance_vms
+  alias miq_template_check_compliance check_compliance_vms
 
   # Collect running processes for all selected or single displayed vm(s)
   def getprocessesvms
     assert_privileges(params[:pressed])
-    vm_button_operation('collect_running_processes', _('Collect Running Processes'))
+    generic_button_operation('collect_running_processes', _('Collect Running Processes'), vm_button_action)
   end
-  alias_method :instance_collect_running_processes, :getprocessesvms
-  alias_method :vm_collect_running_processes, :getprocessesvms
+  alias instance_collect_running_processes getprocessesvms
+  alias vm_collect_running_processes getprocessesvms
 
   # Start all selected or single displayed vm(s)
   def startvms
     assert_privileges(params[:pressed])
-    vm_button_operation('start', _('Start'))
+    generic_button_operation('start', _('Start'), vm_button_action)
   end
-  alias_method :instance_start, :startvms
-  alias_method :vm_start, :startvms
+  alias instance_start startvms
+  alias vm_start startvms
 
   # Suspend all selected or single displayed vm(s)
   def suspendvms
     assert_privileges(params[:pressed])
-    vm_button_operation('suspend', _('Suspend'))
+    generic_button_operation('suspend', _('Suspend'), vm_button_action)
   end
-  alias_method :instance_suspend, :suspendvms
-  alias_method :vm_suspend, :suspendvms
+  alias instance_suspend suspendvms
+  alias vm_suspend suspendvms
 
   # Pause all selected or single displayed vm(s)
   def pausevms
     assert_privileges(params[:pressed])
-    vm_button_operation('pause', _('Pause'))
+    generic_button_operation('pause', _('Pause'), vm_button_action)
   end
-  alias_method :instance_pause, :pausevms
-  alias_method :vm_pause, :pausevms
+  alias instance_pause pausevms
+  alias vm_pause pausevms
 
   # Terminate all selected or single displayed vm(s)
   def terminatevms
     assert_privileges(params[:pressed])
-    vm_button_operation('vm_destroy', _('Terminate'))
+    generic_button_operation('vm_destroy', _('Terminate'), vm_button_action)
   end
-  alias_method :instance_terminate, :terminatevms
+  alias instance_terminate terminatevms
+  alias vm_terminate terminatevms
 
   # Stop all selected or single displayed vm(s)
   def stopvms
     assert_privileges(params[:pressed])
-    vm_button_operation('stop', _('Stop'))
+    generic_button_operation('stop', _('Stop'), vm_button_action)
   end
-  alias_method :instance_stop, :stopvms
-  alias_method :vm_stop, :stopvms
+  alias instance_stop stopvms
+  alias vm_stop stopvms
 
   # Shelve all selected or single displayed vm(s)
   def shelvevms
     assert_privileges(params[:pressed])
-    vm_button_operation('shelve', _('Shelve'))
+    generic_button_operation('shelve', _('Shelve'), vm_button_action)
   end
-  alias_method :instance_shelve, :shelvevms
-  alias_method :vm_shelve, :shelvevms
+  alias instance_shelve shelvevms
+  alias vm_shelve shelvevms
 
   # Shelve all selected or single displayed vm(s)
   def shelveoffloadvms
     assert_privileges(params[:pressed])
-    vm_button_operation('shelve_offload', _('Shelve Offload'))
+    generic_button_operation('shelve_offload', _('Shelve Offload'), vm_button_action)
   end
-  alias_method :instance_shelve_offload, :shelveoffloadvms
-  alias_method :vm_shelve_offload, :shelveoffloadvms
+  alias instance_shelve_offload shelveoffloadvms
+  alias vm_shelve_offload shelveoffloadvms
 
   # Reset all selected or single displayed vm(s)
   def resetvms
     assert_privileges(params[:pressed])
-    vm_button_operation('reset', _('Reset'))
+    generic_button_operation('reset', _('Reset'), vm_button_action)
   end
-  alias_method :instance_reset, :resetvms
-  alias_method :vm_reset, :resetvms
+  alias instance_reset resetvms
+  alias vm_reset resetvms
 
   # Shutdown guests on all selected or single displayed vm(s)
   def guestshutdown
     assert_privileges(params[:pressed])
-    vm_button_operation('shutdown_guest', _('Shutdown Guest'))
+    generic_button_operation('shutdown_guest', _('Shutdown Guest'), vm_button_action)
   end
-  alias_method :vm_guest_shutdown, :guestshutdown
+  alias vm_guest_shutdown guestshutdown
 
   # Standby guests on all selected or single displayed vm(s)
   def gueststandby
     assert_privileges(params[:pressed])
-    vm_button_operation('standby_guest', _('Standby Guest'))
+    generic_button_operation('standby_guest', _('Standby Guest'), vm_button_action)
   end
 
   # Restart guests on all selected or single displayed vm(s)
   def guestreboot
     assert_privileges(params[:pressed])
-    vm_button_operation('reboot_guest', _('Restart Guest'))
+    generic_button_operation('reboot_guest', _('Restart Guest'), vm_button_action)
   end
-  alias_method :instance_guest_restart, :guestreboot
-  alias_method :vm_guest_restart, :guestreboot
+  alias instance_guest_restart guestreboot
+  alias vm_guest_restart guestreboot
 
   # Delete all snapshots for vm(s)
   def deleteallsnapsvms
     assert_privileges(params[:pressed])
-    vm_button_operation('remove_all_snapshots', _('Delete All Snapshots'), 'vm_common/config')
+    generic_button_operation('remove_all_snapshots', _('Delete All Snapshots'), vm_button_action,
+                             @explorer ? {} : {:refresh_partial => 'vm_common/config'})
   end
-  alias_method :vm_snapshot_delete_all, :deleteallsnapsvms
+  alias vm_snapshot_delete_all deleteallsnapsvms
 
   # Delete selected snapshot for vm
   def deletesnapsvms
     assert_privileges(params[:pressed])
-    vm_button_operation('remove_snapshot', _('Delete Snapshot'), 'vm_common/config')
+
+    snap_selected = Snapshot.find_by(:id => session[:snap_selected]) if session[:snap_selected]
+    record = find_record_with_rbac(record_class, params[:id]) if params[:id]
+    error_message = record.try(:remove_snapshot_denied_message, snap_selected.current?) if snap_selected
+    if error_message
+      javascript_flash(
+        :text       => error_message,
+        :severity   => :error,
+        :scroll_top => true
+      )
+      return
+    end
+
+    generic_button_operation('remove_snapshot', _('Delete Snapshot'), vm_button_action,
+                             @explorer ? {} : {:refresh_partial => 'vm_common/config'})
   end
-  alias_method :vm_snapshot_delete, :deletesnapsvms
+  alias vm_snapshot_delete deletesnapsvms
 
   # Delete selected snapshot for vm
   def revertsnapsvms
     assert_privileges(params[:pressed])
-    vm_button_operation('revert_to_snapshot', _('Revert to a Snapshot'), 'vm_common/config')
+
+    snap_selected = Snapshot.find_by(:id => session[:snap_selected])
+    record = find_record_with_rbac(record_class, params[:id])
+    error_message = record.try(:revert_to_snapshot_denied_message, snap_selected.current?)
+    if error_message
+      javascript_flash(
+        :text       => error_message,
+        :severity   => :error,
+        :scroll_top => true
+      )
+      return
+    end
+
+    generic_button_operation('revert_to_snapshot', _('Revert to a Snapshot'), vm_button_action,
+                             @explorer ? {} : {:refresh_partial => 'vm_common/config'})
   end
-  alias_method :vm_snapshot_revert, :revertsnapsvms
+  alias vm_snapshot_revert revertsnapsvms
 
   # End of common VM button handler routines
 
   # Common Cluster button handler routines
-  def process_clusters(clusters, task)
+  def process_clusters(clusters, task, _ = nil)
     clusters, _clusters_out_region = filter_ids_in_region(clusters, _("Cluster"))
     return if clusters.empty?
 
     if task == "destroy"
-      EmsCluster.where(:id => clusters).order("lower(name)").each do |cluster|
+      EmsCluster.where(:id => clusters).order(EmsCluster.arel_table[:name].lower).each do |cluster|
         id = cluster.id
         cluster_name = cluster.name
         audit = {:event => "ems_cluster_record_delete_initiated", :message => "[#{cluster_name}] Record delete initiated", :target_id => id, :target_class => "EmsCluster", :userid => session[:userid]}
@@ -656,17 +567,17 @@ module ApplicationController::CiProcessing
       end
       EmsCluster.destroy_queue(clusters)
     else
-      EmsCluster.where(:id => clusters).order("lower(name)").each do |cluster|
+      EmsCluster.where(:id => clusters).order(EmsCluster.arel_table[:name].lower).each do |cluster|
         cluster_name = cluster.name
         begin
-          cluster.send(task.to_sym) if cluster.respond_to?(task)    # Run the task
-        rescue => err
-          add_flash(_("Cluster / Deployment Role \"%{name}\": Error during '%{task}': %{error_message}") %
+          cluster.send(task.to_sym) if cluster.respond_to?(task) # Run the task
+        rescue StandardError => err
+          add_flash(_("Cluster \"%{name}\": Error during '%{task}': %{error_message}") %
             {:name          => cluster_name,
              :task          => task,
              :error_message => err.message}, :error) # Push msg and error flag
         else
-          add_flash(_("Cluster / Deployment Role: %{task} successfully initiated") % {:task => task})
+          add_flash(_("Cluster: %{task} successfully initiated") % {:task => task})
         end
       end
     end
@@ -678,7 +589,7 @@ module ApplicationController::CiProcessing
     return if rps.empty?
 
     if task == "destroy"
-      ResourcePool.where(:id => rps).order("lower(name)").each do |rp|
+      ResourcePool.where(:id => rps).order(ResourcePool.arel_table[:name].lower).each do |rp|
         id = rp.id
         rp_name = rp.name
         audit = {:event => "rp_record_delete_initiated", :message => "[#{rp_name}] Record delete initiated", :target_id => id, :target_class => "ResourcePool", :userid => session[:userid]}
@@ -686,11 +597,11 @@ module ApplicationController::CiProcessing
       end
       ResourcePool.destroy_queue(rps)
     else
-      ResourcePool.where(:id => rps).order("lower(name)").each do |rp|
+      ResourcePool.where(:id => rps).order(ResourcePool.arel_table[:name].lower).each do |rp|
         rp_name = rp.name
         begin
-          rp.send(task.to_sym) if rp.respond_to?(task)    # Run the task
-        rescue => err
+          rp.send(task.to_sym) if rp.respond_to?(task) # Run the task
+        rescue StandardError => err
           add_flash(_("Resource Pool \"%{name}\": Error during '%{task}': %{error_message}") %
             {:name          => rp_name,
              :task          => task,
@@ -702,52 +613,79 @@ module ApplicationController::CiProcessing
     end
   end
 
-  def cluster_button_operation(method, display_name)
-    clusters = []
-    # Either a list or coming from a different controller (eg from host screen, go to its clusters)
-    if @lastaction == "show_list" || @layout != "ems_cluster"
-      clusters = find_checked_ids_with_rbac(EmsCluster)
-      if clusters.empty?
-        add_flash(_("No Clusters / Deployment Roles were selected for %{task}") % {:task => display_name}, :error)
-      else
-        process_clusters(clusters, method)
-      end
-
-      if @lastaction == "show_list" # In cluster controller, refresh show_list, else let the other controller handle it
-        show_list
-        @refresh_partial = "layouts/gtl"
-      end
-
-    else # showing 1 cluster
-      if params[:id].nil? || !EmsCluster.exists?(params[:id])
-        add_flash(_("Cluster / Deployment Role no longer exists"), :error)
-      else
-        clusters.push(find_id_with_rbac(EmsCluster, params[:id]))
-        process_clusters(clusters, method)  unless clusters.empty?
-      end
-
-      params[:display] = @display
-      show
-
-      # TODO: tells callers to go back to show_list because this Host may be gone
-      # Should be refactored into calling show_list right here
-      if method == 'destroy'
-        @single_delete = true unless flash_errors?
-      end
-      if ["vms", "hosts"].include?(@display)
-        @refresh_partial = "layouts/gtl"
-      else
-        @refresh_partial = "config"
-      end
+  # The method takes care of task processing initiated from UI on the
+  # selected records.
+  #
+  # In case a record does not support the feature, it won't be ran for
+  # any of selected records.
+  #
+  # Params:
+  #   action      - a string indicating the operation user wants to execute
+  #   action_name - a string of an action used for a flash message in case
+  #                 the task can not be applied
+  #   operation   - a block with a operation, specific to the type of action
+  #                 on a record
+  #   options     - other optional parameters
+  def generic_button_operation(action, action_name, operation, options = {})
+    records = find_records_with_rbac(record_class, checked_or_params)
+    if !records_support_feature?(records, action_to_feature(action))
+      javascript_flash(
+        :text       => _("%{action_name} action does not apply to selected items") % {:action_name => action_name},
+        :severity   => :error,
+        :scroll_top => true
+      )
+      return
     end
+    operation.call(records.map(&:id), action, action_name)
+    @single_delete = action == 'destroy' && !flash_errors?
+    screen_redirection(options)
+  end
 
-    clusters.count
+  # Maps UI actions to queryable feature in case it is not possible
+  # to use the action itself in supports query.
+  #
+  # Params:
+  #   action      - a string indicating the operation user wants to execute
+  # Returns:
+  #   symbol      - a feature implemented by using SupportsFeatureMixin
+  def action_to_feature(action)
+    feature_aliases = {
+      "scan"                   => :smartstate_analysis,
+      "retire_now"             => :retire,
+      "vm_destroy"             => :terminate,
+      "vm_miq_request_new"     => :provisioning,
+      "check_compliance_queue" => :check_compliance
+    }
+    feature_aliases[action] || action.to_sym
+  end
+
+  # Explorer or non-explorer screen redirection.
+  #
+  # Params:
+  #   options - specific partial to render
+  def screen_redirection(options)
+    if options[:redirect].present?
+      javascript_redirect(:controller => options[:redirect][:controller],
+                          :action     => options[:redirect][:action])
+      return
+    end
+    if %w[show_list storage_list storage_pod_list].include?(@lastaction)
+      show_list unless @explorer
+      @refresh_partial = "layouts/gtl"
+      return
+    end
+    if options[:refresh_partial].present?
+      show
+      @refresh_partial = options[:refresh_partial]
+      nil
+    end
   end
 
   # Scan all selected or single displayed cluster(s)
   def scanclusters
     assert_privileges("ems_cluster_scan")
-    cluster_button_operation('scan', _('Analysis'))
+    generic_button_operation('scan', _('Analysis'), cluster_button_action,
+                             :refresh_partial => %w[vm hosts].include?(@display) ? 'layouts/gtl' : 'config')
   end
 
   # Common Stacks button handler routines
@@ -756,7 +694,7 @@ module ApplicationController::CiProcessing
     return if stacks.empty?
 
     if task == "destroy"
-      OrchestrationStack.where(:id => stacks).order("lower(name)").each do |stack|
+      OrchestrationStack.where(:id => stacks).order(OrchestrationStack.arel_table[:name].lower).each do |stack|
         id = stack.id
         stack_name = stack.name
         audit = {:event        => "stack_record_delete_initiated",
@@ -776,7 +714,8 @@ module ApplicationController::CiProcessing
     return if stacks.empty?
 
     if task == "destroy"
-      ManageIQ::Providers::AnsibleTower::AutomationManager::Job.where(:id => stacks).order("lower(name)").each do |stack|
+      model = ManageIQ::Providers::AnsibleTower::AutomationManager::Job
+      model.where(:id => stacks).order(model.arel_table[:name].lower).each do |stack|
         id = stack.id
         stack_name = stack.name
         audit = {:event        => "stack_record_delete_initiated",
@@ -786,16 +725,16 @@ module ApplicationController::CiProcessing
                  :userid       => session[:userid]}
         AuditEvent.success(audit)
       end
-      ManageIQ::Providers::AnsibleTower::AutomationManager::Job.destroy_queue(stacks)
+      model.destroy_queue(stacks)
     end
   end
 
-  def process_storage(storages, task)
+  def process_storage(storages, task, _ = nil)
     storages, _storages_out_region = filter_ids_in_region(storages, _("Datastore"))
     return if storages.empty?
 
     if task == "destroy"
-      Storage.where(:id => storages).order("lower(name)").each do |storage|
+      Storage.where(:id => storages).order(Storage.arel_table[:name].lower).each do |storage|
         id = storage.id
         storage_name = storage.name
         audit = {:event => "storage_record_delete_initiated", :message => "[#{storage_name}] Record delete initiated", :target_id => id, :target_class => "Storage", :userid => session[:userid]}
@@ -805,15 +744,15 @@ module ApplicationController::CiProcessing
       add_flash(n_("Delete initiated for Datastore from the %{product} Database",
                    "Delete initiated for Datastores from the %{product} Database", storages.length) % {:product => Vmdb::Appliance.PRODUCT_NAME})
     else
-      Storage.where(:id => storages).order("lower(name)").each do |storage|
+      Storage.where(:id => storages).order(Storage.arel_table[:name].lower).each do |storage|
         storage_name = storage.name
         begin
           if task == "scan"
             storage.send(task.to_sym, session[:userid]) # Scan needs userid
-          else
-            storage.send(task.to_sym) if storage.respond_to?(task)    # Run the task
+          elsif storage.respond_to?(task) # Run the task
+            storage.send(task.to_sym)
           end
-        rescue => err
+        rescue StandardError => err
           add_flash(_("Datastore \"%{name}\": Error during '%{task}': %{error_message}") %
             {:name          => storage_name,
              :task          => task,
@@ -829,63 +768,22 @@ module ApplicationController::CiProcessing
     end
   end
 
-  def storage_button_operation(method, display_name)
-    storages = []
-    # Either a list or coming from a different controller (eg from host screen, go to its storages)
-    if params.key?(:miq_grid_checks)
-      storages = find_checked_ids_with_rbac(Storage)
-
-      if method == 'scan' && !Storage.batch_operation_supported?('smartstate_analysis', storages)
-        render_flash_not_applicable_to_model(_('Smartstate Analysis'), ui_lookup(:tables => "storage"))
-        return
-      end
-      if storages.empty?
-        add_flash(_("No Datastores were selected for %{task}") % {:task => display_name}, :error)
-      else
-        process_storage(storages, method)
-      end
-
-      if @lastaction == "show_list"
-        show_list unless @explorer
-        @refresh_partial = "layouts/gtl"
-      end
-
-    else # showing 1 storage
-      if params[:id].nil? || !Storage.exists?(params[:id])
-        add_flash(_("Datastore no longer exists"), :error)
-      else
-        storages.push(find_id_with_rbac(Storage, params[:id]))
-        process_storage(storages, method)  unless storages.empty?
-      end
-
-      params[:display] = @display
-      show
-      if ["vms", "hosts"].include?(@display)
-        @refresh_partial = "layouts/gtl"
-      else
-        @refresh_partial = "config"
-      end
-    end
-
-    storages.count
-  end
-
-  # Refresh all selected or single displayed Datastore(s)
-  def refreshstorage
-    assert_privileges("storage_refresh")
-    storage_button_operation('refresh_ems', _('Refresh'))
-  end
-
   # Scan all selected or single displayed storage(s)
   def scanstorage
     assert_privileges("storage_scan")
-    storage_button_operation('scan', _('Analysis'))
+    generic_button_operation('scan', _('SmartState Analysis'), storage_button_action,
+                             :refresh_partial => %w[vm hosts].include?(@display) ? 'layouts/gtl' : 'config')
   end
 
   # Delete all selected or single displayed host(s)
   def deletehosts
     assert_privileges("host_delete")
     delete_elements(Host, :process_hosts)
+  end
+
+  def delete_cloud_tenant
+    assert_privileges("cloud_tenant_delete")
+    delete_elements(CloudTenant, :process_cloud_tenants)
   end
 
   # Delete all selected or single displayed stack(s)
@@ -912,38 +810,23 @@ module ApplicationController::CiProcessing
   # Delete all selected or single displayed datastore(s)
   def deletestorages
     assert_privileges("storage_delete")
-    storages = find_checked_ids_with_rbac(Storage)
-    unless Storage.batch_operation_supported?('delete', storages)
+    storages = find_records_with_rbac(Storage, checked_or_params)
+    unless records_support_feature?(storages, 'delete')
       add_flash(_("Only storage without VMs and Hosts can be removed"), :error)
       return
     end
+    storages.each do |storage|
+      next if !storage.vms_and_templates.length.positive? &&
+              !storage.hosts.length.positive?
 
-    datastores = []
-    if %w(show_list storage_list storage_pod_list).include?(@lastaction) || (@lastaction == "show" && @layout != "storage") # showing a list, scan all selected hosts
-      datastores = storages
-      if datastores.empty?
-        add_flash(_("No Datastores were selected for %{task}") % {:task => display_name}, :error)
-      end
-      ds_to_delete = []
-      datastores.each do |s|
-        ds = Storage.find(s)
-        if ds.vms_and_templates.length <= 0 && ds.hosts.length <= 0
-          ds_to_delete.push(s)
-        else
-          add_flash(_("\"%{datastore_name}\": cannot be removed, has vms or hosts") %
-            {:datastore_name => ds.name}, :warning)
-        end
-      end
-      process_storage(ds_to_delete, "destroy")  unless ds_to_delete.empty?
-    else # showing 1 datastore, delete it
-      if params[:id].nil? || !Storage.exists?(params[:id])
-        add_flash(_("Datastore no longer exists"), :error)
-      else
-        datastores.push(find_id_with_rbac(Storage, params[:id]))
-      end
-      process_storage(datastores, "destroy")  unless datastores.empty?
-      @single_delete = true unless flash_errors?
-      add_flash(_("The selected Datastore was deleted")) if @flash_array.nil?
+      storages -= [storage]
+      add_flash(_("\"%{datastore_name}\": cannot be removed, has vms or hosts") %
+        {:datastore_name => storage.name}, :warning)
+    end
+    process_storage(storages.ids, 'destroy') unless storages.empty?
+    if !%w[show_list storage_list storage_pod_list].include?(@lastaction) ||
+       (@lastaction == "show" && @layout != "storage")
+      @single_delete = !flash_errors?
     end
     if @lastaction == "show_list"
       show_list
@@ -952,31 +835,22 @@ module ApplicationController::CiProcessing
   end
 
   def delete_elements(model_class, destroy_method, model_name = nil)
-    elements = []
     model_name ||= model_class.table_name
+    elements = find_records_with_rbac(model_class, checked_or_params)
+    send(destroy_method, elements.ids, 'destroy')
     if params[:miq_grid_checks].present? || @lastaction == "show_list" || (@lastaction == "show" && @layout != model_name.singularize) # showing a list
-      elements = find_checked_ids_with_rbac(model_class)
-      if elements.empty?
-        add_flash(_("No %{model} were selected for deletion") %
-          {:model => ui_lookup(:tables => model_name)}, :error)
+      params[:miq_grid_checks] = []
+      unless flash_errors?
+        add_flash(n_("Delete initiated for %{count} %{model} from the %{product} Database",
+                     "Delete initiated for %{count} %{models} from the %{product} Database", elements.length) %
+          {:count   => elements.length,
+           :product => Vmdb::Appliance.PRODUCT_NAME,
+           :model   => ui_lookup(:table => model_name),
+           :models  => ui_lookup(:tables => model_name)})
       end
-      send(destroy_method, elements, "destroy") unless elements.empty?
-      add_flash(n_("Delete initiated for %{count} %{model} from the %{product} Database",
-                   "Delete initiated for %{count} %{models} from the %{product} Database", elements.length) %
-        {:count   => elements.length,
-         :product => Vmdb::Appliance.PRODUCT_NAME,
-         :model   => ui_lookup(:table => model_name),
-         :models  => ui_lookup(:tables => model_name)}) unless flash_errors?
     else # showing 1 element, delete it
-      if params[:id].nil? || !model_class.exists?(params[:id])
-        add_flash(_("%{record} no longer exists") % {:record => ui_lookup(:table => model_name)}, :error)
-      else
-        elements.push(find_id_with_rbac(model_class, params[:id]))
-      end
-      send(destroy_method, elements, "destroy") unless elements.empty?
       @single_delete = true unless flash_errors?
-      add_flash(_("The selected %{record} was deleted") %
-        {:record => ui_lookup(:table => model_name)}) if @flash_array.nil?
+      add_flash(_("The selected %{record} was deleted") % {:record => ui_lookup(:table => model_name)}) if @flash_array.nil?
     end
     if @lastaction == "show_list"
       show_list
@@ -988,6 +862,19 @@ module ApplicationController::CiProcessing
   def deleteclusters
     assert_privileges("ems_cluster_delete")
     delete_elements(EmsCluster, :process_clusters)
+  end
+
+  # Delete all selected or single displayed flavor(s)
+  def delete_flavors
+    assert_privileges('flavor_delete')
+    flavors = find_records_with_rbac(Flavor, checked_or_params)
+    flavors.each do |flavor|
+      flavor.delete_flavor_queue(User.current_user.id)
+      add_flash(_("Delete of Flavor \"%{name}\" was successfully initiated.") % {:name => flavor.name})
+    rescue StandardError => error
+      add_flash(_("Unable to delete Flavor \"%{name}\": %{details}") % {:name    => flavor.name,
+                                                                        :details => error.message}, :error)
+    end
   end
 
   # Delete all selected or single displayed RP(s)
@@ -1002,8 +889,6 @@ module ApplicationController::CiProcessing
       "image"
     elsif pressed.starts_with?("instance_")
       "instance"
-    elsif pressed.starts_with?("vm_")
-      "vm"
     elsif pressed.starts_with?("miq_template_")
       "miq_template"
     elsif pressed.starts_with?("orchestration_stack_")
@@ -1019,9 +904,7 @@ module ApplicationController::CiProcessing
      "#{pfx}_retire", "#{pfx}_protect", "#{pfx}_ownership",
      "#{pfx}_refresh", "#{pfx}_right_size",
      "#{pfx}_reconfigure",
-     "#{pfx}_resize", "#{pfx}_live_migrate", "#{pfx}_evacuate"
-      ].include?(pressed) &&
-      @flash_array.nil?
+     "#{pfx}_resize", "#{pfx}_live_migrate", "#{pfx}_evacuate"].include?(pressed) && @flash_array.nil?
   end
 
   def vm_style_button?(pressed)
@@ -1049,10 +932,10 @@ module ApplicationController::CiProcessing
     when "#{pfx}_suspend"                   then suspendvms
     when "#{pfx}_pause"                     then pausevms
     when "#{pfx}_shelve"                    then shelvevms
-    when "#{pfx}_shelveoffloadvms"          then shelveoffloadvms
+    when "#{pfx}_shelve_offload"            then shelveoffloadvms
     when "#{pfx}_reset"                     then resetvms
     when "#{pfx}_check_compliance"          then check_compliance_vms
-    when "#{pfx}_reconfigure"               then reconfigurevms
+    when "#{pfx}_reconfigure"               then vm_reconfigure
     when "#{pfx}_resize"                    then resizevms
     when "#{pfx}_evacuate"                  then evacuatevms
     when "#{pfx}_live_migrate"              then livemigratevms
@@ -1072,12 +955,6 @@ module ApplicationController::CiProcessing
     when "#{pfx}_terminate"                 then terminatevms
     when "instance_add_security_group"      then add_security_group_vms
     when "instance_remove_security_group"   then remove_security_group_vms
-    when "vm_transform"                     then vm_transform
     end
-  end
-
-  def owner_changed?(owner)
-    return false if @edit[:new][owner].blank?
-    @edit[:new][owner] != @edit[:current][owner]
   end
 end

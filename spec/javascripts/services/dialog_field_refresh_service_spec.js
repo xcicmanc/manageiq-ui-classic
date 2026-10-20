@@ -1,11 +1,11 @@
 describe('dialogFieldRefreshService', function() {
-  var testDialogFieldRefreshService, miqService;
+  var testDialogFieldRefreshService, API;
 
   beforeEach(module('ManageIQ'));
 
-  beforeEach(inject(function(dialogFieldRefreshService, _miqService_) {
+  beforeEach(inject(function(dialogFieldRefreshService, _API_, DialogData) {
     testDialogFieldRefreshService = dialogFieldRefreshService;
-    miqService = _miqService_;
+    API = _API_;
 
     var responseResult = {
       result: {
@@ -13,13 +13,17 @@ describe('dialogFieldRefreshService', function() {
       }
     };
 
-    spyOn(miqService, 'jqueryRequest').and.callFake(function() {
-      return {then: function(response) { response(responseResult); }};
+    spyOn(API, 'post').and.callFake(function() {
+      return Promise.resolve(responseResult);
     });
+
+    DialogData.data = {
+      fields: {},
+    };
   }));
 
   describe('#refreshField', function() {
-    var data = 'the data';
+    var data = { "the field": "data1" };
     var field = 'the field';
     var url = 'url';
     var idList = {
@@ -45,11 +49,11 @@ describe('dialogFieldRefreshService', function() {
       expect(refreshPromise instanceof Promise).toBe(true);
     });
 
-    it('uses a jqueryRequest', function() {
+    it('uses a post on the API', function() {
       var requestData = {
         action: 'refresh_dialog_fields',
         resource: {
-          dialog_fields: 'the data',
+          dialog_fields: data,
           fields: 'the field',
           resource_action_id: '321',
           target_id: '456',
@@ -57,10 +61,7 @@ describe('dialogFieldRefreshService', function() {
         }
       };
 
-      expect(miqService.jqueryRequest).toHaveBeenCalledWith('url123', {
-        data: JSON.stringify(requestData),
-        dataType: 'json'
-      });
+      expect(API.post).toHaveBeenCalledWith('url123', JSON.stringify(requestData));
     });
 
     it('resolves the promise with the results', function() {

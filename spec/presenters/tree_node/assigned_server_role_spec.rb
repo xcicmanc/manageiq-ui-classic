@@ -1,10 +1,10 @@
-require 'shared/presenters/tree_node/common'
-require 'shared/presenters/tree_node/server_roles'
-
 describe TreeNode::AssignedServerRole do
   include_context 'server roles'
   let(:object) { assigned_server_role }
-  subject { described_class.new(object, nil, {}) }
+  let(:tree) { double }
+  subject { described_class.new(object, nil, tree) }
+
+  before { allow(tree).to receive(:root) }
 
   describe '#title' do
     it 'returns with the title' do

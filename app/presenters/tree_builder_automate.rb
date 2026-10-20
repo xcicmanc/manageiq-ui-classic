@@ -1,22 +1,37 @@
-class TreeBuilderAutomate < TreeBuilderAeClass
-  def tree_init_options(_tree_name)
-    {:leaf => "datastore", :full_ids => false}
+class TreeBuilderAutomate < TreeBuilder
+  has_kids_for MiqAeClass, [:x_get_tree_class_kids]
+  has_kids_for MiqAeNamespace, [:x_get_tree_ns_kids]
+
+  private
+
+  def tree_init_options
+    {:full_ids => false, :lazy => true, :onclick => "miqOnClickAutomate"}
   end
 
-  def initialize(name, type, sandbox, build = true, controller = nil)
-    @controller = controller
-    sandbox[:trees][:automate_tree][:type] = :ae_methods if type == :ae_methods && sandbox.has_key_path?(:trees, 'automate_tree')
-    super(name, type, sandbox, build)
+  def x_get_tree_roots
+    count_only_or_objects(false, [MiqAeDomain.find_by(:id => @sb[:domain_id])])
   end
 
-  def override(node, object, _pid, _options)
-    if @type == 'catalog'
-      # Only the instance items should be clickable when selecting a catalog item entry point
-      node[:selectable] = false unless object.kind_of?(MiqAeInstance) # catalog
-    elsif object.kind_of?(MiqAeNamespace) && object.domain?
-      # Only the namespace items should be clickable when copying a class or instance
-      node[:selectable] = false
+  def override(node, object)
+    node.selectable = false if object.kind_of?(MiqAeNamespace) && object.domain?
+  end
+
+  def x_get_tree_class_kids(object, count_only)
+    count_only_or_objects(count_only, object.ae_instances, %i[display_name name])
+  end
+
+  def x_get_tree_ns_kids(object, count_only)
+    if object.respond_to?(:ae_namespaces) && object.ae_namespaces.size == 1
+      open_node("aen-#{object.id}")
+      open_node("aen-#{object.ae_namespaces.first.id}")
     end
+
+    if object.respond_to?(:ae_classes) && object.ae_classes.size == 1
+      open_node("aen-#{object.id}")
+      open_node("aec-#{object.ae_classes.first.id}")
+    end
+
+    count_only_or_objects(count_only, object.ae_namespaces, %i[display_name name])
   end
 
   def root_options
@@ -25,14 +40,5 @@ class TreeBuilderAutomate < TreeBuilderAeClass
       :tooltip    => t,
       :selectable => false
     }
-  end
-
-  def set_locals_for_render
-    locals = super
-    locals.merge!(:onclick      => "miqOnClickAutomate",
-                  :exp_tree     => false,
-                  :autoload     => true,
-                  :base_id      => "root",
-                  :highlighting => true)
   end
 end

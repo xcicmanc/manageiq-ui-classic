@@ -6,12 +6,10 @@ describe "miq_ae_class/_method_inputs.html.haml" do
     before do
       method_params = {'ae_result'     => {:datatype => 'string', :default_value => 'ok'},
                        'ae_next_state' => {:datatype => 'string'},
-                       'raise'         => {:datatype => 'string'}
-                      }
+                       'raise'         => {:datatype => 'string'}}
       attrs = {:method_script => "puts 1",
                :method_params => method_params,
-               :method_name   => "method1"
-              }
+               :method_name   => "method1"}
       create_ae_model_with_method(attrs)
       ae_method = MiqAeMethod.where(:name => 'method1').first
 
@@ -22,9 +20,9 @@ describe "miq_ae_class/_method_inputs.html.haml" do
     end
 
     it "Check inputs", :js => true do
-      render
-      expect(response).to have_text('ae_result')
-      expect(response).to have_text('ae_next_state')
+      render :template => "miq_ae_class/_method_inputs"
+      expect(rendered).to have_text('ae_result')
+      expect(rendered).to have_text('ae_next_state')
     end
   end
 end

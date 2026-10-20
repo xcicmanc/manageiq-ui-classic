@@ -1,0 +1,42 @@
+@use './aggregate_status_card';
+@use './angular';
+@use './codemirror_editor';
+@use './compare_drift';
+@use './dual_list';
+@use './dialog_fields';
+@use './data_driven_forms_overrides';
+@use './dynamic_prefix_form_input';
+@use './fonticon_picker';
+@use './list_view';
+@use './metrics';
+@use './miq_table_pdf';
+@use './miq_tree';
+@use './piecharts';
+@use './remote_console';
+@use './report_colors';
+@use './report-data-table';
+@use './timeline';
+
+$bootstrap-sass-asset-helper: true;
+$patternfly-sass-asset-helper: true;
+$icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
+// Font Awesome path variables
+$fa-font-path: '~font-awesome/fonts';
+$img-base-path: '../../assets/images/layout/' !default;
+
+// Patternfly path variables
+$img-path: '~patternfly/dist/img/';
+$font-path: '~patternfly/dist/fonts/';
+$ff-font-path: '~@manageiq/font-fabulous/assets/fonts/font-fabulous';
+
+@import '../../../vendor/assets/stylesheets/brand';
+@import '~patternfly/dist/sass/patternfly/variables';
+@import '~patternfly/dist/sass/patternfly/color-variables';
+@import '~font-awesome/scss/font-awesome';
+@import '~@manageiq/font-fabulous/assets/stylesheets/font-fabulous';
+@import './variables';
+@import './patternfly_overrides';
+@import './about_modal_background'; // sets a custom background image in the 'About' modal
+@import './alerts';
+@import './login';
+@import './icon_customizations';

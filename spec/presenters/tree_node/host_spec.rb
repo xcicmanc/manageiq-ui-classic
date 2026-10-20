@@ -1,7 +1,5 @@
-require 'shared/presenters/tree_node/common'
-
 describe TreeNode::Host do
-  subject { described_class.new(object, nil, {}) }
+  subject { described_class.new(object, nil, nil) }
 
   %i(
     host
@@ -11,13 +9,12 @@ describe TreeNode::Host do
     host_vmware
     host_vmware_esx
   ).each do |factory|
-    klass = FactoryGirl.factory_by_name(factory).instance_variable_get(:@class_name)
-    context(klass) do
-      let(:object) { FactoryGirl.create(factory) }
+    context(factory.to_s) do
+      let(:object) { FactoryBot.create(factory) }
 
       include_examples 'TreeNode::Node#key prefix', 'h-'
-      include_examples 'TreeNode::Node#icon', 'pficon pficon-screen'
-      include_examples 'TreeNode::Node#tooltip prefix', 'Host / Node'
+      include_examples 'TreeNode::Node#icon', 'pficon pficon-container-node'
+      include_examples 'TreeNode::Node#tooltip prefix', 'Host'
     end
   end
 end

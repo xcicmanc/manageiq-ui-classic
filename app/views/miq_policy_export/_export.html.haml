@@ -1,0 +1,86 @@
+- url = url_for_only_path(:action => 'export_field_changed')
+#profile_export_div
+  = render :partial => "layouts/flash_msg"
+  %h3
+    = _("Import")
+  #import_div
+    = form_tag({:action => "upload",
+                :type   => "import",
+                :dbtype => @sb[:dbtype]},
+               :class     => "form-horizontal",
+               :multipart => true,
+               :method    => :post) do
+      .form-group
+        .col-md-4
+          = render :partial => "shared/file_chooser", :locals => {:object_name => "upload", :method => "file"}
+          :javascript
+            $("#upload_file").on("change", function() {
+              ImportSetup.setUpUploadImportButton('#upload_tags')
+            });
+
+        .col-md-6
+          = submit_tag(_("Upload"), :id => "upload_tags", :class => "btn btn-default", :disabled => true)
+
+  %hr
+  %h3
+    = _("Export")
+    - case @sb[:dbtype]
+    - when "pp"
+      - available_title = _('Available Profiles:')
+      - export_title = _('Export Selected Profiles')
+    - when "p"
+      - available_title = _('Available Policies:')
+      - export_title = _('Export Selected Policies')
+    - when "al"
+      - available_title = _('Available Alerts:')
+      - export_title = _('Export Selected Alerts')
+
+    .form-horizontal
+      .form-group
+        %label.col-md-2.control-label
+          = _("Export:")
+        .col-md-8
+          .pf_input_container
+            %label{:for => "dbtype", :class => "pf_input_container_label"}
+              = _('Export')
+            .pf_input_container_content
+              = select_tag('dbtype',
+                options_for_select([[_("Policy Profiles"), "pp"], [_("Policies"), "p"], [_("Alerts"), "al"]], @sb[:dbtype]),
+                :class => "selectpicker")
+              :javascript
+                miqInitSelectPicker();
+                miqSelectPickerEvent('dbtype', '#{url}')
+      .form-group
+        %label.col-md-2.control-label
+          = available_title
+        .col-md-8
+          .pf_input_container
+            %label{:for => "choices_chosen_", :class => "pf_input_container_label"}
+              = available_title
+            .pf_input_container_content.miq_available_policies
+              = select_tag('choices_chosen[]',
+                options_for_select(@sb[:new][:choices].sort),
+                :class => "selected-policies",
+                :size  => 15,
+                :style => "width: 400px",
+                :multiple => true)
+    %div.text-right
+      #buttons
+        = link_to(_('Export'),
+          {:action => "export", :button => "export"},
+          :class                 => "btn btn-primary export-policies disabled",
+          :alt                   => export_title,
+          "data-miq_sparkle_on"  => true,
+          "data-miq_sparkle_off" => true,
+          "data-submit"          => "profile_export_div",
+          :remote                => true,
+          "data-method"          => :post,
+          :title                 => export_title)
+:javascript
+  $('.selected-policies').change(function() {
+    if($(this).val()) {
+      $('.export-policies').removeClass('disabled');
+    } else {
+      $('.export-policies').addClass('disabled');
+    }
+  });

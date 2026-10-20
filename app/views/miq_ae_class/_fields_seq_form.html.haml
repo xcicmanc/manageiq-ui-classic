@@ -1,4 +1,3 @@
-= render :partial => "layouts/flash_msg"
 #column_lists
   .col-md-7.col-sm-10.col-xs-10
     = _('Class Schema Sequencing:')
@@ -15,6 +14,3 @@
                         :button_action => 'fields_seq_field_changed',
                         :id            => 'seq'}
 
-:javascript
-  // disable any other tabs on screen when in edit
-  miq_tabs_disable_inactive('#ae_tabs');

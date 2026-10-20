@@ -16,7 +16,7 @@ module ApplicationController::Performance
     :cats,              # hash of available categories (model -> option)
     :cat_model,         # key to :cats hash
     :ght_type,          # hybrid/?
-    :chart_type,        # :performance/:summary/:planning/:util_ts
+    :chart_type,        # :performance/:summary/:util_ts
     :index,             # index to charts, if one selected
     :model,             # class for which we query performance
     :parent,            # compare_to parent
@@ -25,14 +25,17 @@ module ApplicationController::Performance
     :top_ts,
     :top_ids,
     :vmtype,            # selected vmtype
-    :compare_vm,        # id of Vm to compare with
     :skip_days,         # which days to skip, based on time_profile_days
     :time_profile,
     :time_profile_days,
     :time_profile_tz,
     :tz,
-    :tz_daily,
+    :tz_daily
   ) do
+    def self.load_from_hash(hash)
+      new(*(hash || {}).values)
+    end
+
     def update_from_params(params)
       self.typ         = params[:perf_typ]          if params[:perf_typ]
       self.days        = params[:perf_days]         if params[:perf_days]
@@ -40,8 +43,7 @@ module ApplicationController::Performance
       self.hourly_date = params[:miq_date_1]        if params[:miq_date_1] && typ == 'Hourly'
       self.daily_date  = params[:miq_date_1]        if params[:miq_date_1] && typ == 'Daily'
       self.index       = params[:chart_idx] == 'clear' ? nil : params[:chart_idx] if params[:chart_idx]
-      self.parent      = params[:compare_to].blank? ? nil : params[:compare_to] if params.key?(:compare_to)
-      self.compare_vm  = params[:compare_vm].blank? ? nil : params[:compare_vm] if params.key?(:compare_vm)
+      self.parent      = params[:compare_to].presence if params.key?(:compare_to)
       self.vmtype      = params[:perf_vmtype] == '<All>' ? nil : params[:perf_vmtype] if params[:perf_vmtype]
       if params[:perf_cat]
         self.cat_model, self.cat = if params[:perf_cat] == '<None>'
@@ -97,6 +99,7 @@ module ApplicationController::Performance
         hdate = hourly_date.to_date                                       # Start at the currently set hourly date
         6.times do                                                        # Go back up to 6 days (try each weekday)
           break if time_profile_days.include?(hdate.wday)                 # If weekday is in the profile, use it
+
           hdate -= 1.day                                                  # Drop back 1 day and try again
         end
         self.hourly_date = [hdate.month, hdate.day, hdate.year].join('/') # Set the new hourly date
@@ -105,8 +108,10 @@ module ApplicationController::Performance
       end
     end
 
-    def cats # category pulldown for tag charts
-      return unless %w(EmsCluster Host Storage AvailabilityZone HostAggregate).include?(model)
+    # category pulldown for tag charts
+    def cats
+      return unless %w[EmsCluster Host Storage AvailabilityZone HostAggregate].include?(model)
+
       self[:cats] ||=
         begin
           cats = Classification.categories.select(&:show).sort_by(&:description)
@@ -124,7 +129,7 @@ module ApplicationController::Performance
     end
 
     def vmtypes
-      if 'Storage' == model && typ == 'Daily'
+      if model == 'Storage' && typ == 'Daily'
         [['<All>', '<All>'],
          ['Managed/Registered', 'registered'],
          ['Managed/Unregistered', 'unregistered'],

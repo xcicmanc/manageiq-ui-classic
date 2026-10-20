@@ -1,18 +1,33 @@
 module CloudTenantHelper::TextualSummary
   include TextualMixins::TextualEmsCloud
   include TextualMixins::TextualGroupTags
+  include TextualMixins::TextualCustomButtonEvents
   #
   # Groups
   #
+
+  def textual_group_properties
+    TextualGroup.new(_("Properties"), %i[name description])
+  end
+
   def textual_group_relationships
     TextualGroup.new(
       _("Relationships"),
-      %i(
+      %i[
         ems_cloud instances images cloud_object_store_containers
         cloud_volumes cloud_volume_snapshots cloud_networks cloud_subnets
-        network_routers security_groups floating_ips network_ports
-      )
+        network_routers network_services security_groups security_policies
+        floating_ips network_ports custom_button_events
+      ]
     )
+  end
+
+  def textual_name
+    @record.name
+  end
+
+  def textual_description
+    @record.description
   end
 
   def textual_group_quotas
@@ -92,12 +107,20 @@ module CloudTenantHelper::TextualSummary
     textual_link(@record.security_groups, :label => _('Security Groups'))
   end
 
+  def textual_security_policies
+    textual_link(@record.security_policies, :label => _('Security Policies'))
+  end
+
   def textual_floating_ips
     textual_link(@record.floating_ips, :label => _('Floating IPs'))
   end
 
   def textual_network_routers
     textual_link(@record.network_routers, :label => _('Network Routers'))
+  end
+
+  def textual_network_services
+    textual_link(@record.network_services, :label => _('Network Services'))
   end
 
   def textual_network_ports

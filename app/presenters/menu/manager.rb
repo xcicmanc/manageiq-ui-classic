@@ -6,22 +6,33 @@ module Menu
     class << self
       extend Forwardable
 
-      delegate %i(menu item_in_section? item section section_id_string_to_symbol
-                  section_for_item_id each map detect select) => :instance
+      delegate %i[menu item_in_section? item items reload section section_id_string_to_symbol
+                  section_for_item_id each map detect select] => :instance
+    end
+
+    def reload
+      @menu = @id_to_section = @valid_sections = nil
+      initialize
     end
 
     def each
       @menu.each { |section| yield section }
     end
 
-    def menu(placement = :default)
-      @menu.each do |menu_section|
-        yield menu_section if menu_section.placement == placement
-      end
+    def menu(placement = :_all)
+      @menu.select do |menu_section|
+        placement == :_all || menu_section.placement == placement
+      end.compact
+    end
+
+    def items
+      @menu
     end
 
     def item(item_id)
       @menu.each do |menu_section|
+        return menu_section if menu_section.kind_of?(Menu::Item) && menu_section.id == item_id
+
         menu_section.items.each do |el|
           the_item = el.item(item_id)
           return the_item if the_item.present?
@@ -67,30 +78,41 @@ module Menu
 
     def initialize
       load_default_items
-      load_custom_items(Menu::YamlLoader)
-      load_custom_items(Menu::CustomLoader)
+      load_custom_items(Menu::YamlLoader.new)
+      load_custom_items(Menu::CustomLoader.new)
     end
 
     def merge_sections(sections)
       sections.each do |section|
         position = nil
+
+        parent = if section.parent_id && @id_to_section.key?(section.parent_id)
+                   @id_to_section[section.parent_id].items
+                 else
+                   @menu
+                 end
+
         if section.before
-          position = @menu.index { |existing_section| existing_section.id == section.before }
+          position = parent.index { |existing_section| existing_section.id == section.before }
         end
 
         if position
-          @menu.insert(position, section)
+          parent.insert(position, section)
         else
-          @menu << section
+          parent << section
         end
       end
     end
 
     def merge_items(items)
       items.each do |item|
-        raise InvalidMenuDefinition, 'Invalid parent' unless @id_to_section.key?(item.parent)
-        @id_to_section[item.parent].items << item
-        item.parent = @id_to_section[item.parent]
+        parent = @id_to_section[item.parent_id]
+        if parent.nil?
+          @menu << item
+        else
+          parent.items << item
+          item.parent = parent
+        end
       end
     end
 
@@ -110,7 +132,7 @@ module Menu
       @id_to_section = @menu.index_by(&:id)
       # recursively add subsections to the @id_to_section hash
       @menu.each do |section|
-        section.preprocess_sections(@id_to_section)
+        section.preprocess_sections(@id_to_section) if section.respond_to?(:preprocess_sections)
       end
     end
 

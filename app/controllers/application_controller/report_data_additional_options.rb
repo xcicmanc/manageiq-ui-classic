@@ -6,6 +6,7 @@ class ApplicationController
     :match_via_descendants,
     :parent_id,
     :parent_class_name,
+    :filter,
     :parent_method,
     :association,
     :view_suffix,
@@ -14,12 +15,19 @@ class ApplicationController
     :menu_click,
     :sb_controller,
 
-    :listicon,
     :embedded,
     :showlinks,
     :policy_sim,
+    :in_a_form,
     :lastaction,
-    :display
+    :display,
+    :supported_features_filter,
+    :clickable,
+    :no_checkboxes,
+    :checkboxes_clicked,
+    :show_pagination,
+    :report_name,
+    :custom_action
   ) do
     def self.from_options(options)
       additional_options = new
@@ -27,20 +35,25 @@ class ApplicationController
       additional_options.gtl_dbname = options[:gtl_dbname]
       additional_options.with_model(options[:model]) if options[:model]
       additional_options.match_via_descendants = options[:match_via_descendants]
-      additional_options.parent_id = options[:parent].id if options[:parent]
+      additional_options.parent_id = options[:parent].id.to_s if options[:parent]
       additional_options.parent_class_name = options[:parent].class.name if options[:parent]
       additional_options.association = options[:association]
       additional_options.view_suffix = options[:view_suffix]
       additional_options.parent_method = options[:parent_method]
+      additional_options.filter = options[:filter] if options[:filter]
+      additional_options.supported_features_filter = options[:supported_features_filter]
+      additional_options.clickable = options[:clickable]
+      additional_options.report_name = options[:report_name]
+      additional_options.custom_action = options[:custom_action]
       additional_options
     end
 
     def with_quadicon_options(options)
-      self.listicon   = options[:listicon]
       self.embedded   = options[:embedded]
       self.showlinks  = options[:showlinks]
       self.policy_sim = options[:policy_sim]
       self.lastaction = options[:lastaction]
+      self.in_a_form  = options[:in_a_form]
       self.display    = options[:display]
     end
 
@@ -58,6 +71,22 @@ class ApplicationController
 
     def with_model(curr_model)
       self.model = curr_model.kind_of?(String) ? curr_model : curr_model.name
+    end
+
+    def with_no_checkboxes(no_checkboxes)
+      self.no_checkboxes = no_checkboxes
+    end
+
+    def with_checkboxes_clicked(checkboxes_clicked)
+      self.checkboxes_clicked = checkboxes_clicked
+    end
+
+    def in_a_form(in_a_form)
+      self.in_a_form = in_a_form
+    end
+
+    def show_pagination(show_pagination)
+      self.show_pagination = show_pagination
     end
   end
 end

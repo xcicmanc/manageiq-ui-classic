@@ -5,20 +5,18 @@ module Mixins
         # Common handling of misc Host buttons
 
         def each_host(host_ids, task_name)
-          Host.where(:id => host_ids).order('lower(name)').each do |host|
-            begin
-              yield host
-            rescue => err
-              add_flash(
-                _("Host \"%{name}\": Error during '%{task}': %{message}") %
-                {
-                  :name    => host.name,
-                  :task    => task_name,
-                  :message => err.message
-                },
-                :error
-              )
-            end
+          Host.where(:id => host_ids).order(Host.arel_table[:name].lower).each do |host|
+            yield host
+          rescue StandardError => err
+            add_flash(
+              _("Host \"%{name}\": Error during '%{task}': %{message}") %
+              {
+                :name    => host.name,
+                :task    => task_name,
+                :message => err.message
+              },
+              :error
+            )
           end
         end
 
@@ -36,9 +34,8 @@ module Mixins
 
         def process_hosts_destroy(hosts, display_name)
           each_host(hosts, display_name) do |host|
-            validation = host.validate_destroy
-            if !validation[:available]
-              add_flash(validation[:message], :error)
+            if !host.supports?(:destroy)
+              add_flash(host.unsupported_reason(:destroy), :error)
             else
               audit = {:event        => "host_record_delete_initiated",
                        :message      => "[#{host.name}] Record delete initiated",
@@ -65,14 +62,14 @@ module Mixins
         def process_hosts_maintenance(hosts, display_name)
           each_host(hosts, display_name) do |host|
             if host.maintenance
-              if host.respond_to?(:unset_node_maintenance)
-                host.send(:unset_node_maintenance_queue, session[:userid])
+              if host.supports?(:unset_node_maintenance)
+                host.unset_node_maintenance_queue(session[:userid])
                 add_flash(_("\"%{record}\": %{task} successfully initiated") % {:record => host.name, :task => display_name})
               else
                 add_flash(_("\"%{task}\": not supported for %{hostname}") % {:hostname => host.name, :task => display_name}, :error)
               end
-            elsif host.respond_to?(:set_node_maintenance)
-              host.send(:set_node_maintenance_queue, session[:userid])
+            elsif host.supports?(:set_node_maintenance)
+              host.set_node_maintenance_queue(session[:userid])
               add_flash(_("\"%{record}\": %{task} successfully initiated") % {:record => host.name, :task => display_name})
             else
               add_flash(_("\"%{task}\": not supported for %{hostname}") % {:hostname => host.name, :task => display_name}, :error)
@@ -103,7 +100,7 @@ module Mixins
 
         def process_hosts_manageable(hosts, display_name)
           each_host(hosts, display_name) do |host|
-            if %w(enroll available adoptfail inspectfail cleanfail).include?(host.hardware.provision_state)
+            if %w[enroll available adoptfail inspectfail cleanfail].include?(host.hardware.provision_state)
               host.manageable_queue(session[:userid])
               add_flash(_("\"%{record}\": %{task} successfully initiated") % {:record => host.name, :task => display_name})
             else
@@ -123,7 +120,7 @@ module Mixins
           end
         end
 
-        def process_host_provide(hosts, display_name)
+        def process_hosts_provide(hosts, display_name)
           each_host(hosts, display_name) do |host|
             if host.hardware.provision_state == "manageable"
               host.provide_queue(session[:userid])
@@ -136,7 +133,7 @@ module Mixins
 
         def process_hosts_generic(hosts, task, display_name)
           each_host(hosts, display_name) do |host|
-            if host.respond_to?(task) && host.is_available?(task)
+            if host.supports?(task.to_sym)
               host.send(task.to_sym)
               add_flash(_("\"%{record}\": %{task} successfully initiated") % {:record => host.name, :task => display_name})
             else
@@ -218,33 +215,18 @@ module Mixins
         end
 
         def host_button_operation(method, display_name)
-          hosts = []
+          hosts = find_records_with_rbac(Host, checked_or_params).ids
+          process_hosts(hosts, method, display_name)
 
           # Either a list or coming from a different controller (eg from ems screen, go to its hosts)
           if @lastaction == "show_list" || @layout != "host"
-            hosts = find_checked_ids_with_rbac(Host)
-            if hosts.empty?
-              add_flash(_("No Hosts were selected for %{task}") % {:task => display_name}, :error)
-            else
-              process_hosts(hosts, method, display_name)
-            end
-
             if @lastaction == "show_list" # In host controller, refresh show_list, else let the other controller handle it
               show_list
               @refresh_partial = "layouts/gtl"
             end
-
           else # showing 1 host
-            if params[:id].nil? || Host.find_by(:id => params[:id]).nil?
-              add_flash(_("Host no longer exists"), :error)
-            else
-              hosts.push(find_id_with_rbac(Host, params[:id]))
-              process_hosts(hosts, method, display_name) unless hosts.empty?
-            end
-
             params[:display] = @display
             show
-
             # TODO: tells callers to go back to show_list because this Host may be gone
             # Should be refactored into calling show_list right here
             if method == 'destroy'

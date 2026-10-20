@@ -3,11 +3,11 @@ class TreeBuilderMenuRoles < TreeBuilder
 
   attr_reader :rpt_menu, :role_choice
 
-  def initialize(name, type, sandbox, build, role_choice:, rpt_menu: nil)
-    @rpt_menu    = rpt_menu || sandbox[:rpt_menu]
-    @role_choice = role_choice
+  def initialize(name, sandbox, build, **params)
+    @rpt_menu    = params[:rpt_menu] || sandbox[:rpt_menu]
+    @role_choice = params[:role_choice]
 
-    super(name, type, sandbox, build)
+    super(name, sandbox, build)
   end
 
   # Used for testing convenience and to satisfy need for
@@ -19,17 +19,8 @@ class TreeBuilderMenuRoles < TreeBuilder
 
   private
 
-  def set_locals_for_render
-    locals = {
-      :click_url => "/report/menu_editor/",
-      :onclick   => "miqOnCheckMenuRoles"
-    }
-
-    super.merge!(locals)
-  end
-
-  def tree_init_options(_tree_name)
-    { :lazy => false, :add_root => true }
+  def tree_init_options
+    {:click_url => "/report/menu_editor/", :onclick => "miqOnClickMenuRoles"}
   end
 
   def root_options
@@ -45,7 +36,7 @@ class TreeBuilderMenuRoles < TreeBuilder
   # parents to children. Therefore we include the children with the parent.
   # The :data key was chosen to avoid future conflicts with the :nodes key.
   #
-  def x_get_tree_roots(count_only = false, _options)
+  def x_get_tree_roots
     branches = menus.map do |i|
       grandkids = i.last.kind_of?(Array) ? i.last : []
 
@@ -58,7 +49,7 @@ class TreeBuilderMenuRoles < TreeBuilder
       }
     end
 
-    count_only_or_objects(count_only, branches)
+    count_only_or_objects(false, branches)
   end
 
   # Referenced by has_kids_for, builds nodes from branch kids and grandkids
@@ -114,15 +105,15 @@ class TreeBuilderMenuRoles < TreeBuilder
   end
 
   def present_and_empty?(item)
-    item && item.empty?
+    item&.empty?
   end
 
   def present_not_empty_but_first_empty?(item)
-    item && !item.empty? && item[0].empty?
+    item.present? && item[0].empty?
   end
 
   # Check the second level menu for "Custom"
   def present_not_empty_and_not_custom?(item)
-    item && !item.empty? && !item[0].empty? && item[0][0] != "Custom"
+    item.present? && !item[0].empty? && item[0][0] != "Custom"
   end
 end

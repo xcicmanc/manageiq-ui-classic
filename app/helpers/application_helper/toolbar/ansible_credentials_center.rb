@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::AnsibleCredentialsCenter < ApplicationHelper::
   button_group('embedded_ansible_credentials', [
     select(
       :embedded_ansible_credentials_configuration,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -34,8 +34,37 @@ class ApplicationHelper::Toolbar::AnsibleCredentialsCenter < ApplicationHelper::
           :send_checked => true,
           :enabled      => false,
           :onwhen       => "1+",
-          :confirm      => N_("Warning: The selected Credentials will be permanently removed!")),
+          :data         => {'function'      => 'sendDataWithRx',
+                            'function-data' => {:controller     => 'provider_dialogs',
+                                                :modal_title    => N_('Delete Credentials'),
+                                                :modal_text     => N_('Are you sure you want to delete the following credentials?'),
+                                                :api_url        => 'authentications',
+                                                :async_delete   => true,
+                                                :redirect_url   => '/ansible_credential/show_list',
+                                                :component_name => 'RemoveGenericItemModal'}}),
       ]
     )
   ])
+  button_group('embedded_ansible_credentials_policy', [
+                 select(
+                   :embedded_ansible_credentials_policy_choice,
+                   nil,
+                   t = N_('Policy'),
+                   t,
+                   :enabled => false,
+                   :onwhen  => "1+",
+                   :items   => [
+                     button(
+                       :embedded_automation_manager_credential_tag,
+                       'pficon pficon-edit fa-lg',
+                       N_('Edit Tags for the selected Ansible Credentials'),
+                       N_('Edit Tags'),
+                       :url_parms    => "main_div",
+                       :send_checked => true,
+                       :enabled      => false,
+                       :onwhen       => "1+"
+                     ),
+                   ]
+                 )
+               ])
 end

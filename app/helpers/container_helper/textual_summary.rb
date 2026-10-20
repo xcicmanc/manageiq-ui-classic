@@ -6,23 +6,23 @@ module ContainerHelper::TextualSummary
   def textual_group_properties
     TextualGroup.new(
       _("Properties"),
-      %i(
+      %i[
         name state reason started_at finished_at exit_code signal message last_state restart_count backing_ref command
         capabilities_add capabilities_drop privileged run_as_user se_linux_user se_linux_role se_linux_type
         se_linux_level run_as_non_root
-      )
+      ]
     )
   end
 
   def textual_group_relationships
     TextualGroup.new(
       _("Relationships"),
-      %i(ems container_project container_replicator container_group container_node container_image)
+      %i[ems container_project container_replicator container_group container_node container_image]
     )
   end
 
   def textual_group_smart_management
-    TextualTags.new(_("Smart Management"), %i(tags))
+    TextualTags.new(_("Smart Management"), %i[tags])
   end
 
   #
@@ -92,13 +92,17 @@ module ContainerHelper::TextualSummary
   end
 
   def textual_privileged
-    {:label => _("Privileged"),
-     :value => @record.privileged} unless @record.privileged.nil?
+    unless @record.privileged.nil?
+      {:label => _("Privileged"),
+       :value => @record.privileged}
+    end
   end
 
   def textual_run_as_user
-    {:label => _("Run As User"),
-     :value => @record.run_as_user} if @record.run_as_user
+    if @record.run_as_user
+      {:label => _("Run As User"),
+       :value => @record.run_as_user}
+    end
   end
 
   def textual_se_linux_user
@@ -122,8 +126,10 @@ module ContainerHelper::TextualSummary
   end
 
   def textual_run_as_non_root
-    {:label => _("Run As Non Root"),
-     :value => @record.run_as_non_root} unless @record.run_as_non_root.nil?
+    unless @record.run_as_non_root.nil?
+      {:label => _("Run As Non Root"),
+       :value => @record.run_as_non_root}
+    end
   end
 
   def textual_group_env
@@ -149,6 +155,7 @@ module ContainerHelper::TextualSummary
       :values => [[_("Limit CPU cores"), @record.limit_cpu_cores],
                   [_("Limit Memory bytes"), @record.limit_memory_bytes],
                   [_("Request CPU cores"), @record.request_cpu_cores],
-                  [_("Request Memory bytes"), @record.request_memory_bytes]])
+                  [_("Request Memory bytes"), @record.request_memory_bytes]]
+    )
   end
 end

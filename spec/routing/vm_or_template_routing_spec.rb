@@ -10,7 +10,6 @@ describe VmOrTemplateController do
   it_behaves_like "A controller that has policy protect routes"
   it_behaves_like "A controller that has tagging routes"
   it_behaves_like "A controller that has timeline routes"
-  it_behaves_like "A controller that has utilization routes"
 
   describe "#explorer" do
     it "routes with GET" do
@@ -37,8 +36,7 @@ describe VmOrTemplateController do
     drift_to_pdf
     drift_to_txt
     launch_html5_console
-    launch_vmware_console
-    retirement_info
+    launch_vmrc_console
     vm_show
   ).each do |path|
     describe "##{path}" do
@@ -59,18 +57,13 @@ describe VmOrTemplateController do
     drift_history
     drift_mode
     drift_same
-    edit_vm
     event_logs
-    evm_relationship_field_changed
-    evm_relationship_update
     filesystem_drivers
     filesystems
-    form_field_changed
     groups
     guest_applications
     kernel_drivers
     linux_initprocesses
-    ownership_field_changed
     ownership_update
     patches
     perf_chart_chooser
@@ -85,19 +78,15 @@ describe VmOrTemplateController do
     processes
     prov_edit
     prov_field_changed
-    reconfigure_field_changed
     reconfigure_update
     registry_items
     reload
-    retire
     scan_histories
     sections_field_changed
     snap_pressed
-    snap_vm
     sort_ds_grid
     sort_host_grid
     sort_iso_img_grid
-    squash_toggle
     tree_select
     users
     vm_pre_prov

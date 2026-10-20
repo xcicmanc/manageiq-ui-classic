@@ -1,4 +1,8 @@
 describe OpsController do
+  before do
+    stub_user(:features => :all)
+  end
+
   let(:params) { {} }
   let(:session) { {} }
 
@@ -11,7 +15,7 @@ describe OpsController do
     end
 
     context "when the filter_type is 'vm'" do
-      let(:vm) { FactoryGirl.create(:vm_vmware, :name => "vmtest") }
+      let(:vm) { FactoryBot.create(:vm_vmware, :name => "vmtest") }
       let(:filter_type) { "vm" }
 
       before do
@@ -26,7 +30,7 @@ describe OpsController do
     end
 
     context "when the filter_type is 'ems'" do
-      let(:ext_management_system) { FactoryGirl.create(:ext_management_system, :name => "emstest") }
+      let(:ext_management_system) { FactoryBot.create(:ext_management_system) }
       let(:filter_type) { "ems" }
 
       before do
@@ -36,21 +40,21 @@ describe OpsController do
 
       it "responds with a filtered ext management system list" do
         json = JSON.parse(response.body)
-        expect(json["filtered_item_list"]).to eq(["emstest"])
+        expect(json["filtered_item_list"]).to eq([ext_management_system.name])
       end
     end
 
     context "when the filter_type is 'cluster'" do
       let(:cluster) do
-        FactoryGirl.create(
+        FactoryBot.create(
           :ems_cluster,
-          :name                => "clustertest"
+          :name => "clustertest"
         )
       end
       let(:filter_type) { "cluster" }
 
       before do
-        cluster.parent = FactoryGirl.create(:datacenter, :name => "datacenter")
+        cluster.parent = FactoryBot.create(:datacenter, :name => "datacenter")
         bypass_rescue
         allow(EmsCluster).to receive(:find).with(:all, {}).and_return([cluster])
         post :schedule_form_filter_type_field_changed, :params => params, :session => session
@@ -63,7 +67,7 @@ describe OpsController do
     end
 
     context "when the filter_type is 'host'" do
-      let(:host) { FactoryGirl.create(:host, :name => "hosttest") }
+      let(:host) { FactoryBot.create(:host, :name => "hosttest") }
       let(:filter_type) { "host" }
 
       before do
@@ -77,49 +81,14 @@ describe OpsController do
       end
     end
   end
-  context "#build_uri_settings" do
-    let(:mocked_filedepot) { double(FileDepotSmb) }
-    it "uses params[:log_password] for validation if one exists" do
-      controller.instance_variable_set(:@_params,
-                                       :log_userid   => "userid",
-                                       :log_password => "password2",
-                                       :uri_prefix   => "smb",
-                                       :uri          => "samba_uri",
-                                       :log_protocol => "Samba")
-      settings = {:username   => "userid",
-                  :password   => "password2",
-                  :uri        => "smb://samba_uri",
-                  :uri_prefix => "smb"
-                 }
-      expect(controller.send(:build_uri_settings, :mocked_filedepot)).to include(settings)
-    end
-
-    it "uses the stored password for validation if params[:log_password] does not exist" do
-      controller.instance_variable_set(:@_params,
-                                       :log_userid   => "userid",
-                                       :uri_prefix   => "smb",
-                                       :uri          => "samba_uri",
-                                       :log_protocol => "Samba")
-      expect(mocked_filedepot).to receive(:try).with(:authentication_password).and_return('password')
-      settings = {:username   => "userid",
-                  :password   => "password",
-                  :uri        => "smb://samba_uri",
-                  :uri_prefix => "smb"
-                 }
-      expect(controller.send(:build_uri_settings, mocked_filedepot)).to include(settings)
-    end
-  end
 
   context "#schedule_set_record_vars" do
-    let(:zone) { double("Zone", :name => "foo") }
-    let(:server) { double("MiqServer", :logon_status => :ready, :id => 1, :my_zone => zone) }
     let(:user) { stub_user(:features => :all) }
-    let(:schedule) { FactoryGirl.create(:miq_automate_schedule) }
-    let(:vm) { FactoryGirl.create(:vm_vmware) }
+    let(:schedule) { FactoryBot.create(:miq_automate_schedule) }
+    let(:vm) { FactoryBot.create(:vm_vmware) }
 
     before do
-      allow(MiqServer).to receive(:my_server).and_return(server)
-      allow(server).to receive(:zone_id).and_return(1)
+      EvmSpecHelper.local_miq_server
       stub_user(:features => :all)
     end
 
@@ -159,17 +128,25 @@ describe OpsController do
       expect(schedule.filter.exp[key]["field"]).to eq("Vm-name")
       expect(schedule.sched_action).to eq(:method=>"check_compliance")
     end
+
+    it "sets start time correctly" do
+      params[:start_date] = "Mon Mar 12 2018 20:00:00 GMT-0400 (EDT)"
+      params[:start_hour] = "1"
+      params[:start_min]  = "5"
+      params[:time_zone]  = "UTC"
+
+      allow(controller).to receive(:params).and_return(params)
+      controller.send(:schedule_set_start_time_record_vars, schedule)
+      expect(schedule.run_at[:start_time]).to eq("2018-03-12 01:05:00 UTC")
+    end
   end
 
   context "#build_attrs_from_params" do
-    let(:zone) { double("Zone", :name => "foo") }
-    let(:server) { double("MiqServer", :logon_status => :ready, :id => 1, :my_zone => zone) }
     let(:user) { stub_user(:features => :all) }
-    let(:vm) { FactoryGirl.create(:vm_vmware) }
+    let(:vm) { FactoryBot.create(:vm_vmware) }
 
     before do
-      allow(MiqServer).to receive(:my_server).and_return(server)
-      allow(server).to receive(:zone_id).and_return(1)
+      EvmSpecHelper.local_miq_server
       stub_user(:features => :all)
     end
 
@@ -200,8 +177,8 @@ describe OpsController do
     settings = {}
     it "returns a filtered item list for MiqTemplate" do
       controller.instance_variable_set(:@settings, settings)
-      current_user = FactoryGirl.create(:user)
-      FactoryGirl.create(:miq_search,
+      current_user = FactoryBot.create(:user)
+      FactoryBot.create(:miq_search,
                          :name        => "default_Environment / UAT",
                          :description => "Environment / UAT",
                          :db          => "MiqTemplate",
@@ -213,8 +190,8 @@ describe OpsController do
 
     it "returns a filtered item list for Datastore" do
       controller.instance_variable_set(:@settings, settings)
-      current_user = FactoryGirl.create(:user)
-      FactoryGirl.create(:miq_search,
+      current_user = FactoryBot.create(:user)
+      FactoryBot.create(:miq_search,
                          :name        => "default_Environment_Storage / UAT",
                          :description => "Storage_Environment / UAT",
                          :db          => "Storage",
@@ -226,20 +203,62 @@ describe OpsController do
 
     it "returns a filtered item list for a single Datastore" do
       controller.instance_variable_set(:@settings, settings)
-      storage = FactoryGirl.create(:storage_vmware)
+      storage = FactoryBot.create(:storage_vmware)
       filtered_list = controller.send(:build_filtered_item_list, "storage", "storage")
       expect(filtered_list.first).to include(storage.name)
     end
 
     it "returns a filtered item list for ems providers that have hosts" do
       controller.instance_variable_set(:@settings, settings)
-      ems_cloud = FactoryGirl.create(:ems_cloud)
-      ems_infra_no_hosts = FactoryGirl.create(:ems_openstack_infra)
-      ems_infra_with_hosts = FactoryGirl.create(:ems_openstack_infra_with_stack)
+      ems_cloud = FactoryBot.create(:ems_cloud)
+      ems_infra_no_hosts = FactoryBot.create(:ems_openstack_infra)
+      ems_infra_with_hosts = FactoryBot.create(:ems_openstack_infra_with_stack)
       filtered_list = controller.send(:build_filtered_item_list, "host", "ems")
       expect(filtered_list).not_to include(ems_cloud.name)
       expect(filtered_list).not_to include(ems_infra_no_hosts.name)
       expect(filtered_list.first).to include(ems_infra_with_hosts.name)
+    end
+  end
+
+  describe "#schedule_run_now" do
+    let(:user) { FactoryBot.create(:user_admin) }
+
+    before do
+      EvmSpecHelper.local_miq_server
+      login_as(user, :stub_controller => true)
+      allow(controller).to receive(:get_node_info)
+      allow(controller).to receive(:replace_right_cell)
+
+      schedules.each { |schedule| controller.params["check_#{schedule.id}"] = "1" }
+    end
+
+    let(:schedules) { FactoryBot.create_list(:miq_schedule, amount) }
+
+    shared_examples "creates queue items" do |flash_msg|
+      it 'displays the flash message' do
+        controller.send(:schedule_run_now)
+        expect(assigns(:flash_array)).to eq([{:message => flash_msg, :level => :success}])
+      end
+
+      it 'creates queue items' do
+        controller.send(:schedule_run_now)
+        schedules.each do |schedule|
+          record = MiqQueue.find_by(:instance_id => schedule.id, :class_name => "MiqSchedule", :state => "ready")
+          expect(record.args.first).to eq("action_" + schedule.sched_action[:method])
+        end
+      end
+    end
+
+    context "single schedule" do
+      let(:amount) { 1 }
+
+      include_examples "creates queue items", "The selected Schedule has been queued to run"
+    end
+
+    context "multiple schedules" do
+      let(:amount) { 10 }
+
+      include_examples "creates queue items", "The selected Schedules have been queued to run"
     end
   end
 end

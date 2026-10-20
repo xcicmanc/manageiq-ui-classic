@@ -2,20 +2,21 @@ class ApplicationHelper::Toolbar::ConfigurationScriptCenter < ApplicationHelper:
   button_group('configuration_script_vmdb', [
     select(
       :configuration_script_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
         button(
-          :configscript_service_dialog,
+          :configuration_script_service_dialog,
           'pficon pficon-add-circle-o fa-lg',
-          t = N_('Create Service Dialog from this Job Template'),
-          t),
+          t = N_('Create Service Dialog from this Template'),
+          t,
+          :url => "/configuration_script_service_dialog"),
       ]
     ),
     select(
-      :automation_manager_policy_choice,
-      'fa fa-shield fa-lg',
+      :configuration_script_policy_choice,
+      nil,
       t = N_('Policy'),
       t,
       :enabled => true,
@@ -23,12 +24,8 @@ class ApplicationHelper::Toolbar::ConfigurationScriptCenter < ApplicationHelper:
         button(
           :configuration_script_tag,
           'pficon pficon-edit fa-lg',
-          N_('Edit Tags for this Job Template'),
-          N_('Edit Tags'),
-          :url          => "tagging",
-          :url_parms    => "main_div",
-          :send_checked => true,
-          :enabled      => true),
+          N_('Edit Tags for this Template'),
+          N_('Edit Tags')),
       ]
     ),
   ])

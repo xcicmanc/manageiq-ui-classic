@@ -1,0 +1,2295 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Button Group form component should render the adding form 1`] = `
+<div>
+  <div
+    class="col-md-12 button-form"
+  >
+    <form>
+      <div
+        class=""
+        id="name-wrapper"
+        name="subform-1"
+      >
+        <div
+          class="cds--form-item cds--text-input-wrapper"
+        >
+          <div
+            class="cds--text-input__label-wrapper"
+          >
+            <label
+              class="cds--label"
+              dir="auto"
+              for="button_group_name"
+            >
+              <span
+                aria-hidden="true"
+                class="ddorg__carbon-component-mapper_is-required isRequired-0-2-2"
+              >
+                *
+              </span>
+              Name
+            </label>
+          </div>
+          <div
+            class="cds--text-input__field-outer-wrapper"
+          >
+            <div
+              class="cds--text-input__field-wrapper"
+            >
+              <input
+                class="cds--text-input"
+                id="button_group_name"
+                maxlength="50"
+                name="name"
+                type="text"
+                value=""
+              />
+              <span
+                aria-atomic="true"
+                aria-live="assertive"
+                class="cds--text-input__counter-alert"
+                role="alert"
+              />
+            </div>
+          </div>
+        </div>
+        <div>
+          <div
+            class="cds--form-item cds--checkbox-wrapper"
+          >
+            <input
+              class="cds--checkbox"
+              id="button_group_display"
+              name="set_data.display"
+              type="checkbox"
+            />
+            <label
+              class="cds--checkbox-label"
+              for="button_group_display"
+              title=""
+            >
+              <div
+                class="cds--checkbox-label-text"
+                dir="auto"
+              >
+                Display on Button
+              </div>
+            </label>
+            <div
+              class="cds--checkbox__validation-msg"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="button_group_desription"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-2"
+            >
+              *
+            </span>
+            Description
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="button_group_desription"
+              maxlength="50"
+              name="description"
+              type="text"
+              value=""
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <fieldset
+        class="cds--fieldset"
+      >
+        <legend
+          class="cds--label"
+        >
+          Icon
+        </legend>
+        <div
+          class="fonticon-picker"
+        >
+          <button
+            class="icon-button cds--btn cds--btn--tertiary"
+            type="button"
+          >
+            No icon
+            <svg
+              aria-hidden="true"
+              class="cds--btn__icon"
+              fill="currentColor"
+              focusable="false"
+              height="32"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 32 32"
+              width="32"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16 22 6 12 7.4 10.6 16 19.2 24.6 10.6 26 12z"
+              />
+            </svg>
+          </button>
+        </div>
+      </fieldset>
+      <div
+        class="cds--form-item form-control-color-select cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="color-select"
+          >
+            Icon color
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="color-select"
+              name="set_data.button_color"
+              type="color"
+              value=""
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <fieldset
+        class="cds--fieldset"
+      >
+        <legend
+          class="cds--label"
+        >
+          Assign buttons
+        </legend>
+        <div
+          class="miq-dual-list-common-grid-container cds--css-grid cds--css-grid--condensed"
+        >
+          <div
+            class="cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-5 cds--css-grid-column"
+          >
+            <h6>
+              Unassigned:
+            </h6>
+            <div
+              class="toolbar-0-2-7"
+            >
+              <div
+                aria-labelledby="search-input-_r_2_-search"
+                class="cds--search"
+                role="search"
+              >
+                <div
+                  class="cds--search-magnifier"
+                  tabindex="-1"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="cds--search-magnifier-icon"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 16 16"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15,14.3L10.7,10c1.9-2.3,1.6-5.8-0.7-7.7S4.2,0.7,2.3,3S0.7,8.8,3,10.7c2,1.7,5,1.7,7,0l4.3,4.3L15,14.3z M2,6.5 C2,4,4,2,6.5,2S11,4,11,6.5S9,11,6.5,11S2,9,2,6.5z"
+                    />
+                  </svg>
+                </div>
+                <label
+                  class="cds--label"
+                  for="search-input-_r_2_"
+                  id="search-input-_r_2_-search"
+                />
+                <input
+                  autocomplete="off"
+                  class="cds--search-input"
+                  id="search-input-_r_2_"
+                  placeholder="Filter options"
+                  type="search"
+                />
+                <button
+                  aria-label="Clear search input"
+                  class="cds--search-close cds--search-close--hidden"
+                  title="Clear search input"
+                  type="button"
+                >
+                  <svg
+                    aria-hidden="true"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 32 32"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <span
+                class="cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--bottom cds--tooltip cds--icon-tooltip"
+              >
+                <div
+                  class="cds--tooltip-trigger__wrapper"
+                >
+                  <button
+                    aria-labelledby="tooltip-_r_4_"
+                    class="tooltipButton-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--ghost cds--btn--icon-only"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="32"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 32 32"
+                      width="32"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M24 24 16 32 8 24z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <span
+                  aria-hidden="true"
+                  class="cds--popover"
+                  id="tooltip-_r_4_"
+                  role="tooltip"
+                >
+                  <span
+                    class="cds--popover-content cds--tooltip-content"
+                  >
+                    Sort options
+                  </span>
+                  <span
+                    class="cds--popover-caret"
+                  />
+                </span>
+              </span>
+            </div>
+            <div
+              aria-label="Structured list section"
+              class="cds--structured-list"
+              role="table"
+            >
+              <div
+                class="cds--structured-list-tbody"
+                role="rowgroup"
+              >
+                <div
+                  class="cds--structured-list-row"
+                  role="row"
+                >
+                  <div
+                    class="cds--structured-list-td"
+                    dir="auto"
+                    role="cell"
+                  >
+                    No available options
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="buttonWrapper-0-2-6 cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-4 cds--css-grid-column"
+          >
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-right"
+              type="button"
+            >
+              Add
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M22 16 12 26 10.6 24.6 19.2 16 10.6 7.4 12 6z"
+                />
+              </svg>
+            </button>
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-all-right"
+              type="button"
+            >
+              Add all
+            </button>
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-all-left"
+              type="button"
+            >
+              Remove all
+            </button>
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-left"
+              type="button"
+            >
+              Remove
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M10 16 20 6 21.4 7.4 12.8 16 21.4 24.6 20 26z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-5 cds--css-grid-column"
+          >
+            <h6>
+              Selected:
+            </h6>
+            <div
+              class="toolbar-0-2-7"
+            >
+              <div
+                aria-labelledby="search-input-_r_c_-search"
+                class="cds--search"
+                role="search"
+              >
+                <div
+                  class="cds--search-magnifier"
+                  tabindex="-1"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="cds--search-magnifier-icon"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 16 16"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15,14.3L10.7,10c1.9-2.3,1.6-5.8-0.7-7.7S4.2,0.7,2.3,3S0.7,8.8,3,10.7c2,1.7,5,1.7,7,0l4.3,4.3L15,14.3z M2,6.5 C2,4,4,2,6.5,2S11,4,11,6.5S9,11,6.5,11S2,9,2,6.5z"
+                    />
+                  </svg>
+                </div>
+                <label
+                  class="cds--label"
+                  for="search-input-_r_c_"
+                  id="search-input-_r_c_-search"
+                />
+                <input
+                  autocomplete="off"
+                  class="cds--search-input"
+                  id="search-input-_r_c_"
+                  placeholder="Filter values"
+                  type="search"
+                />
+                <button
+                  aria-label="Clear search input"
+                  class="cds--search-close cds--search-close--hidden"
+                  title="Clear search input"
+                  type="button"
+                >
+                  <svg
+                    aria-hidden="true"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 32 32"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <span
+                class="cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--bottom cds--tooltip cds--icon-tooltip"
+              >
+                <div
+                  class="cds--tooltip-trigger__wrapper"
+                >
+                  <button
+                    aria-labelledby="tooltip-_r_e_"
+                    class="tooltipButton-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--ghost cds--btn--icon-only"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="32"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 32 32"
+                      width="32"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M24 24 16 32 8 24z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <span
+                  aria-hidden="true"
+                  class="cds--popover"
+                  id="tooltip-_r_e_"
+                  role="tooltip"
+                >
+                  <span
+                    class="cds--popover-content cds--tooltip-content"
+                  >
+                    Sort values
+                  </span>
+                  <span
+                    class="cds--popover-caret"
+                  />
+                </span>
+              </span>
+            </div>
+            <div
+              aria-label="Structured list section"
+              class="cds--structured-list"
+              role="table"
+            >
+              <div
+                class="cds--structured-list-tbody"
+                role="rowgroup"
+              >
+                <div
+                  class="cds--structured-list-row"
+                  role="row"
+                >
+                  <div
+                    class="cds--structured-list-td"
+                    dir="auto"
+                    role="cell"
+                  >
+                    No option selected
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <div
+        class="custom-button-wrapper"
+      >
+        <button
+          class="btnRight cds--btn cds--btn--primary cds--btn--disabled"
+          disabled=""
+          type="submit"
+        >
+          Add
+        </button>
+        <button
+          class="cds--btn cds--btn--secondary"
+          type="button"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+`;
+
+exports[`Button Group form component should render the adding form for generic object button groups 1`] = `
+<div>
+  <div
+    class="col-md-12 button-form"
+  >
+    <form>
+      <div
+        class=""
+        id="name-wrapper"
+        name="subform-1"
+      >
+        <div
+          class="cds--form-item cds--text-input-wrapper"
+        >
+          <div
+            class="cds--text-input__label-wrapper"
+          >
+            <label
+              class="cds--label"
+              dir="auto"
+              for="button_group_name"
+            >
+              <span
+                aria-hidden="true"
+                class="ddorg__carbon-component-mapper_is-required isRequired-0-2-2"
+              >
+                *
+              </span>
+              Name
+            </label>
+          </div>
+          <div
+            class="cds--text-input__field-outer-wrapper"
+          >
+            <div
+              class="cds--text-input__field-wrapper"
+            >
+              <input
+                class="cds--text-input"
+                id="button_group_name"
+                maxlength="50"
+                name="name"
+                type="text"
+                value=""
+              />
+              <span
+                aria-atomic="true"
+                aria-live="assertive"
+                class="cds--text-input__counter-alert"
+                role="alert"
+              />
+            </div>
+          </div>
+        </div>
+        <div>
+          <div
+            class="cds--form-item cds--checkbox-wrapper"
+          >
+            <input
+              class="cds--checkbox"
+              id="button_group_display"
+              name="set_data.display"
+              type="checkbox"
+            />
+            <label
+              class="cds--checkbox-label"
+              for="button_group_display"
+              title=""
+            >
+              <div
+                class="cds--checkbox-label-text"
+                dir="auto"
+              >
+                Display on Button
+              </div>
+            </label>
+            <div
+              class="cds--checkbox__validation-msg"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="button_group_desription"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-2"
+            >
+              *
+            </span>
+            Description
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="button_group_desription"
+              maxlength="50"
+              name="description"
+              type="text"
+              value=""
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <fieldset
+        class="cds--fieldset"
+      >
+        <legend
+          class="cds--label"
+        >
+          Icon
+        </legend>
+        <div
+          class="fonticon-picker"
+        >
+          <button
+            class="icon-button cds--btn cds--btn--tertiary"
+            type="button"
+          >
+            No icon
+            <svg
+              aria-hidden="true"
+              class="cds--btn__icon"
+              fill="currentColor"
+              focusable="false"
+              height="32"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 32 32"
+              width="32"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16 22 6 12 7.4 10.6 16 19.2 24.6 10.6 26 12z"
+              />
+            </svg>
+          </button>
+        </div>
+      </fieldset>
+      <div
+        class="cds--form-item form-control-color-select cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="color-select"
+          >
+            Icon color
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="color-select"
+              name="set_data.button_color"
+              type="color"
+              value=""
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <fieldset
+        class="cds--fieldset"
+      >
+        <legend
+          class="cds--label"
+        >
+          Assign buttons
+        </legend>
+        <div
+          class="miq-dual-list-common-grid-container cds--css-grid cds--css-grid--condensed"
+        >
+          <div
+            class="cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-5 cds--css-grid-column"
+          >
+            <h6>
+              Unassigned:
+            </h6>
+            <div
+              class="toolbar-0-2-7"
+            >
+              <div
+                aria-labelledby="search-input-_r_m_-search"
+                class="cds--search"
+                role="search"
+              >
+                <div
+                  class="cds--search-magnifier"
+                  tabindex="-1"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="cds--search-magnifier-icon"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 16 16"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15,14.3L10.7,10c1.9-2.3,1.6-5.8-0.7-7.7S4.2,0.7,2.3,3S0.7,8.8,3,10.7c2,1.7,5,1.7,7,0l4.3,4.3L15,14.3z M2,6.5 C2,4,4,2,6.5,2S11,4,11,6.5S9,11,6.5,11S2,9,2,6.5z"
+                    />
+                  </svg>
+                </div>
+                <label
+                  class="cds--label"
+                  for="search-input-_r_m_"
+                  id="search-input-_r_m_-search"
+                />
+                <input
+                  autocomplete="off"
+                  class="cds--search-input"
+                  id="search-input-_r_m_"
+                  placeholder="Filter options"
+                  type="search"
+                />
+                <button
+                  aria-label="Clear search input"
+                  class="cds--search-close cds--search-close--hidden"
+                  title="Clear search input"
+                  type="button"
+                >
+                  <svg
+                    aria-hidden="true"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 32 32"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <span
+                class="cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--bottom cds--tooltip cds--icon-tooltip"
+              >
+                <div
+                  class="cds--tooltip-trigger__wrapper"
+                >
+                  <button
+                    aria-labelledby="tooltip-_r_o_"
+                    class="tooltipButton-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--ghost cds--btn--icon-only"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="32"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 32 32"
+                      width="32"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M24 24 16 32 8 24z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <span
+                  aria-hidden="true"
+                  class="cds--popover"
+                  id="tooltip-_r_o_"
+                  role="tooltip"
+                >
+                  <span
+                    class="cds--popover-content cds--tooltip-content"
+                  >
+                    Sort options
+                  </span>
+                  <span
+                    class="cds--popover-caret"
+                  />
+                </span>
+              </span>
+            </div>
+            <div
+              aria-label="Structured list section"
+              class="cds--structured-list"
+              role="table"
+            >
+              <div
+                class="cds--structured-list-tbody"
+                role="rowgroup"
+              >
+                <div
+                  class="cds--structured-list-row"
+                  role="row"
+                >
+                  <div
+                    class="cds--structured-list-td"
+                    dir="auto"
+                    role="cell"
+                  >
+                    No available options
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="buttonWrapper-0-2-6 cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-4 cds--css-grid-column"
+          >
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-right"
+              type="button"
+            >
+              Add
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M22 16 12 26 10.6 24.6 19.2 16 10.6 7.4 12 6z"
+                />
+              </svg>
+            </button>
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-all-right"
+              type="button"
+            >
+              Add all
+            </button>
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-all-left"
+              type="button"
+            >
+              Remove all
+            </button>
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-left"
+              type="button"
+            >
+              Remove
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M10 16 20 6 21.4 7.4 12.8 16 21.4 24.6 20 26z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-5 cds--css-grid-column"
+          >
+            <h6>
+              Selected:
+            </h6>
+            <div
+              class="toolbar-0-2-7"
+            >
+              <div
+                aria-labelledby="search-input-_r_10_-search"
+                class="cds--search"
+                role="search"
+              >
+                <div
+                  class="cds--search-magnifier"
+                  tabindex="-1"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="cds--search-magnifier-icon"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 16 16"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15,14.3L10.7,10c1.9-2.3,1.6-5.8-0.7-7.7S4.2,0.7,2.3,3S0.7,8.8,3,10.7c2,1.7,5,1.7,7,0l4.3,4.3L15,14.3z M2,6.5 C2,4,4,2,6.5,2S11,4,11,6.5S9,11,6.5,11S2,9,2,6.5z"
+                    />
+                  </svg>
+                </div>
+                <label
+                  class="cds--label"
+                  for="search-input-_r_10_"
+                  id="search-input-_r_10_-search"
+                />
+                <input
+                  autocomplete="off"
+                  class="cds--search-input"
+                  id="search-input-_r_10_"
+                  placeholder="Filter values"
+                  type="search"
+                />
+                <button
+                  aria-label="Clear search input"
+                  class="cds--search-close cds--search-close--hidden"
+                  title="Clear search input"
+                  type="button"
+                >
+                  <svg
+                    aria-hidden="true"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 32 32"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <span
+                class="cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--bottom cds--tooltip cds--icon-tooltip"
+              >
+                <div
+                  class="cds--tooltip-trigger__wrapper"
+                >
+                  <button
+                    aria-labelledby="tooltip-_r_12_"
+                    class="tooltipButton-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--ghost cds--btn--icon-only"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="32"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 32 32"
+                      width="32"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M24 24 16 32 8 24z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <span
+                  aria-hidden="true"
+                  class="cds--popover"
+                  id="tooltip-_r_12_"
+                  role="tooltip"
+                >
+                  <span
+                    class="cds--popover-content cds--tooltip-content"
+                  >
+                    Sort values
+                  </span>
+                  <span
+                    class="cds--popover-caret"
+                  />
+                </span>
+              </span>
+            </div>
+            <div
+              aria-label="Structured list section"
+              class="cds--structured-list"
+              role="table"
+            >
+              <div
+                class="cds--structured-list-tbody"
+                role="rowgroup"
+              >
+                <div
+                  class="cds--structured-list-row"
+                  role="row"
+                >
+                  <div
+                    class="cds--structured-list-td"
+                    dir="auto"
+                    role="cell"
+                  >
+                    No option selected
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <div
+        class="custom-button-wrapper"
+      >
+        <button
+          class="btnRight cds--btn cds--btn--primary cds--btn--disabled"
+          disabled=""
+          type="submit"
+        >
+          Add
+        </button>
+        <button
+          class="cds--btn cds--btn--secondary"
+          type="button"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+`;
+
+exports[`Button Group form component should render the editing form 1`] = `
+<div>
+  <div
+    class="col-md-12 button-form"
+  >
+    <form>
+      <div
+        class=""
+        id="name-wrapper"
+        name="subform-1"
+      >
+        <div
+          class="cds--form-item cds--text-input-wrapper"
+        >
+          <div
+            class="cds--text-input__label-wrapper"
+          >
+            <label
+              class="cds--label"
+              dir="auto"
+              for="button_group_name"
+            >
+              <span
+                aria-hidden="true"
+                class="ddorg__carbon-component-mapper_is-required isRequired-0-2-2"
+              >
+                *
+              </span>
+              Name
+            </label>
+          </div>
+          <div
+            class="cds--text-input__field-outer-wrapper"
+          >
+            <div
+              class="cds--text-input__field-wrapper"
+            >
+              <input
+                class="cds--text-input"
+                id="button_group_name"
+                maxlength="50"
+                name="name"
+                type="text"
+                value="OP VM Group"
+              />
+              <span
+                aria-atomic="true"
+                aria-live="assertive"
+                class="cds--text-input__counter-alert"
+                role="alert"
+              />
+            </div>
+          </div>
+        </div>
+        <div>
+          <div
+            class="cds--form-item cds--checkbox-wrapper"
+          >
+            <input
+              checked=""
+              class="cds--checkbox"
+              id="button_group_display"
+              name="set_data.display"
+              type="checkbox"
+            />
+            <label
+              class="cds--checkbox-label"
+              for="button_group_display"
+              title=""
+            >
+              <div
+                class="cds--checkbox-label-text"
+                dir="auto"
+              >
+                Display on Button
+              </div>
+            </label>
+            <div
+              class="cds--checkbox__validation-msg"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="button_group_desription"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-2"
+            >
+              *
+            </span>
+            Description
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="button_group_desription"
+              maxlength="50"
+              name="description"
+              type="text"
+              value="OP VM Group"
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <fieldset
+        class="cds--fieldset"
+      >
+        <legend
+          class="cds--label"
+        >
+          Icon
+        </legend>
+        <div
+          class="fonticon-picker"
+        >
+          <button
+            class="icon-button cds--btn cds--btn--tertiary"
+            type="button"
+          >
+            <i
+              class="fa-lg pficon pficon-cluster"
+              id="selected-icon"
+            />
+            <svg
+              aria-hidden="true"
+              class="cds--btn__icon"
+              fill="currentColor"
+              focusable="false"
+              height="32"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 32 32"
+              width="32"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16 22 6 12 7.4 10.6 16 19.2 24.6 10.6 26 12z"
+              />
+            </svg>
+          </button>
+        </div>
+      </fieldset>
+      <div
+        class="cds--form-item form-control-color-select cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="color-select"
+          >
+            Icon color
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="color-select"
+              name="set_data.button_color"
+              type="color"
+              value="#ed1a21"
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <fieldset
+        class="cds--fieldset"
+      >
+        <legend
+          class="cds--label"
+        >
+          Assign buttons
+        </legend>
+        <div
+          class="miq-dual-list-common-grid-container cds--css-grid cds--css-grid--condensed"
+        >
+          <div
+            class="cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-5 cds--css-grid-column"
+          >
+            <h6>
+              Unassigned:
+            </h6>
+            <div
+              class="toolbar-0-2-7"
+            >
+              <div
+                aria-labelledby="search-input-_r_1a_-search"
+                class="cds--search"
+                role="search"
+              >
+                <div
+                  class="cds--search-magnifier"
+                  tabindex="-1"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="cds--search-magnifier-icon"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 16 16"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15,14.3L10.7,10c1.9-2.3,1.6-5.8-0.7-7.7S4.2,0.7,2.3,3S0.7,8.8,3,10.7c2,1.7,5,1.7,7,0l4.3,4.3L15,14.3z M2,6.5 C2,4,4,2,6.5,2S11,4,11,6.5S9,11,6.5,11S2,9,2,6.5z"
+                    />
+                  </svg>
+                </div>
+                <label
+                  class="cds--label"
+                  for="search-input-_r_1a_"
+                  id="search-input-_r_1a_-search"
+                />
+                <input
+                  autocomplete="off"
+                  class="cds--search-input"
+                  id="search-input-_r_1a_"
+                  placeholder="Filter options"
+                  type="search"
+                />
+                <button
+                  aria-label="Clear search input"
+                  class="cds--search-close cds--search-close--hidden"
+                  title="Clear search input"
+                  type="button"
+                >
+                  <svg
+                    aria-hidden="true"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 32 32"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <span
+                class="cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--bottom cds--tooltip cds--icon-tooltip"
+              >
+                <div
+                  class="cds--tooltip-trigger__wrapper"
+                >
+                  <button
+                    aria-labelledby="tooltip-_r_1c_"
+                    class="tooltipButton-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--ghost cds--btn--icon-only"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="32"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 32 32"
+                      width="32"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M24 24 16 32 8 24z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <span
+                  aria-hidden="true"
+                  class="cds--popover"
+                  id="tooltip-_r_1c_"
+                  role="tooltip"
+                >
+                  <span
+                    class="cds--popover-content cds--tooltip-content"
+                  >
+                    Sort options
+                  </span>
+                  <span
+                    class="cds--popover-caret"
+                  />
+                </span>
+              </span>
+            </div>
+            <div
+              aria-label="Structured list section"
+              class="cds--structured-list"
+              role="table"
+            >
+              <div
+                class="cds--structured-list-tbody"
+                role="rowgroup"
+              >
+                <div
+                  class="cds--structured-list-row"
+                  role="row"
+                >
+                  <div
+                    class="cds--structured-list-td"
+                    dir="auto"
+                    role="cell"
+                  >
+                    No available options
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="buttonWrapper-0-2-6 cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-4 cds--css-grid-column"
+          >
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-right"
+              type="button"
+            >
+              Add
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M22 16 12 26 10.6 24.6 19.2 16 10.6 7.4 12 6z"
+                />
+              </svg>
+            </button>
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-all-right"
+              type="button"
+            >
+              Add all
+            </button>
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-all-left"
+              type="button"
+            >
+              Remove all
+            </button>
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-left"
+              type="button"
+            >
+              Remove
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M10 16 20 6 21.4 7.4 12.8 16 21.4 24.6 20 26z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-5 cds--css-grid-column"
+          >
+            <h6>
+              Selected:
+            </h6>
+            <div
+              class="toolbar-0-2-7"
+            >
+              <div
+                aria-labelledby="search-input-_r_1k_-search"
+                class="cds--search"
+                role="search"
+              >
+                <div
+                  class="cds--search-magnifier"
+                  tabindex="-1"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="cds--search-magnifier-icon"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 16 16"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15,14.3L10.7,10c1.9-2.3,1.6-5.8-0.7-7.7S4.2,0.7,2.3,3S0.7,8.8,3,10.7c2,1.7,5,1.7,7,0l4.3,4.3L15,14.3z M2,6.5 C2,4,4,2,6.5,2S11,4,11,6.5S9,11,6.5,11S2,9,2,6.5z"
+                    />
+                  </svg>
+                </div>
+                <label
+                  class="cds--label"
+                  for="search-input-_r_1k_"
+                  id="search-input-_r_1k_-search"
+                />
+                <input
+                  autocomplete="off"
+                  class="cds--search-input"
+                  id="search-input-_r_1k_"
+                  placeholder="Filter values"
+                  type="search"
+                />
+                <button
+                  aria-label="Clear search input"
+                  class="cds--search-close cds--search-close--hidden"
+                  title="Clear search input"
+                  type="button"
+                >
+                  <svg
+                    aria-hidden="true"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 32 32"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <span
+                class="cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--bottom cds--tooltip cds--icon-tooltip"
+              >
+                <div
+                  class="cds--tooltip-trigger__wrapper"
+                >
+                  <button
+                    aria-labelledby="tooltip-_r_1m_"
+                    class="tooltipButton-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--ghost cds--btn--icon-only"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="32"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 32 32"
+                      width="32"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M24 24 16 32 8 24z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <span
+                  aria-hidden="true"
+                  class="cds--popover"
+                  id="tooltip-_r_1m_"
+                  role="tooltip"
+                >
+                  <span
+                    class="cds--popover-content cds--tooltip-content"
+                  >
+                    Sort values
+                  </span>
+                  <span
+                    class="cds--popover-caret"
+                  />
+                </span>
+              </span>
+            </div>
+            <div
+              aria-label="Structured list section"
+              class="cds--structured-list"
+              role="table"
+            >
+              <div
+                class="cds--structured-list-tbody"
+                role="rowgroup"
+              >
+                <div
+                  class="cds--structured-list-row"
+                  role="row"
+                >
+                  <div
+                    class="cds--structured-list-td"
+                    dir="auto"
+                    role="cell"
+                  >
+                    No option selected
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <div
+        class="custom-button-wrapper"
+      >
+        <button
+          class="btnRight cds--btn cds--btn--primary cds--btn--disabled"
+          disabled=""
+          type="submit"
+        >
+          Save
+        </button>
+        <button
+          class="btnRight cds--btn cds--btn--secondary cds--btn--disabled"
+          disabled=""
+          type="button"
+        >
+          Reset
+        </button>
+        <button
+          class="cds--btn cds--btn--secondary"
+          type="button"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+`;
+
+exports[`Button Group form component should render the editing form for generic object button group 1`] = `
+<div>
+  <div
+    class="col-md-12 button-form"
+  >
+    <form>
+      <div
+        class=""
+        id="name-wrapper"
+        name="subform-1"
+      >
+        <div
+          class="cds--form-item cds--text-input-wrapper"
+        >
+          <div
+            class="cds--text-input__label-wrapper"
+          >
+            <label
+              class="cds--label"
+              dir="auto"
+              for="button_group_name"
+            >
+              <span
+                aria-hidden="true"
+                class="ddorg__carbon-component-mapper_is-required isRequired-0-2-2"
+              >
+                *
+              </span>
+              Name
+            </label>
+          </div>
+          <div
+            class="cds--text-input__field-outer-wrapper"
+          >
+            <div
+              class="cds--text-input__field-wrapper"
+            >
+              <input
+                class="cds--text-input"
+                id="button_group_name"
+                maxlength="50"
+                name="name"
+                type="text"
+                value="test group form"
+              />
+              <span
+                aria-atomic="true"
+                aria-live="assertive"
+                class="cds--text-input__counter-alert"
+                role="alert"
+              />
+            </div>
+          </div>
+        </div>
+        <div>
+          <div
+            class="cds--form-item cds--checkbox-wrapper"
+          >
+            <input
+              checked=""
+              class="cds--checkbox"
+              id="button_group_display"
+              name="set_data.display"
+              type="checkbox"
+            />
+            <label
+              class="cds--checkbox-label"
+              for="button_group_display"
+              title=""
+            >
+              <div
+                class="cds--checkbox-label-text"
+                dir="auto"
+              >
+                Display on Button
+              </div>
+            </label>
+            <div
+              class="cds--checkbox__validation-msg"
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        class="cds--form-item cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="button_group_desription"
+          >
+            <span
+              aria-hidden="true"
+              class="ddorg__carbon-component-mapper_is-required isRequired-0-2-2"
+            >
+              *
+            </span>
+            Description
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="button_group_desription"
+              maxlength="50"
+              name="description"
+              type="text"
+              value="test"
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <fieldset
+        class="cds--fieldset"
+      >
+        <legend
+          class="cds--label"
+        >
+          Icon
+        </legend>
+        <div
+          class="fonticon-picker"
+        >
+          <button
+            class="icon-button cds--btn cds--btn--tertiary"
+            type="button"
+          >
+            <i
+              class="fa-lg pficon pficon-applications"
+              id="selected-icon"
+            />
+            <svg
+              aria-hidden="true"
+              class="cds--btn__icon"
+              fill="currentColor"
+              focusable="false"
+              height="32"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 32 32"
+              width="32"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16 22 6 12 7.4 10.6 16 19.2 24.6 10.6 26 12z"
+              />
+            </svg>
+          </button>
+        </div>
+      </fieldset>
+      <div
+        class="cds--form-item form-control-color-select cds--text-input-wrapper"
+      >
+        <div
+          class="cds--text-input__label-wrapper"
+        >
+          <label
+            class="cds--label"
+            dir="auto"
+            for="color-select"
+          >
+            Icon color
+          </label>
+        </div>
+        <div
+          class="cds--text-input__field-outer-wrapper"
+        >
+          <div
+            class="cds--text-input__field-wrapper"
+          >
+            <input
+              class="cds--text-input"
+              id="color-select"
+              name="set_data.button_color"
+              type="color"
+              value="ffffff"
+            />
+            <span
+              aria-atomic="true"
+              aria-live="assertive"
+              class="cds--text-input__counter-alert"
+              role="alert"
+            />
+          </div>
+        </div>
+      </div>
+      <fieldset
+        class="cds--fieldset"
+      >
+        <legend
+          class="cds--label"
+        >
+          Assign buttons
+        </legend>
+        <div
+          class="miq-dual-list-common-grid-container cds--css-grid cds--css-grid--condensed"
+        >
+          <div
+            class="cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-5 cds--css-grid-column"
+          >
+            <h6>
+              Unassigned:
+            </h6>
+            <div
+              class="toolbar-0-2-7"
+            >
+              <div
+                aria-labelledby="search-input-_r_1v_-search"
+                class="cds--search"
+                role="search"
+              >
+                <div
+                  class="cds--search-magnifier"
+                  tabindex="-1"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="cds--search-magnifier-icon"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 16 16"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15,14.3L10.7,10c1.9-2.3,1.6-5.8-0.7-7.7S4.2,0.7,2.3,3S0.7,8.8,3,10.7c2,1.7,5,1.7,7,0l4.3,4.3L15,14.3z M2,6.5 C2,4,4,2,6.5,2S11,4,11,6.5S9,11,6.5,11S2,9,2,6.5z"
+                    />
+                  </svg>
+                </div>
+                <label
+                  class="cds--label"
+                  for="search-input-_r_1v_"
+                  id="search-input-_r_1v_-search"
+                />
+                <input
+                  autocomplete="off"
+                  class="cds--search-input"
+                  id="search-input-_r_1v_"
+                  placeholder="Filter options"
+                  type="search"
+                />
+                <button
+                  aria-label="Clear search input"
+                  class="cds--search-close cds--search-close--hidden"
+                  title="Clear search input"
+                  type="button"
+                >
+                  <svg
+                    aria-hidden="true"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 32 32"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <span
+                class="cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--bottom cds--tooltip cds--icon-tooltip"
+              >
+                <div
+                  class="cds--tooltip-trigger__wrapper"
+                >
+                  <button
+                    aria-labelledby="tooltip-_r_21_"
+                    class="tooltipButton-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--ghost cds--btn--icon-only"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="32"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 32 32"
+                      width="32"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M24 24 16 32 8 24z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <span
+                  aria-hidden="true"
+                  class="cds--popover"
+                  id="tooltip-_r_21_"
+                  role="tooltip"
+                >
+                  <span
+                    class="cds--popover-content cds--tooltip-content"
+                  >
+                    Sort options
+                  </span>
+                  <span
+                    class="cds--popover-caret"
+                  />
+                </span>
+              </span>
+            </div>
+            <div
+              aria-label="Structured list section"
+              class="cds--structured-list"
+              role="table"
+            >
+              <div
+                class="cds--structured-list-tbody"
+                role="rowgroup"
+              >
+                <div
+                  class="cds--structured-list-row"
+                  role="row"
+                >
+                  <div
+                    class="cds--structured-list-td"
+                    dir="auto"
+                    role="cell"
+                  >
+                    No available options
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="buttonWrapper-0-2-6 cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-4 cds--css-grid-column"
+          >
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-right"
+              type="button"
+            >
+              Add
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M22 16 12 26 10.6 24.6 19.2 16 10.6 7.4 12 6z"
+                />
+              </svg>
+            </button>
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-all-right"
+              type="button"
+            >
+              Add all
+            </button>
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-all-left"
+              type="button"
+            >
+              Remove all
+            </button>
+            <button
+              class="cds--btn cds--btn--primary cds--btn--disabled"
+              disabled=""
+              id="move-left"
+              type="button"
+            >
+              Remove
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M10 16 20 6 21.4 7.4 12.8 16 21.4 24.6 20 26z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="cds--sm:col-span-4 cds--md:col-span-8 cds--lg:col-span-5 cds--css-grid-column"
+          >
+            <h6>
+              Selected:
+            </h6>
+            <div
+              class="toolbar-0-2-7"
+            >
+              <div
+                aria-labelledby="search-input-_r_29_-search"
+                class="cds--search"
+                role="search"
+              >
+                <div
+                  class="cds--search-magnifier"
+                  tabindex="-1"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="cds--search-magnifier-icon"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 16 16"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15,14.3L10.7,10c1.9-2.3,1.6-5.8-0.7-7.7S4.2,0.7,2.3,3S0.7,8.8,3,10.7c2,1.7,5,1.7,7,0l4.3,4.3L15,14.3z M2,6.5 C2,4,4,2,6.5,2S11,4,11,6.5S9,11,6.5,11S2,9,2,6.5z"
+                    />
+                  </svg>
+                </div>
+                <label
+                  class="cds--label"
+                  for="search-input-_r_29_"
+                  id="search-input-_r_29_-search"
+                />
+                <input
+                  autocomplete="off"
+                  class="cds--search-input"
+                  id="search-input-_r_29_"
+                  placeholder="Filter values"
+                  type="search"
+                />
+                <button
+                  aria-label="Clear search input"
+                  class="cds--search-close cds--search-close--hidden"
+                  title="Clear search input"
+                  type="button"
+                >
+                  <svg
+                    aria-hidden="true"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 32 32"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <span
+                class="cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--bottom cds--tooltip cds--icon-tooltip"
+              >
+                <div
+                  class="cds--tooltip-trigger__wrapper"
+                >
+                  <button
+                    aria-labelledby="tooltip-_r_2b_"
+                    class="tooltipButton-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--ghost cds--btn--icon-only"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="32"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 32 32"
+                      width="32"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M24 24 16 32 8 24z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <span
+                  aria-hidden="true"
+                  class="cds--popover"
+                  id="tooltip-_r_2b_"
+                  role="tooltip"
+                >
+                  <span
+                    class="cds--popover-content cds--tooltip-content"
+                  >
+                    Sort values
+                  </span>
+                  <span
+                    class="cds--popover-caret"
+                  />
+                </span>
+              </span>
+            </div>
+            <div
+              aria-label="Structured list section"
+              class="cds--structured-list"
+              role="table"
+            >
+              <div
+                class="cds--structured-list-tbody"
+                role="rowgroup"
+              >
+                <div
+                  class="cds--structured-list-row"
+                  role="row"
+                >
+                  <div
+                    class="cds--structured-list-td"
+                    dir="auto"
+                    role="cell"
+                  >
+                    No option selected
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <div
+        class="custom-button-wrapper"
+      >
+        <button
+          class="btnRight cds--btn cds--btn--primary cds--btn--disabled"
+          disabled=""
+          type="submit"
+        >
+          Save
+        </button>
+        <button
+          class="btnRight cds--btn cds--btn--secondary cds--btn--disabled"
+          disabled=""
+          type="button"
+        >
+          Reset
+        </button>
+        <button
+          class="cds--btn cds--btn--secondary"
+          type="button"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+`;

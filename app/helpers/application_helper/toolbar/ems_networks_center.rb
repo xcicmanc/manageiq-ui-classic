@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::EmsNetworksCenter < ApplicationHelper::Toolbar
   button_group('ems_network_vmdb', [
     select(
       :ems_network_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -23,7 +23,7 @@ class ApplicationHelper::Toolbar::EmsNetworksCenter < ApplicationHelper::Toolbar
           t = N_('Add a New Network Provider'),
           t,
           :url   => "/new",
-          :klass => ApplicationHelper::Button::EmsNetworkNew),
+          :klass => ApplicationHelper::Button::ButtonNewDiscover),
         button(
           :ems_network_edit,
           'pficon pficon-edit fa-lg',
@@ -32,8 +32,7 @@ class ApplicationHelper::Toolbar::EmsNetworksCenter < ApplicationHelper::Toolbar
           :url_parms    => "main_div",
           :send_checked => true,
           :enabled      => false,
-          :onwhen       => "1",
-          :klass        => ApplicationHelper::Button::EmsNetwork),
+          :onwhen       => "1"),
         button(
           :ems_network_delete,
           'pficon pficon-delete fa-lg',
@@ -50,7 +49,7 @@ class ApplicationHelper::Toolbar::EmsNetworksCenter < ApplicationHelper::Toolbar
   button_group('ems_network_policy', [
     select(
       :ems_network_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :enabled => false,

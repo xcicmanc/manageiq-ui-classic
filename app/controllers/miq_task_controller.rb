@@ -5,6 +5,7 @@ class MiqTaskController < ApplicationController
   after_action :set_session_data
 
   include Mixins::GenericSessionMixin
+  include Mixins::BreadcrumbsMixin
 
   # Per page choices for task/jobs
   PPCHOICES2 = [
@@ -31,31 +32,50 @@ class MiqTaskController < ApplicationController
   ].freeze
 
   def index
+    assert_privileges('miq_task_all_ui', 'miq_task_my_ui', :any => false)
     @tabform = nil
     # TODO: remove :feature => "job_my_smartproxy" and  :feature => "job_all_smartproxy" from miq_user_roles.yml
     # above features assigned to the same roles as corresponding :feature => "miq_task_my_ui"
     # and :feature => "miq_task_all_ui"
     @tabform ||= "tasks_1" if role_allows?(:feature => "miq_task_my_ui")
     @tabform ||= "tasks_2" if role_allows?(:feature => "miq_task_all_ui")
+    tab_vars(@tabform.split("_")[1])
     jobs
     render :action => "jobs"
+  end
+
+  def show
+    assert_privileges('miq_task_all_ui', 'miq_task_my_ui', :any => false)
+    @tabs = nil
+    @in_a_form = true
+    @miq_task = identify_record(params[:id], MiqTask)
+    @miq_server = identify_record(@miq_task.miq_server_id, MiqServer)
+    drop_breadcrumb(:name => @miq_task.name)
+    render :action => "show"
   end
 
   # New tab was pressed
   def change_tab
-    @tabform = "tasks_#{params[:tab]}"
+    assert_privileges('miq_task_all_ui', 'miq_task_my_ui', :any => false)
+    @tabform = "tasks_#{params[:'uib-tab']}"
+    tab_vars(params[:'uib-tab'])
     jobs
     render :action => "jobs"
   end
 
+  def tab_vars(current_tab)
+    @path = '/miq_task/change_tab/'
+    @current_tab = current_tab.to_s
+  end
+
   def build_jobs_tab
-    @pp_choices = PPCHOICES2  # Get special pp choices for jobs/tasks lists
-    @settings[:perpage][:job_task] ||= 50       # Default to 50 per page until changed
+    @pp_choices = PPCHOICES2 # Get special pp choices for jobs/tasks lists
+    @settings[:perpage][:job_task] ||= 50 # Default to 50 per page until changed
     @tasks_options = HashWithIndifferentAccess.new if @tasks_options.blank?
-    @tasks_options[:zones] = Zone.all.collect { |z| z.name unless z.miq_servers.blank? }.compact
+    @tasks_options[:zones] = Zone.visible.includes(:miq_servers).collect { |z| z.name if z.miq_servers.present? }.compact
     tasks_set_default_options if @tasks_options[@tabform].blank?
 
-    @tabs ||= []
+    @tabs = []
 
     if role_allows?(:feature => "miq_task_my_ui")
       @tabs.push(["1", _("My Tasks")])
@@ -67,6 +87,7 @@ class MiqTaskController < ApplicationController
 
   # Show job list for the current user
   def jobs
+    assert_privileges('miq_task_all_ui', 'miq_task_my_ui', :any => false)
     jobs_info
   end
 
@@ -78,7 +99,6 @@ class MiqTaskController < ApplicationController
     when "tasks_1" then @layout = "my_tasks"
     when "tasks_2", "alltasks_2" then @layout = "all_tasks"
     end
-
     @view, @pages = get_view(MiqTask, :named_scope => tasks_scopes(@tasks_options[@tabform]))
     @user_names = MiqTask.distinct.pluck("userid").delete_if(&:blank?) if @active_tab.to_i == 2
   end
@@ -93,7 +113,11 @@ class MiqTaskController < ApplicationController
               elsif task.state.downcase == "finished"
                 _("Finished Task cannot be cancelled")
               else
-                task.process_cancel
+                begin
+                  task.process_cancel
+                rescue RuntimeError => e
+                  e.message
+                end
               end
     add_flash(message, :error)
     jobs
@@ -103,7 +127,10 @@ class MiqTaskController < ApplicationController
   # Delete selected tasks
   def delete_tasks
     assert_privileges("miq_task_delete")
-    delete_tasks_from_table(find_checked_items, "Delete selected tasks")
+
+    new_checked_items = find_checked_items.select { |item| params["select-row-#{item}"] == "on" }
+
+    delete_tasks_from_table(new_checked_items, "Delete selected tasks")
     jobs
     @refresh_partial = "layouts/tasks"
   end
@@ -112,8 +139,10 @@ class MiqTaskController < ApplicationController
   def delete_all_tasks
     assert_privileges("miq_task_deleteall")
     task_ids = []
-    session[:view].table.data.each do |rec|
-      task_ids.push(rec["id"])
+    if session[:view].table.present?
+      session[:view].table.data.each do |rec|
+        task_ids.push(rec["id"])
+      end
     end
     delete_tasks_from_table(task_ids, "Delete all finished tasks")
     jobs
@@ -127,8 +156,7 @@ class MiqTaskController < ApplicationController
     task = MiqTask.find_by(:id => taskid)
     if task
       MiqTask.delete_older(task.updated_on, tasks_condition(@tasks_options[@tabform], false))
-      message = _("Delete started for records older than %{date}, conditions: %{conditions}") %
-                {:date => task.updated_on, :conditions => @tasks_options[@tabform].inspect}
+      message = "Delete started for records older than #{task.updated_on}, conditions: #{@tasks_options[@tabform].inspect}"
       AuditEvent.success(:userid       => session[:userid],
                          :event        => "Delete older tasks",
                          :message      => message,
@@ -142,14 +170,13 @@ class MiqTaskController < ApplicationController
     @refresh_partial = "layouts/tasks"
   end
 
-
-  TASK_X_BUTTON_ALLOWED_ACTIONS =  {
+  TASK_X_BUTTON_ALLOWED_ACTIONS = {
     "miq_task_delete"      => :delete_tasks,
     "miq_task_deleteall"   => :delete_all_tasks,
     "miq_task_deleteolder" => :delete_older_tasks,
     "miq_task_canceljob"   => :cancel_task,
     "miq_task_reload"      => :reload_tasks,
-  }
+  }.freeze
 
   # handle buttons pressed on the button bar
   def button
@@ -160,57 +187,13 @@ class MiqTaskController < ApplicationController
     render :update do |page|
       page << javascript_prologue
       unless @refresh_partial.nil?
+        page << "miqSetButtons(0, 'center_tb');"
         if @refresh_div == "flash_msg_div"
-          page << "miqSetButtons(0, 'center_tb');"
           page.replace(@refresh_div, :partial => @refresh_partial)
         else
-          page << "miqSetButtons(0, 'center_tb');"
           page.replace_html("main_div", :partial => @refresh_partial)
         end
       end
-    end
-  end
-
-  # Gather any changed options
-  def tasks_change_options
-    @edit = session[:edit]
-    @edit[:opts][:zone] = params[:chosen_zone] if params[:chosen_zone]
-    @edit[:opts][:user_choice] = params[:user_choice] if params[:user_choice]
-    @edit[:opts][:time_period] = params[:time_period].to_i if params[:time_period]
-    @edit[:opts][:queued] = params[:queued] == "1" ? params[:queued] : nil if params[:queued]
-    @edit[:opts][:ok] = params[:ok] == "1" ? params[:ok] : nil if params[:ok]
-    @edit[:opts][:error] = params[:error] == "1" ? params[:error] : nil if params[:error]
-    @edit[:opts][:warn] = params[:warn] == "1" ? params[:warn] : nil if params[:warn]
-    @edit[:opts][:running] = params[:running] == "1" ? params[:running] : nil if params[:running]
-    @edit[:opts][:state_choice] = params[:state_choice] if params[:state_choice]
-
-    render :update do |page|
-      page << javascript_prologue
-      page << javascript_for_miq_button_visibility(@tasks_options[@tabform] != @edit[:opts])
-    end
-  end
-
-  # Refresh the display with the chosen filters
-  def tasks_button
-    @edit = session[:edit]
-    if params[:button] == "apply"
-      @tasks_options[@tabform] = copy_hash(@edit[:opts]) # Copy the latest changed options
-    elsif params[:button] == "reset"
-      @edit[:opts] = copy_hash(@tasks_options[@tabform]) # Reset to the saved options
-    elsif params[:button] == "default"
-      tasks_set_default_options
-      @edit[:opts] = copy_hash(@tasks_options[@tabform]) # Backup current settings
-    end
-
-    list_jobs # Get the jobs based on the latest options
-    @pp_choices = PPCHOICES2                             # Get special pp choices for jobs/tasks lists
-
-    render :update do |page|
-      page << javascript_prologue
-      page.replace("flash_msg_div", :partial => "layouts/flash_msg")
-      page << "miqSetButtons(0, 'center_tb');"                             # Reset the center toolbar
-      page.replace("main_div", :partial => "layouts/tasks")
-      page << "miqSparkle(false);"
     end
   end
 
@@ -223,7 +206,7 @@ class MiqTaskController < ApplicationController
       MiqTask.delete_by_id(task_ids)
       AuditEvent.success(:userid       => session[:userid],
                          :event        => event_message,
-                         :message      => _("Delete started for record ids: %{id}") % {:id => task_ids.inspect},
+                         :message      => "Delete started for record ids: #{task_ids.inspect}",
                          :target_class => "MiqTask")
       add_flash(n_("Delete initiated for %{count} Task from the %{product} Database",
                    "Delete initiated for %{count} Tasks from the %{product} Database",
@@ -245,7 +228,7 @@ class MiqTaskController < ApplicationController
     }
 
     @tasks_options[@tabform][:zone]        = "<all>"
-    @tasks_options[@tabform][:user_choice] = "all" if "tasks_2" == @tabform
+    @tasks_options[@tabform][:user_choice] = "all" if @tabform == 'tasks_2'
   end
 
   # Create a condition from the passed in options
@@ -280,7 +263,7 @@ class MiqTaskController < ApplicationController
 
   def build_query_for_userid(opts)
     sql = "miq_tasks.userid=?"
-    if "tasks_1" == @tabform
+    if @tabform == 'tasks_1'
       [sql, session[:userid]]
     elsif opts[:user_choice] && opts[:user_choice] != "all"
       [sql, opts[:user_choice]]
@@ -291,7 +274,7 @@ class MiqTaskController < ApplicationController
 
   def build_query_for_status(opts)
     cond = [[]]
-    [:queued, :ok, :error, :warn, :running].each do |st|
+    %i[queued ok error warn running].each do |st|
       cond = add_to_condition(cond, *send("build_query_for_" + st.to_s)) if opts[st]
     end
 
@@ -300,7 +283,7 @@ class MiqTaskController < ApplicationController
   end
 
   def build_query_for_queued
-    ["(miq_tasks.state=? OR miq_tasks.state=?)", %w(Waiting_to_start Queued)]
+    ["(miq_tasks.state=? OR miq_tasks.state=?)", %w[Waiting_to_start Queued]]
   end
 
   def build_query_for_ok
@@ -322,13 +305,13 @@ class MiqTaskController < ApplicationController
 
   def build_query_for_running
     sql = "(miq_tasks.state!=? AND miq_tasks.state!=? AND miq_tasks.state!=?)"
-    [sql, %w(Finished Waiting_to_start Queued)]
+    [sql, %w[Finished Waiting_to_start Queued]]
   end
 
   def build_query_for_status_none_selected
     sql = "(miq_tasks.status!=? AND miq_tasks.status!=? AND miq_tasks.status!=? AND "\
           "miq_tasks.state!=? AND miq_tasks.state!=? AND miq_tasks.state!=?)"
-    [sql, %w(Ok Error Warn Finished Queued Waiting_to_start)]
+    [sql, %w[Ok Error Warn Finished Queued Waiting_to_start]]
   end
 
   def build_query_for_time_period(opts)
@@ -351,15 +334,16 @@ class MiqTaskController < ApplicationController
     # Specify user scope
     if @tabform == "tasks_1"
       scope << [:with_userid, session[:userid]]
+      @userid = session[:userid]
     elsif opts[:user_choice] && opts[:user_choice] != "all"
       scope << [:with_userid, opts[:user_choice]]
     end
 
     # Add status scope
-    status = (opts.compact.symbolize_keys.keys & %i(ok queued error warn running))
+    status = %i[ok queued error warn running].select { |s| opts[s] }
     if status.any?
       status_scope_mapping = { :ok => :completed_ok, :warn => :completed_warn, :error => :completed_error } # remap reserved names
-      status.map! { |s| status_scope_mapping[s] ? status_scope_mapping[s] : s }
+      status.map! { |s| status_scope_mapping[s] || s }
       scope << [:with_status_in, *status]
     else
       scope << :no_status_selected
@@ -387,14 +371,15 @@ class MiqTaskController < ApplicationController
   end
 
   def get_layout
-    %w(my_tasks all_tasks).include?(session[:layout]) ? session[:layout] : "my_tasks"
+    %w[my_tasks all_tasks].include?(session[:layout]) ? session[:layout] : "my_tasks"
   end
 
   def get_session_data
     super
     @layout = get_layout
-    @tabform       = session[:tabform]  if session[:tabform]
+    @tabform = session[:tabform] if session[:tabform]
     @tasks_options = session[:tasks_options] || ""
+    @tabs ||= session[:tabs]
   end
 
   def set_session_data
@@ -402,6 +387,7 @@ class MiqTaskController < ApplicationController
     session[:tabform]             = @tabform
     session[:layout]              = @layout
     session[:tasks_options]       = @tasks_options unless @tasks_options.nil?
+    session[:tabs]                ||= @tabs
   end
 
   def jobs_info
@@ -415,6 +401,14 @@ class MiqTaskController < ApplicationController
 
     list_jobs
     {:view => @view, :pages => @pages}
+  end
+
+  def breadcrumbs_options
+    {
+      :breadcrumbs => [
+        {:url => controller_url, :title => _("Tasks")},
+      ],
+    }
   end
 
   menu_section :set

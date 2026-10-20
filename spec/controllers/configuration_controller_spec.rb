@@ -14,8 +14,9 @@ describe ConfigurationController do
   end
 
   describe "building tabs" do
-    before(:each) do
+    before do
       controller.instance_variable_set(:@tabform, "ui_2")
+      login_as FactoryBot.create(:user, :features => "everything")
     end
 
     it 'sets the active tab' do
@@ -24,12 +25,10 @@ describe ConfigurationController do
     end
 
     it 'sets the available tabs' do
-      allow(controller).to receive(:role_allows?).and_return(true)
       controller.send(:build_tabs)
 
       expect(assigns(:tabs)).to eq([
                                      ["1", "Visual"],
-                                     ["2", "Default Views"],
                                      ["3", "Default Filters"],
                                      ["4", "Time Profiles"]
                                    ])

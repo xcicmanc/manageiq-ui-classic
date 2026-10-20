@@ -22,16 +22,15 @@ module Mixins
             @refresh_partial = "vm_common/right_size"
             right_size(record)
             replace_right_cell if @orig_action == "x_history"
+          elsif role_allows?(:feature => "vm_right_size")
+            # redirect to build the ownership screen
+            javascript_redirect(:controller => rec_cls.to_s, :action => 'right_size', :id => record.id, :escape => false)
           else
-            if role_allows?(:feature => "vm_right_size")
-              javascript_redirect :controller => rec_cls.to_s, :action => 'right_size', :id => record.id, :escape => false # redirect to build the ownership screen
-            else
-              head :ok
-            end
+            head :ok
           end
         end
 
-        alias_method :instance_right_size, :vm_right_size
+        alias instance_right_size vm_right_size
       end
     end
   end

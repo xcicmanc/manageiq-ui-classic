@@ -1,6 +1,7 @@
 class ContainerNodeController < ApplicationController
-  include ContainersCommonMixin
-  include ContainersExternalLoggingSupportMixin
+  include Mixins::ContainersCommonMixin
+  include Mixins::ContainersExternalLoggingSupportMixin
+  include Mixins::BreadcrumbsMixin
 
   before_action :check_privileges
   before_action :get_session_data
@@ -13,35 +14,37 @@ class ContainerNodeController < ApplicationController
 
   def textual_group_list
     [
-      %i(properties container_labels compliance miq_custom_attributes),
-      %i(relationships conditions smart_management)
+      %i[properties container_labels compliance miq_custom_attributes],
+      %i[relationships conditions smart_management annotations]
     ]
   end
   helper_method :textual_group_list
 
-  def launch_cockpit
-    node = identify_record(params[:id], ContainerNode)
-
-    if node.kubernetes_hostname
-      javascript_open_window(node.cockpit_url.to_s)
-    else
-      javascript_flash(:text => node.unsupported_reason(:launch_cockpit), :severity => :error, :spinner_off => true)
-    end
+  def download_data
+    assert_privileges('container_node_show_list')
+    super
   end
 
-  def show_ad_hoc_metrics
-    if @record && @record.try(:ems_id)
-      ems = find_record_with_rbac(ExtManagementSystem, @record.ems_id)
-      tags = {:type => "node", :hostname => @record.name}.to_json
-      redirect_to polymorphic_path(ems, :display => "ad_hoc_metrics", :tags => tags)
-    end
+  def download_summary_pdf
+    assert_privileges('container_node_show')
+    super
   end
 
-  def self.custom_display_modes
-    %w(ad_hoc_metrics)
+  def breadcrumbs_options
+    {
+      :breadcrumbs => [
+        {:title => _("Compute")},
+        {:title => _("Containers")},
+        {:title => _("Nodes"), :url => controller_url},
+      ],
+    }
   end
 
   menu_section :cnt
+
+  feature_for_actions "#{controller_name}_show_list", *ADV_SEARCH_ACTIONS
+  feature_for_actions "#{controller_name}_timeline", :tl_chooser
+  feature_for_actions "#{controller_name}_perf", :perf_top_chart
 
   has_custom_buttons
 end

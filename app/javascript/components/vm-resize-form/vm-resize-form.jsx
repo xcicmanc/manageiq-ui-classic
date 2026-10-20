@@ -1,0 +1,69 @@
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { Grid, Column } from '@carbon/react';
+import MiqFormRenderer from '@@ddf';
+import miqRedirectBack from '../../helpers/miq-redirect-back';
+import createSchema from './vm-resize.schema';
+
+const VmResizeForm = ({ recordId, vmCloudResizeFormId }) => {
+  const [{ isLoading, fields }, setState] = useState({ isLoading: true, fields: [] });
+
+  const loadSchema = (appendState = {}) => ({ data: { form_schema: { fields } } }) => {
+    setState((state) => ({
+      ...state,
+      ...appendState,
+      fields,
+      isLoading: false,
+    }));
+  };
+
+  useEffect(() => {
+    if (isLoading) {
+      API.options(`/api/vms/${recordId}?option_action=resize`)
+        .then(loadSchema());
+    }
+  });
+
+  const onSubmit = (values) => {
+    miqSparkleOn();
+
+    const resource = {
+      resizeValues: values,
+      resizeFormId: vmCloudResizeFormId,
+    };
+
+    const payload = {
+      action: 'resize',
+      resource,
+    };
+
+    API.post(`/api/vms/${recordId}`, payload).then(() => {
+      const message = sprintf(__('Resize of VM has been successfully queued.'));
+      miqRedirectBack(message, 'success', '/vm_cloud/explorer');
+    }).catch(miqSparkleOff);
+  };
+
+  const onCancel = () => {
+    const message = sprintf(__('Resize of VM was cancelled by the user'));
+    miqRedirectBack(message, 'warning', '/vm_cloud/explorer');
+  };
+
+  return !isLoading && (
+    <Grid>
+      <Column sm={4} md={8} lg={16}>
+        <MiqFormRenderer
+          schema={createSchema(fields)}
+          onSubmit={onSubmit}
+          onCancel={onCancel}
+        />
+      </Column>
+    </Grid>
+  );
+};
+
+VmResizeForm.propTypes = {
+  recordId: PropTypes.string,
+  vmCloudResizeFormId: PropTypes.string,
+};
+
+export default VmResizeForm;

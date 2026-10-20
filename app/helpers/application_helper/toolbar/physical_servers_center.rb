@@ -4,33 +4,24 @@ class ApplicationHelper::Toolbar::PhysicalServersCenter < ApplicationHelper::Too
     [
       select(
         :physical_server_vmdb_choice,
-        'fa fa-cog fa-lg',
+        nil,
         t = N_('Configuration'),
         t,
         :items => [
-          button(
+          api_button(
             :physical_server_refresh,
-            'fa fa-refresh fa-lg',
+            "fa fa-refresh fa-lg",
             N_('Refresh relationships and power states for all items related to the selected Physical Servers'),
             N_('Refresh Relationships and Power States'),
-            :image   => "refresh",
-            :data    => {'function'      => 'sendDataWithRx',
-                         'function-data' => '{"type": "refresh", "controller": "physicalServerToolbarController"}'},
+            :icon    => "fa fa-refresh fa-lg",
+            :api     => {
+              :action => 'refresh',
+              :entity => 'physical_servers'
+            },
             :confirm => N_("Refresh relationships and power states for all items related to the selected Physical Servers?"),
             :enabled => false,
             :onwhen  => "1+",
             :options => {:feature => :refresh}
-          ),
-          button(
-            :physical_server_delete,
-            'pficon pficon-delete fa-lg',
-            N_('Remove selected Physical Servers from Inventory'),
-            N_('Remove Physical Servers from Inventory'),
-            :url_parms    => "main_div",
-            :send_checked => true,
-            :confirm      => N_("Warning: The selected Physical Servers and ALL of their components will be permanently removed!"),
-            :enabled      => false,
-            :onwhen       => "1+"
           ),
         ]
       ),
@@ -41,96 +32,110 @@ class ApplicationHelper::Toolbar::PhysicalServersCenter < ApplicationHelper::Too
     [
       select(
         :physical_server_power_choice,
-        'fa fa-power-off fa-lg',
+        nil,
         N_('Power Operations'),
         N_('Power'),
         :items => [
-          button(
+          api_button(
             :physical_server_power_on,
             nil,
             N_('Power on the selected servers'),
             N_('Power On'),
-            :image                       => "power_on",
-            :data                        => {'function'      => 'sendDataWithRx',
-                         'function-data' => '{"type": "power_on", "controller": "physicalServerToolbarController"}'},
-            :confirm                     => N_("Power on the selected servers?"),
-            :enabled                     => false,
-            :onwhen                      => "1+",
-            :options                     => {:feature => :power_on}
+            :icon    => "pficon pficon-on fa-lg",
+            :api     => {
+              :action => 'power_on',
+              :entity => 'physical_servers'
+            },
+            :confirm => N_("Power on the selected servers?"),
+            :enabled => false,
+            :onwhen  => "1+",
+            :options => {:feature => :power_on}
           ),
-          button(
+          api_button(
             :physical_server_power_off,
             nil,
             N_('Power off the selected servers'),
             N_('Power Off'),
-            :image                       => "power_off",
-            :data                        => {'function'      => 'sendDataWithRx',
-                         'function-data' => '{"type": "power_off", "controller": "physicalServerToolbarController"}'},
-            :confirm                     => N_("Power off the selected servers?"),
-            :enabled                     => false,
-            :onwhen                      => "1+",
-            :options                     => {:feature => :power_off}
+            :icon    => "pficon pficon-off fa-lg",
+            :api     => {
+              :action => 'power_off',
+              :entity => 'physical_servers'
+            },
+            :confirm => N_("Power off the selected servers?"),
+            :enabled => false,
+            :onwhen  => "1+",
+            :options => {:feature => :power_off}
           ),
-          button(
+          api_button(
             :physical_server_power_off_now,
             nil,
             N_('Power off the servers immediately'),
             N_('Power Off Immediately'),
-            :image   => "power_off",
-            :data    => {'function'      => 'sendDataWithRx',
-                         'function-data' => '{"type": "power_off_now", "controller": "physicalServerToolbarController"}'},
+            :icon    => "pficon pficon-off fa-lg",
+            :api     => {
+              :action => 'power_off_now',
+              :entity => 'physical_servers'
+            },
             :confirm => N_("Power off the servers immediately?"),
             :enabled => false,
             :onwhen  => "1+",
             :options => {:feature => :power_off_now}
           ),
-          button(
+          api_button(
             :physical_server_restart,
             nil,
             N_('Restart the selected servers'),
             N_('Restart'),
-            :image                       => "power_reset",
-            :data                        => {'function'      => 'sendDataWithRx',
-                         'function-data' => '{"type": "restart", "controller": "physicalServerToolbarController"}'},
-            :confirm                     => N_("Restart the selected servers?"),
-            :enabled                     => false,
-            :onwhen                      => "1+",
-            :options                     => {:feature => :restart}
+            :icon    => "pficon pficon-restart fa-lg",
+            :api     => {
+              :action => 'restart',
+              :entity => 'physical_servers'
+            },
+            :confirm => N_("Restart the selected servers?"),
+            :enabled => false,
+            :onwhen  => "1+",
+            :options => {:feature => :restart}
           ),
-          button(
+          api_button(
             :physical_server_restart_now,
             nil,
             N_('Restart Servers Immediately'),
             N_('Restart Immediately'),
-            :image   => "power_reset",
-            :data    => {'function'      => 'sendDataWithRx',
-                         'function-data' => '{"type": "restart_now", "controller": "physicalServerToolbarController"}'},
+            :icon    => "pficon pficon-restart fa-lg",
+            :api     => {
+              :action => 'restart_now',
+              :entity => 'physical_servers'
+            },
             :confirm => N_("Restart the servers immediately?"),
             :enabled => false,
             :onwhen  => "1+",
             :options => {:feature => :restart_now}
           ),
-          button(
+          api_button(
             :physical_server_restart_to_sys_setup,
             nil,
             N_('Restart Servers to System Setup'),
             N_('Restart to System Setup'),
-            :image   => "power_reset",
-            :data    => {'function'      => 'sendDataWithRx',
-                         'function-data' => '{"type": "restart_to_sys_setup", "controller": "physicalServerToolbarController"}'},
+            :icon    => "pficon pficon-restart fa-lg",
+            :api     => {
+              :action => 'restart_to_sys_setup',
+              :entity => 'physical_servers'
+            },
             :confirm => N_("Restart the servers to system setup?"),
             :enabled => false,
             :onwhen  => "1+",
             :options => {:feature => :restart_to_sys_setup}
           ),
-          button(
+          api_button(
             :physical_server_restart_mgmt_controller,
             nil,
             N_('Restart Management Controller'),
             N_('Restart Management Controller'),
-            :image   => "power_reset",
-            :data    => {'function'      => 'sendDataWithRx',
-                         'function-data' => '{"type": "restart_mgmt_controller", "controller": "physicalServerToolbarController"}'},
+            :icon    => "pficon pficon-restart fa-lg",
+            :api     => {
+              :action => 'restart_mgmt_controller',
+              :entity => 'physical_servers'
+            },
             :confirm => N_("Restart management controller for the selected servers?"),
             :enabled => false,
             :onwhen  => "1+",
@@ -144,44 +149,50 @@ class ApplicationHelper::Toolbar::PhysicalServersCenter < ApplicationHelper::Too
         N_('Identify LED Operations'),
         N_('Identify'),
         :items => [
-          button(
+          api_button(
             :physical_server_blink_loc_led,
             nil,
             N_('Blink the Identify LED'),
             N_('Blink LED'),
-            :image                       => "blank_button",
-            :data                        => {'function'      => 'sendDataWithRx',
-                         'function-data' => '{"type": "blink_loc_led", "controller": "physicalServerToolbarController"}'},
-            :confirm                     => N_("Blink the Identify LED?"),
-            :enabled                     => false,
-            :onwhen                      => "1+",
-            :options                     => {:feature => :blink_loc_led}
+            :icon    => "pficon pficon-connected fa-lg",
+            :api     => {
+              :action => 'blink_loc_led',
+              :entity => 'physical_servers'
+            },
+            :confirm => N_("Blink the Identify LED?"),
+            :enabled => false,
+            :onwhen  => "1+",
+            :options => {:feature => :blink_loc_led}
           ),
-          button(
+          api_button(
             :physical_server_turn_on_loc_led,
             nil,
             N_('Turn on the Idenfity LED'),
             N_('Turn On LED'),
-            :image                       => "blank_button",
-            :data                        => {'function'      => 'sendDataWithRx',
-                         'function-data' => '{"type": "turn_on_loc_led", "controller": "physicalServerToolbarController"}'},
-            :confirm                     => N_("Turn on the Identify LED?"),
-            :enabled                     => false,
-            :onwhen                      => "1+",
-            :options                     => {:feature => :turn_on_loc_led}
+            :icon    => "pficon pficon-on fa-lg",
+            :api     => {
+              :action => 'turn_on_loc_led',
+              :entity => 'physical_servers'
+            },
+            :confirm => N_("Turn on the Identify LED?"),
+            :enabled => false,
+            :onwhen  => "1+",
+            :options => {:feature => :turn_on_loc_led}
           ),
-          button(
+          api_button(
             :physical_server_turn_off_loc_led,
             nil,
             N_('Turn off the Identify LED'),
             N_('Turn Off LED'),
-            :image                       => "blank_button",
-            :data                        => {'function'      => 'sendDataWithRx',
-                         'function-data' => '{"type": "turn_off_loc_led", "controller": "physicalServerToolbarController"}'},
-            :confirm                     => N_("Turn off the Identify LED?"),
-            :enabled                     => false,
-            :onwhen                      => "1+",
-            :options                     => {:feature => :turn_off_loc_led}
+            :icon    => "pficon pficon-off fa-lg",
+            :api     => {
+              :action => 'turn_off_loc_led',
+              :entity => 'physical_servers'
+            },
+            :confirm => N_("Turn off the Identify LED?"),
+            :enabled => false,
+            :onwhen  => "1+",
+            :options => {:feature => :turn_off_loc_led}
           ),
         ]
       ),
@@ -192,10 +203,9 @@ class ApplicationHelper::Toolbar::PhysicalServersCenter < ApplicationHelper::Too
     [
       select(
         :physical_server_policy_choice,
-        'fa fa-shield fa-lg',
+        nil,
         N_('Policy'),
-        :enabled => false,
-        :onwhen  => "1+",
+        :enabled => true,
         :items   => [
           button(
             :physical_server_protect,
@@ -221,7 +231,7 @@ class ApplicationHelper::Toolbar::PhysicalServersCenter < ApplicationHelper::Too
       ),
       select(
         :physical_server_lifecycle_choice,
-        'fa fa-recycle fa-lg',
+        nil,
         t = N_('Lifecycle'),
         t,
         :enabled => true,
@@ -232,10 +242,11 @@ class ApplicationHelper::Toolbar::PhysicalServersCenter < ApplicationHelper::Too
             t = N_('Provision Physical Server'),
             t,
             :url       => "provision",
+            :send_checked => true,
             :url_parms => "main_div",
-            :enabled   => true,
-            :onwhen    => "0+",
-            :klass     => ApplicationHelper::Button::ConfiguredSystemProvision
+            :enabled      => false,
+            :onwhen       => "1+",
+            :klass     => ApplicationHelper::Button::PhysicalServerProvision
           )
         ]
       )

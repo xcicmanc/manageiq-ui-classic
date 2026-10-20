@@ -34,9 +34,9 @@ describe 'routes for VmInfra' do
     end
   end
 
-  describe '#launch_vmware_console' do
+  describe '#launch_vmrc_console' do
     it 'routes with GET' do
-      expect(get("/#{controller_name}/launch_vmware_console")).to route_to("#{controller_name}#launch_vmware_console")
+      expect(get("/#{controller_name}/launch_vmrc_console")).to route_to("#{controller_name}#launch_vmrc_console")
     end
   end
 
@@ -58,23 +58,9 @@ describe 'routes for VmInfra' do
     end
   end
 
-  describe '#reconfigure_field_changed' do
-    it 'routes with POST' do
-      expect(
-        post("/#{controller_name}/reconfigure_field_changed")
-      ).to route_to("#{controller_name}#reconfigure_field_changed")
-    end
-  end
-
   describe '#snap_pressed' do
     it 'routes with POST' do
       expect(post("/#{controller_name}/snap_pressed")).to route_to("#{controller_name}#snap_pressed")
-    end
-  end
-
-  describe '#snap_vm' do
-    it 'routes with POST' do
-      expect(post("/#{controller_name}/snap_vm")).to route_to("#{controller_name}#snap_vm")
     end
   end
 
@@ -129,12 +115,6 @@ describe 'routes for VmInfra' do
   describe '#html5_console' do
     it 'routes with POST' do
       expect(post("/#{controller_name}/html5_console")).to route_to("#{controller_name}#html5_console")
-    end
-  end
-
-  describe '#console' do
-    it 'routes with POST' do
-      expect(post("/#{controller_name}/console")).to route_to("#{controller_name}#console")
     end
   end
 

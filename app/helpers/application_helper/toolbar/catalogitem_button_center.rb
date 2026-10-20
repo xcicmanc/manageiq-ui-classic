@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::CatalogitemButtonCenter < ApplicationHelper::T
   button_group('catalogitem_button_vmdb', [
     select(
       :catalogitem_button_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -19,19 +19,25 @@ class ApplicationHelper::Toolbar::CatalogitemButtonCenter < ApplicationHelper::T
           'pficon pficon-delete fa-lg',
           t = N_('Remove this Button'),
           t,
-          :klass        => ApplicationHelper::Button::CatalogItemButton,
-          :url_parms    => "main_div",
-          :send_checked => true,
-          :confirm      => N_("Warning: This Button will be permanently removed from the Virtual Management Database!")),
+          :klass => ApplicationHelper::Button::CatalogItemButton,
+          :data  => {'function'      => 'sendDataWithRx',
+                     'function-data' => {:controller     => 'provider_dialogs',
+                                         :modal_title    => N_('Delete Button'),
+                                         :modal_text     => N_('Are you sure you want to delete the following Button?'),
+                                         :api_url        => 'custom_buttons',
+                                         :async_delete   => false,
+                                         :ajax_reload    => true,
+                                         :component_name => 'RemoveGenericItemModal'}}),
         separator,
         button(
           :ab_button_simulate,
           'fa fa-play-circle-o fa-lg',
           N_('Simulate using Button details'),
           N_('Simulate'),
-          :klass     => ApplicationHelper::Button::CatalogItemButton,
-          :url       => "resolve",
-          :url_parms => "?button=simulate"),
+          :keepSpinner => true,
+          :klass       => ApplicationHelper::Button::CatalogItemButton,
+          :url         => "resolve",
+          :url_parms   => "?button=simulate"),
       ]
     ),
   ])

@@ -47,51 +47,15 @@ describe 'routes for ConfigurationController' do
     end
   end
 
-  describe '#form_field_changed' do
-    it 'routes' do
-      expect(post('/configuration/form_field_changed')).to route_to('configuration#form_field_changed')
-    end
-  end
-
-  describe '#theme_changed' do
-    it 'routes' do
-      expect(post('/configuration/theme_changed')).to route_to('configuration#theme_changed')
-    end
-  end
-
-  describe '#timeprofile_create' do
-    it 'routes' do
-      expect(post('/configuration/timeprofile_create')).to route_to('configuration#timeprofile_create')
-    end
-  end
-
   describe '#timeprofile_delete' do
     it 'routes' do
       expect(post('/configuration/timeprofile_delete')).to route_to('configuration#timeprofile_delete')
     end
   end
 
-  describe '#timeprofile_field_changed' do
-    it 'routes' do
-      expect(post('/configuration/timeprofile_field_changed')).to route_to('configuration#timeprofile_field_changed')
-    end
-  end
-
-  describe '#timeprofile_update' do
-    it 'routes' do
-      expect(post('/configuration/timeprofile_update')).to route_to('configuration#timeprofile_update')
-    end
-  end
-
   describe '#update' do
     it 'routes' do
       expect(post('/configuration/update')).to route_to('configuration#update')
-    end
-  end
-
-  describe '#view_selected' do
-    it 'routes' do
-      expect(post('/configuration/view_selected')).to route_to('configuration#view_selected')
     end
   end
 end

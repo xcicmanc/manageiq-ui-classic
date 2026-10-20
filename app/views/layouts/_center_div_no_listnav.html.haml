@@ -1,18 +1,23 @@
-= render :partial => "layouts/vertical_navbar"
 .container-fluid.container-pf-nav-pf-vertical.container-pf-nav-pf-vertical-with-sub-menus{:style => "overflow: hidden !important; height: 100%;"}
-  .row.max-height
-    .col-md-12.max-height
+  %header
+    #breadcrumbs
+      = render :partial => "layouts/breadcrumbs"
+  %main.row.max-height.responsive-layout-main
+    .col-md-12.max-height.full-content
       - if !@in_a_form && taskbar_in_header?
         .row.toolbar-pf#toolbar
           .col-sm-12
-            = render :partial => "layouts/angular/toolbar"
-      .row#main-content{:class => @lastaction == "show_dashboard" ? 'miq-sand-paper' : ''}
+            = miq_toolbar toolbar_from_hash
+      .row#main-content.miq-layout-center_div_no_listnav{:class => @lastaction == "show_dashboard" && !@in_a_form ? 'miq-body' : ''}
         .col-md-12
-          = render :partial => "layouts/breadcrumbs"
-        - if layout_uses_tabs?
-          .col-md-12
-            = render :partial => 'layouts/tabs'
+          .row
+            .col-md-7
+              - if layout_uses_tabs?
+                = render :partial => 'layouts/tabs'
+            .col-md-5
+              - if show_search?
+                %br
+                = render :partial => 'layouts/searchbar'
         .col-md-12
           = yield
-      - if layout_uses_paging? && !@in_a_form
-        .row#paging_div
+      .row#paging_div{:style => (layout_uses_paging? && !@in_a_form) || saved_report_paging? ? '' : 'display: none'}

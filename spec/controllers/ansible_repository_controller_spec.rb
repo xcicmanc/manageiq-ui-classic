@@ -1,59 +1,154 @@
 describe AnsibleRepositoryController do
-  include CompressedIds
-
-  before do
-    EvmSpecHelper.create_guid_miq_server_zone
-    login_as FactoryGirl.create(:user_admin)
-  end
-
-  context "show" do
-    let(:repository) { FactoryGirl.create(:embedded_ansible_configuration_script_source) }
-    subject { get :show, :params => {:id => repository.id} }
+  context 'with existing :embedded_ansible_configuration_script_source' do
     render_views
 
-    it "return correct http response code" do
-      is_expected.to have_http_status 200
+    before do
+      EvmSpecHelper.assign_embedded_ansible_role
+      login_as FactoryBot.create(:user_admin)
+      # creating repository takes time, so we do it only once
+      @repository = FactoryBot.create(:embedded_ansible_configuration_script_source)
     end
 
-    it "render view for specific repository" do
-      is_expected.to render_template(:partial => "layouts/_textual_groups_generic")
+    describe "#show" do
+      subject { get :show, :params => {:id => @repository.id} }
+
+      it "render specific view and listnav" do
+        is_expected.to render_template(:partial => "layouts/_textual_groups_generic")
+        is_expected.to have_http_status 200
+      end
+    end
+
+    describe "#show_output" do
+      subject { get :show, :params => {'id' => @repository.id, 'display' => 'output'} }
+
+      it "render specific view" do
+        is_expected.to render_template(:partial => "ansible_repository/_output")
+        is_expected.to have_http_status 200
+      end
+    end
+
+    describe "#show_list" do
+      subject { get :show_list, :params => {} }
+
+      it "render list of repositories with a toolbar and without listnav" do
+        expect(ApplicationHelper::Toolbar::AnsibleRepositoriesCenter).to receive(:definition).and_call_original
+        is_expected.to render_template(:partial => "layouts/_gtl")
+        is_expected.not_to render_template(:partial => "layouts/listnav/_show_list")
+        is_expected.to have_http_status 200
+      end
+    end
+
+    describe "#show_association" do
+      before do
+        @playbook = FactoryBot.create(:embedded_playbook, :configuration_script_source => @repository)
+      end
+
+      it "shows associated playbooks" do
+        get :show, :params => {:id => @repository.id, :display => 'playbooks'}
+        expect(response.body).to include("#{@repository.name} (All Playbooks)")
+        expect(response.status).to eq(200)
+      end
     end
   end
 
-  context "showList" do
-    let(:repository) { FactoryGirl.create(:embedded_ansible_configuration_script_source) }
-    subject { get :show_list, :params => {} }
-    render_views
-
-    it "return correct http response code" do
-      is_expected.to have_http_status 200
+  describe '#button' do
+    before do
+      controller.params = params
     end
 
-    it "render view for list of repositories" do
-      is_expected.to render_template(:partial => "layouts/_gtl")
+    context 'editing an existing repository' do
+      let(:params) { {:pressed => "embedded_configuration_script_source_edit", :miq_grid_checks => [123]} }
+
+      it 'redirects to action edit' do
+        expect(controller).to receive(:javascript_redirect).with(:action => 'edit', :id => params[:miq_grid_checks])
+        controller.send(:button)
+      end
+    end
+
+    context 'adding a new repository' do
+      let(:params) { {:pressed => "embedded_configuration_script_source_add"} }
+
+      it 'redirects to action new' do
+        expect(controller).to receive(:javascript_redirect).with(:action => 'new')
+        controller.send(:button)
+      end
+    end
+
+    context 'refreshing selected ansible repositories' do
+      let(:params) { {:pressed => "ansible_repositories_reload"} }
+
+      it 'calls show_list and render methods' do
+        expect(controller).to receive(:show_list)
+        expect(controller).to receive(:render)
+        controller.send(:button)
+      end
+    end
+
+    context 'refreshing an actual repository' do
+      let(:params) { {:pressed => "ansible_repository_reload"} }
+
+      it 'calls show and render methods' do
+        expect(controller).to receive(:show)
+        expect(controller).to receive(:render)
+        controller.send(:button)
+      end
+    end
+
+    context 'tagging one or more repositories' do
+      let(:params) { {:pressed => "embedded_configuration_script_source_tag"} }
+
+      it 'calls tag method' do
+        expect(controller).to receive(:tag).with(controller.class.model)
+        controller.send(:button)
+      end
+    end
+
+    context 'tagging one or more playbooks from nested list' do
+      let(:params) { {:pressed => "embedded_configuration_script_payload_tag"} }
+
+      before do
+        controller.instance_variable_set(:@display, "playbooks")
+      end
+
+      it 'calls tag method' do
+        expect(controller).to receive(:tag).with(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::Playbook)
+        controller.send(:button)
+      end
     end
   end
 
-  context "#show_association" do
-    render_views
+  describe '#toolbar' do
+    let(:action) { 'show' }
+    subject { controller.send(:toolbar) }
 
-    before(:each) do
-      @repository = FactoryGirl.create(:embedded_ansible_configuration_script_source, :name => "Test Repository")
-      @playbook = FactoryGirl.create(:embedded_playbook, :name => 'playbook_name', :configuration_script_source => @repository)
+    before { controller.instance_variable_set(:@lastaction, action) }
+
+    context 'displaying list of repositories' do
+      let(:action) { 'show_list' }
+
+      it 'returns proper toolbar filename' do
+        expect(subject).to eq('ansible_repositories_center')
+      end
     end
 
-    it "shows associated playbooks" do
-      get :show, :params => {:id => @repository.id, :display => 'playbooks'}
-      expect(response.status).to eq(200)
-      expect(response.body).to include("Test Repository (All Playbooks)")
+    context 'displaying summary screen of repository' do
+      it 'returns proper toolbar filename' do
+        expect(subject).to eq('ansible_repository_center')
+      end
     end
 
-    it 'reload button will stay on the nested list' do
-      get :show, :params => {:id => @repository.id, :display => 'playbooks'}
-      expect(response.status).to eq(200)
-      post :button, :params => { :id => @repository.id, :pressed => 'ansible_repository_reload' }
-      expect(response.status).to eq(200)
-      expect(response).to render_template(:partial => "layouts/_gtl")
+    context 'displaying nested list of playbooks' do
+      before { controller.instance_variable_set(:@display, 'playbooks') }
+
+      it 'returns proper toolbar filename' do
+        expect(subject).to eq('ansible_playbooks_center')
+      end
+    end
+  end
+
+  describe '#show_searchbar?' do
+    it 'renders true to allow displaying Search bar' do
+      expect(controller.send(:show_searchbar?)).to eq(true)
     end
   end
 end

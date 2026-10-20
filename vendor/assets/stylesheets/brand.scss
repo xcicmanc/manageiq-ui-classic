@@ -1,0 +1,47 @@
+/*
+ * TL;DR: DO NOT MOVE THIS FILE !!!;
+ *
+ * The branding information needs to be stored outside the folder where the main
+ * application.scss lives. The SassC::Rails::Importer always prefers the folder
+ * from which the @import is called over the order set in the SASS load path.
+ *
+ * https://github.com/sass/sassc-rails/blob/master/lib/sassc/rails/importer.rb#L99
+ *
+ */
+
+// Product overrides of Boostrap & Patternfly variables
+$screen-lg:                                 1400px;  // add 200px to account for vertical nav
+$navbar-pf-navbar-navbar-brand-min-width:   270px;
+$navbar-pf-navbar-navbar-brand-padding:     8px 0 2px;
+$dropdown-link-hover-bg:                    #d4edfa;  // sets dropdown link hover
+$link-color:                                #0099d3;  // sets link (also accordion hover, selected table cell) color globally
+$navbar-pf-vertical-border-color:           #3c69a3;  // sets 3px border color at top of screen
+$navbar-pf-alt-bg-color:                    #3c69a3;  // sets background color of navigation bar
+$nav-pf-vertical-width:                     225px;    // sets width of primary navigation
+$navbar-pf-alt-navbar-toggle-icon-bar-hover-bg: #fff;
+
+// Product overrides for 'About' Modal
+
+$modal-about-pf-bg-img:                     "#{$img-base-path}bg-modal-about-pf.png"; 
+$modal-about-pf-bg-color:                   #101010; // sets background color of 'About' modal
+
+// Product overrides of Patternfly Login variables
+$img-bg-login:                              "#{$img-base-path}bg-login.png";
+$img-bg-login-whitelabel:                   "/upload/custom_login_logo.png";
+$login-bg-color:                            #101010;
+$login-container-bg-color:                  #000000;
+$login-container-bg-color-rgba:             rgba(0, 0, 0, 0.2);
+$login-container-details-border-color-rgba: rgba(0, 0, 0, 0.5);
+
+.login-pf #brand img { // sets size of brand.svg on login screen (upstream only)
+  height: 38px !important;
+}
+
+.about-modal-pf .modal-footer img { // sets size of logo in 'About' modal footer
+  height: 48px !important;
+}
+
+body.login.whitelabel { // styling of custom logo in header
+  background: url($img-bg-login-whitelabel) !important;
+  background-size: 100% auto !important;
+}

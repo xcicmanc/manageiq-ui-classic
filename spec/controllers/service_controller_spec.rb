@@ -1,25 +1,84 @@
 describe ServiceController do
-  before(:each) do
+  before do
     stub_user(:features => :all)
+    EvmSpecHelper.local_miq_server
   end
 
-  context "#service_delete" do
+  let(:go_definition) do
+    FactoryBot.create(:generic_object_definition, :properties => {:associations => {"vms" => "Vm", "services" => "Service"}})
+  end
+
+  let(:service_with_go) do
+    service = FactoryBot.create(:service, :name => 'Services with a GO')
+
+    go = FactoryBot.create(
+      :generic_object,
+      :generic_object_definition => go_definition,
+      :name                      => 'go_assoc',
+      :services                  => [service]
+    )
+    service.add_resource(go)
+
+    service
+  end
+
+  describe "#service_retire_now" do
+    let(:service)          { FactoryBot.create(:service, :service_template => service_template, :name => "foo") }
+    let(:service_template) { FactoryBot.create(:service_template, :name => "bar") }
+
+    it "creates a ServiceRetireRequest" do
+      expect(controller).to receive(:assert_privileges)
+      expect(controller).to receive(:javascript_redirect).with({:action => "show_list", :controller => "miq_request"})
+
+      controller.instance_variable_set(:@record, service)
+      controller.params = {:id => service.id}
+      controller.send(:service_retire_now)
+
+      expect(ServiceRetireRequest.count).to eq(1)
+      expect(ServiceRetireRequest.first).to have_attributes(
+        :description    => "Service Retire for: #{service.name}",
+        :approval_state => "pending_approval",
+        :type           => "ServiceRetireRequest",
+        :request_type   => "service_retire",
+        :request_state  => "pending",
+        :message        => "Service Retire - Request Created",
+        :status         => "Ok",
+        :options        => {:src_ids => [service.id]}
+      )
+    end
+  end
+
+  describe "#service_reconfigure" do
+    let(:service) { instance_double("Service", :id => 321, :service_template => service_template, :name => "foo name") }
+    let(:service_template) { instance_double("ServiceTemplate", :name => "the name") }
+    let(:ar_association_dummy) { double }
+    let(:resource_action) { instance_double("ResourceAction", :id => 123) }
+
+    before do
+      allow(Service).to receive(:find_by).with(:id => 321).and_return(service)
+      allow(service_template).to receive(:resource_actions).and_return(ar_association_dummy)
+      allow(ar_association_dummy).to receive(:find_by).with(:action => 'Reconfigure').and_return(resource_action)
+      allow(controller).to receive(:replace_right_cell)
+      controller.params = {:id => 321}
+    end
+  end
+
+  describe "#service_delete" do
     it "display flash message with description of deleted Service" do
-      st  = FactoryGirl.create(:service_template)
-      svc = FactoryGirl.create(:service, :service_template => st, :name => "GemFire", :description => "VMware vFabric GEMFIRE")
+      st  = FactoryBot.create(:service_template)
+      svc = FactoryBot.create(:service, :service_template => st, :name => "GemFire", :description => "VMware vFabric GEMFIRE")
 
       controller.instance_variable_set(:@record, svc)
       controller.instance_variable_set(:@sb,
                                        :trees       => {
                                          :svcs_tree => {:active_node => svc.id.to_s}
                                        },
-                                       :active_tree => :svcs_tree
-                                      )
+                                       :active_tree => :svcs_tree)
 
       allow(controller).to receive(:replace_right_cell)
 
       # Now delete the Service
-      controller.instance_variable_set(:@_params, :id => svc.id)
+      controller.params = {:id => svc.id}
       controller.send(:service_delete)
 
       # Check for Service Description to be part of flash message displayed
@@ -28,229 +87,103 @@ describe ServiceController do
 
       expect(controller.send(:flash_errors?)).not_to be_truthy
     end
-  end
 
-  describe 'x_button' do
-    before do
-      ApplicationController.handle_exceptions = true
-    end
+    context 'setting x_node properly after deleting a service from its details page' do
+      let(:service) { FactoryBot.create(:service) }
 
-    describe 'corresponding methods are called for allowed actions' do
-      ServiceController::SERVICE_X_BUTTON_ALLOWED_ACTIONS.each_pair do |action_name, method|
-        it "calls the appropriate method: '#{method}' for action '#{action_name}'" do
-          expect(controller).to receive(method)
-          get :x_button, :params => { :pressed => action_name }
-        end
+      before do
+        allow(controller).to receive(:replace_right_cell)
+        controller.params = {:id => service.id}
+      end
+
+      it 'sets x_node to return to Active Services' do
+        controller.send(:service_delete)
+        expect(controller.x_node).to eq("xx-asrv")
+      end
+
+      it 'sets x_node to return to Retired Services' do
+        service.update(:retired => true)
+        controller.send(:service_delete)
+        expect(controller.x_node).to eq("xx-rsrv")
       end
     end
-
-    it 'exception is raised for unknown action' do
-      get :x_button, :params => { :pressed => 'random_dude', :format => :html }
-      expect(response).to render_template('layouts/exception')
-    end
   end
 
-  context "#service_delete" do
-    it "replaces right cell after service is deleted" do
-      service = FactoryGirl.create(:service)
-      allow(controller).to receive(:x_build_tree)
-      controller.instance_variable_set(:@settings, {})
-      controller.instance_variable_set(:@sb, {})
-      controller.instance_variable_set(:@_params, :id => service.id)
-      expect(controller).to receive(:render)
-      expect(response.status).to eq(200)
-      controller.send(:service_delete)
-
-      flash_message = assigns(:flash_array).first
-      expect(flash_message[:message]).to include("Delete successful")
-      expect(flash_message[:level]).to be(:success)
-    end
-  end
-
-  context "#show" do
+  describe "#show" do
     render_views
-
-    it 'contains the associated tags for the ansible service template' do
-      EvmSpecHelper.local_miq_server
-      record = FactoryGirl.create(:service_ansible_playbook)
-      get :explorer, :params => { :id => "s-#{record.id}" }
-      expect(response.status).to eq(200)
-      expect(response.body).to include('Smart Management')
-    end
 
     it 'displays generic objects as a nested list' do
       EvmSpecHelper.create_guid_miq_server_zone
-      login_as FactoryGirl.create(:user)
+      login_as FactoryBot.create(:user)
       controller.instance_variable_set(:@breadcrumbs, [])
-      service = FactoryGirl.create(:service, :name => "Abc")
-      definition = FactoryGirl.create(:generic_object_definition,
-                                      :properties => {:associations => {"vms" => "Vm", "services" => "Service"}})
-      go = FactoryGirl.create(
-        :generic_object,
-        :generic_object_definition => definition,
-        :name                      => 'go_assoc',
-        :services                  => [service]
-      )
-      service.add_resource(go)
 
-      get :show, :params => { :id => service.id, :display => 'generic_objects'}
+      get :show, :params => {:id => service_with_go.id, :display => 'generic_objects'}
       expect(response.status).to eq(200)
-      expect(assigns(:breadcrumbs)).to eq([{:name => "Abc (All Generic Objects)", :url => "/service/show/#{service.id}?display=generic_objects"}])
+      expect(assigns(:breadcrumbs)).to eq([{:name => "Services with a GO (All Generic Objects)", :url => "/service/show/#{service_with_go.id}?display=generic_objects"}])
     end
 
-    it 'redirects to service detail page when Services maintab is clicked right after viewing the GO object' do
-      EvmSpecHelper.create_guid_miq_server_zone
-      login_as FactoryGirl.create(:user)
-      controller.instance_variable_set(:@breadcrumbs, [])
-      service = FactoryGirl.create(:service, :name => "Abc")
-      definition = FactoryGirl.create(:generic_object_definition,
-                                      :properties => {:associations => {"vms" => "Vm", "services" => "Service"}})
-      go = FactoryGirl.create(
-        :generic_object,
-        :generic_object_definition => definition,
-        :name                      => 'GOTest',
-        :services                  => [service]
-      )
-      go.add_to_service(service)
-      get :show, :params => { :id => service.id, :display => 'generic_objects', :generic_object_id => go.id}
-      expect(response.status).to eq(200)
-      expect(assigns(:breadcrumbs)).to eq([{:name => "Abc (All Generic Objects)", :url => "/service/show/#{service.id}?display=generic_objects"},
-                                           {:name => "GOTest", :url => "/service/show/#{service.id}?display=generic_objects&generic_object_id=#{go.id}"}])
-      is_expected.to render_template("layouts/_item")
-      is_expected.to render_template("service/show")
-
-      get :show, :params => { :id => service.id}
-      expect(response.status).to eq(302)
-      expect(response).to redirect_to(:action => 'explorer', :id => "s-#{service.id}")
-    end
-
-    context "#button" do
+    describe "#button" do
       render_views
 
-      before(:each) do
+      before do
         stub_user(:features => :all)
         EvmSpecHelper.create_guid_miq_server_zone
         ApplicationController.handle_exceptions = true
-      end
-
-      it "when Generic Object Tag is pressed for the generic object nested list" do
-        service = FactoryGirl.create(:service, :name => "Service with Generic Objects")
-        definition = FactoryGirl.create(:generic_object_definition,
-                                        :properties => {:associations => {"vms" => "Vm", "services" => "Service"}})
-        go = FactoryGirl.create(
-          :generic_object,
-          :generic_object_definition => definition,
-          :name                      => 'go_assoc',
-          :services                  => [service]
-        )
-        service.add_resource(go)
-
-        get :show, :params => { :id => service.id, :display => 'generic_objects'}
-        expect(response.status).to eq(200)
-
-        post :button, :params => {:pressed => "generic_object_tag", "check_#{go.id}" => "1", :format => :js, :id => service.id, :display => 'generic_objects' }
-        expect(response.status).to eq(200)
-        expect(response.body).to include('service/tagging_edit')
-      end
-    end
-  end
-
-  context "#sanitize_output" do
-    it "escapes characters in the output string" do
-      output = controller.send(:sanitize_output, "I'm \"\\'Fred\\'\" {{Flintstone}}")
-      expect(output).to eq("I\\'m \\\"\\'Fred\\'\\\" \\{\\{Flintstone\\}\\}")
-    end
-  end
-
-  context 'displaying a service with associated VMs' do
-    let(:service) { FactoryGirl.create(:service) }
-
-    let!(:vm) do
-      vm = FactoryGirl.create(:vm)
-      vm.add_to_service(service)
-      vm
-    end
-
-    describe "#report_data" do
-      it 'returns VMs associated to the selected Service' do
-        report_data_request(
-          :model         => 'Vm',
-          :parent_model  => 'Service',
-          :parent_id     => service.id,
-          :active_tree   => 'svcs_tree',
-          :parent_method => 'all_vms'
-        )
-        results = assert_report_data_response
-        expect(results['data']['rows'].length).to eq(1)
-        expect(results['data']['rows'][0]['long_id']).to eq(vm.id.to_s)
-      end
-    end
-
-    # Request URL:http://localhost:3000/service/tree_select?id=s-10r219
-    describe '#tree_select' do
-      render_views
-
-      it 'renders GTL of VMs associated to the selected Service' do
-        expect_any_instance_of(GtlHelper).to receive(:render_gtl).with match_gtl_options(
-          :model_name                     => 'Vm',
-          :parent_id                      => service.id,
-          :report_data_additional_options => {
-            :parent_class_name => 'Service',
-            :parent_method     => :all_vms,
-          }
-        )
-        post :tree_select, :params => {:id => "s-#{service.id}"}
-        expect(response.status).to eq(200)
-      end
-    end
-  end
-
-  # Request URL: http://localhost:3000/service/tree_select?id=xx-asrv
-  context 'displaying a list of Active Services' do
-    describe '#tree_select' do
-      render_views
-
-      it 'renders GTL of Active services' do
-        expect_any_instance_of(GtlHelper).to receive(:render_gtl).with match_gtl_options(
-          :model_name                     => 'Service',
-          :report_data_additional_options => {
-            :named_scope => [[:retired, false], :displayed]
-          }
-        )
-        post :tree_select, :params => {:id => 'xx-asrv'}
-        expect(response.status).to eq(200)
-      end
-    end
-  end
-
-  context 'displaying a list of Retired Services' do
-    describe '#tree_select' do
-      render_views
-
-      it 'renders GTL of Retired services' do
-        expect_any_instance_of(GtlHelper).to receive(:render_gtl).with match_gtl_options(
-          :model_name                     => 'Service',
-          :report_data_additional_options => {
-            :named_scope => [:retired, :displayed]
-          }
-        )
-        post :tree_select, :params => {:id => 'xx-rsrv'}
-        expect(response.status).to eq(200)
       end
     end
   end
 
   context "Generic Object instances in Textual Summary" do
     it "displays Generic Objects in Ansible Playbook Service Textual Summary" do
-      record = FactoryGirl.create(:service_ansible_playbook)
+      record = FactoryBot.create(:service_ansible_playbook)
       controller.instance_variable_set(:@record, record)
       expect(controller.send(:textual_group_list)).to include(array_including(:generic_objects))
     end
 
     it "displays Generic Objects for all other Services" do
-      record = FactoryGirl.create(:service)
+      record = FactoryBot.create(:service)
       controller.instance_variable_set(:@record, record)
       expect(controller.send(:textual_group_list)).to include(array_including(:generic_objects))
+    end
+  end
+
+  describe "breadcrumbs" do
+    context "generic_objects" do
+      before { get :show, :params => {:id => service_with_go.id, :display => 'generic_objects'} }
+
+      it "contains breadcrumbs with item" do
+        expect(controller.data_for_breadcrumbs.find { |x| x[:title].include?(service_with_go.name) }).to be_truthy
+      end
+    end
+
+    context "helpers" do
+      describe "generic_objects_list?" do
+        it "returns true when user is in generic_objects section" do
+          get :show, :params => {:id => service_with_go.id, :display => 'generic_objects'}
+
+          expect(controller.send(:generic_objects_list?)).to eq(true)
+        end
+
+        it "returns true when user is not in generic_objects section" do
+          get :show, :params => {:id => service_with_go.id}
+
+          expect(controller.send(:generic_objects_list?)).to eq(false)
+        end
+      end
+
+      describe "hide_record_info?" do
+        it "returns false when user is in detail of generic_object" do
+          get :show, :params => {:id => service_with_go.id, :display => 'generic_objects', :generic_object_id => '10101'}
+
+          expect(controller.send(:hide_record_info?)).to eq(false)
+        end
+
+        it "returns true when user is not in detail of generic_object" do
+          get :show, :params => {:id => service_with_go.id, :display => 'generic_objects'}
+
+          expect(controller.send(:hide_record_info?)).to eq(true)
+        end
+      end
     end
   end
 

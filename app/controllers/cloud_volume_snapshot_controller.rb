@@ -8,19 +8,30 @@ class CloudVolumeSnapshotController < ApplicationController
   include Mixins::GenericShowMixin
   include Mixins::GenericSessionMixin
   include Mixins::GenericButtonMixin
+  include Mixins::BreadcrumbsMixin
 
   def self.display_methods
-    %w(based_volumes)
+    %w[based_volumes]
   end
 
   def display_based_volumes
     nested_list(CloudVolume, :association => :based_volumes)
   end
 
+  def download_data
+    assert_privileges('cloud_volume_snapshot_view')
+    super
+  end
+
+  def download_summary_pdf
+    assert_privileges('cloud_volume_snapshot_view')
+    super
+  end
+
   private
 
   def textual_group_list
-    [%i(properties relationships), %i(tags)]
+    [%i[properties relationships], %i[tags]]
   end
   helper_method :textual_group_list
 
@@ -36,26 +47,8 @@ class CloudVolumeSnapshotController < ApplicationController
   def delete_cloud_volume_snapshots
     assert_privileges("cloud_volume_snapshot_delete")
 
-    snapshots = if @lastaction == "show_list" || (@lastaction == "show" && @layout != "cloud_volume_snapshot")
-                  find_checked_ids_with_rbac(CloudVolumeSnapshot)
-                else
-                  [find_id_with_rbac(CloudVolumeSnapshot, params[:id])]
-                end
-
-    if snapshots.empty?
-      add_flash(_("No Cloud Volume Snapshots were selected for deletion."), :error)
-    end
-
-    snapshots_to_delete = []
-    snapshots.each do |snapshot_id|
-      snapshot = CloudVolumeSnapshot.find_by_id(snapshot_id)
-      if snapshot.nil?
-        add_flash(_("Cloud Volume Snapshot no longer exists."), :error)
-      else
-        snapshots_to_delete.push(snapshot)
-      end
-    end
-    process_cloud_volume_snapshots(snapshots_to_delete, "destroy") unless snapshots_to_delete.empty?
+    snapshots = find_records_with_rbac(CloudVolumeSnapshot, checked_or_params)
+    process_cloud_volume_snapshots(snapshots, "destroy")
 
     # refresh the list if applicable
     if @lastaction == "show_list"
@@ -92,5 +85,15 @@ class CloudVolumeSnapshotController < ApplicationController
     end
   end
 
+  def breadcrumbs_options
+    {
+      :breadcrumbs => [
+        {:title => _("Storage")},
+        {:title => _("Volume Snapshots"), :url => controller_url},
+      ],
+    }
+  end
+
   menu_section :bst
+  feature_for_actions "#{controller_name}_show_list", *ADV_SEARCH_ACTIONS
 end

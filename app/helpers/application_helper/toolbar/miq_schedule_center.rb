@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::MiqScheduleCenter < ApplicationHelper::Toolbar
   button_group('miq_schedule_vmdb', [
     select(
       :miq_schedule_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -18,6 +18,18 @@ class ApplicationHelper::Toolbar::MiqScheduleCenter < ApplicationHelper::Toolbar
           t,
           :url_parms => "&refresh=y",
           :confirm   => N_("Warning: This Schedule and ALL of its components will be permanently removed!")),
+        button(
+          :schedule_enable,
+          'fa fa-check fa-lg',
+          t = N_('Enable this Schedule'),
+          t
+        ),
+        button(
+          :schedule_disable,
+          'fa fa-ban fa-lg',
+          t = N_('Disable this Schedule'),
+          t
+        ),
         separator,
         button(
           :schedule_run_now,

@@ -1,30 +1,50 @@
-= render :partial => "layouts/vertical_navbar"
+- left_div_classname = filters_present? ? "" : "no_filters"
 .container-fluid.container-pf-nav-pf-vertical.container-pf-nav-pf-vertical-with-sub-menus.max-height{:style => "overflow: hidden !important"}
-  - if !@in_a_form && taskbar_in_header?
-    .row.toolbar-pf#toolbar.miq-toolbar-menu
-      .col-sm-12
-        - if @layout == "dashboard"
-          = render :partial => "/layouts/tabs"
-        = render :partial => "layouts/angular/toolbar"
-  .row.max-height
-    .col-sm-10.col-md-9.col-sm-push-2.col-md-push-3.max-height
-      #main-content.row
-        .col-md-12
-          .row
-            .col-md-7
-              = render :partial => "layouts/breadcrumbs"
-              - if layout_uses_tabs?
-                = render :partial => 'layouts/tabs'
-            .col-md-5
-              %br
-              = render :partial => 'layouts/searchbar'
-          .row
-            .col-md-12
-              = yield
-      - unless @in_a_form
-        .row#paging_div
-
-    .col-sm-2.col-md-3.col-sm-pull-10.col-md-pull-9.sidebar-pf.sidebar-pf-left.max-height
-      -# listnav_div
-      = render :partial => "layouts/listnav"
-
+  %header    
+    #breadcrumbs
+      = render :partial => "layouts/breadcrumbs"
+    - if !@in_a_form && taskbar_in_header?
+      .row.toolbar-pf#toolbar.miq-toolbar-menu
+        .col-sm-12
+          - if @layout == "dashboard"
+            = render :partial => "/layouts/tabs"
+          = miq_toolbar toolbar_from_hash
+  %main.div{:class => "responsive-layout-main row max-height content-focus-order #{left_div_classname}"}
+    - if !controller.respond_to?(:display_tree)
+      .col-sm-12.col-md-12.col-sm-push-12.col-md-push-3.max-height.full-content
+        #main-content.row.miq-layout-center_div_with_listnav
+          .col-md-12
+            .row
+              .col-md-5
+                - if layout_uses_tabs?
+                  = render :partial => 'layouts/tabs'
+              .col-md-4
+                - if filters_present?
+                  %br
+                  = react('FilterDropdown', :defSearches => @def_searches, :mySearches => @my_searches,
+                   :filterSelected => 'listnav_search_selected', :defaultSelected => 'save_default_search', :selectedFilter => @selected_filter)
+              .col-md-3
+                - if show_search?
+                  %br
+                  = render :partial => 'layouts/searchbar'
+            .row
+              .col-md-12
+                = yield
+    - else
+      .col-sm-4.col-md-3.col-sm-pull-8.col-md-pull-9.sidebar-pf.sidebar-pf-left.max-height.left-sidebar
+        -# listnav_div
+        = render :partial => "layouts/listnav"
+      .col-sm-8.col-md-9.col-sm-push-4.col-md-push-3.max-height
+        #main-content.row.miq-layout-center_div_with_listnav
+          .col-md-12
+            .row
+              .col-md-7
+                - if layout_uses_tabs?
+                  = render :partial => 'layouts/tabs'
+              .col-md-5
+                - if show_search?
+                  %br
+                  = render :partial => 'layouts/searchbar'
+            .row
+              .col-md-12
+                = yield

@@ -2,16 +2,10 @@ class ApplicationHelper::Toolbar::IsoDatastoresCenter < ApplicationHelper::Toolb
   button_group('iso_datastore_vmdb', [
     select(
       :iso_datastore_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
-        button(
-          :iso_datastore_new,
-          'pficon pficon-add-circle-o fa-lg',
-          t = N_('Add a New ISO Datastore'),
-          t,
-          :klass => ApplicationHelper::Button::IsoDatastoreNew),
         button(
           :iso_datastore_delete,
           'pficon pficon-delete fa-lg',

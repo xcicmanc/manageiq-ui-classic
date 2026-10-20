@@ -1,14 +1,9 @@
 # ManageIQ::UI::Classic
 
 [![Gem Version](https://badge.fury.io/rb/manageiq-ui-classic.svg)](http://badge.fury.io/rb/manageiq-ui-classic)
-[![Build Status](https://travis-ci.org/ManageIQ/manageiq-ui-classic.svg)](https://travis-ci.org/ManageIQ/manageiq-ui-classic)
-[![Code Climate](https://codeclimate.com/github/ManageIQ/manageiq-ui-classic.svg)](https://codeclimate.com/github/ManageIQ/manageiq-ui-classic)
-[![Test Coverage](https://codeclimate.com/github/ManageIQ/manageiq-ui-classic/badges/coverage.svg)](https://codeclimate.com/github/ManageIQ/manageiq-ui-classic/coverage)
-[![Dependency Status](https://gemnasium.com/ManageIQ/manageiq-ui-classic.svg)](https://gemnasium.com/ManageIQ/manageiq-ui-classic)
-[![Security](https://hakiri.io/github/ManageIQ/manageiq-ui-classic/master.svg)](https://hakiri.io/github/ManageIQ/manageiq-ui-classic/master)
+[![CI](https://github.com/ManageIQ/manageiq-ui-classic/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/ManageIQ/manageiq-ui-classic/actions/workflows/ci.yaml)
 
-[![Chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ManageIQ/manageiq/ui?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Translate](https://img.shields.io/badge/translate-zanata-blue.svg)](https://translate.zanata.org/zanata/project/view/manageiq-ui-classic)
+[![Chat](https://matrix.to/img/matrix-badge.svg)](https://app.element.io/#/room/#ManageIQ_manageiq/ui:gitter.im)
 
 ManageIQ UI Classic is the UI that has been split out of the main [manageiq repo](https://github.com/ManageIQ/manageiq).
 
@@ -31,3 +26,8 @@ Or you can get more detailed instructions in [ManageIQ/guides](https://github.co
 ## License
 
 The gem is available as open source under the terms of the [Apache License 2.0](https://opensource.org/licenses/apache-2.0).
+
+Except where otherwise noted, all ManageIQ source files are covered by
+the following copyright and license notice:
+
+Copyright (c) 2014-present ManageIQ Authors.

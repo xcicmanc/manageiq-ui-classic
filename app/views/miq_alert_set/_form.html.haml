@@ -1,0 +1,4 @@
+- url = url_for_only_path(:action => 'alert_profile_field_changed', :id => (@alert_profile.id || 'new'))
+- observe_with_interval = {:interval => '.5', :url => url}.to_json
+#form_div
+  = render :partial => "layouts/flash_msg"

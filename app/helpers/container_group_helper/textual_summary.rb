@@ -2,11 +2,12 @@ module ContainerGroupHelper::TextualSummary
   #
   # Groups
   #
+  include TextualMixins::TextualCustomButtonEvents
 
   def textual_group_properties
     TextualGroup.new(
       _("Properties"),
-      %i(name status message reason creation_timestamp resource_version restart_policy dns_policy ip)
+      %i[name status message reason creation_timestamp resource_version restart_policy dns_policy ip]
     )
   end
 
@@ -14,10 +15,10 @@ module ContainerGroupHelper::TextualSummary
     # Order of items should be from parent to child
     TextualGroup.new(
       _("Relationships"),
-      %i(
+      %i[
         ems container_project container_services container_replicator containers container_node
-        lives_on container_images
-      )
+        lives_on container_images persistent_volumes custom_button_events
+      ]
     )
   end
 
@@ -34,7 +35,7 @@ module ContainerGroupHelper::TextualSummary
   end
 
   def textual_group_smart_management
-    TextualTags.new(_("Smart Management"), %i(tags))
+    TextualTags.new(_("Smart Management"), %i[tags])
   end
 
   @@key_dictionary = [
@@ -68,7 +69,7 @@ module ContainerGroupHelper::TextualSummary
         [nil, name, volume[key]] if volume[key].present?
       end.compact
       # Set the volume name only  for the first item in the list
-      volume_values[0][0] = volume.name if volume_values.length > 0
+      volume_values[0][0] = volume.name if volume_values.present?
       h[:values] += volume_values
     end
     TextualMultilabel.new(_("Volumes"), h)
@@ -109,7 +110,7 @@ module ContainerGroupHelper::TextualSummary
     lives_on_entity_name = lives_on_ems.kind_of?(EmsCloud) ? _("Instance") : _("Virtual Machine")
     {
       :label => _("Underlying %{name}") % {:name => lives_on_entity_name},
-      :image => "svg/vendor-#{lives_on_ems.image_name}.svg",
+      :image => lives_on_ems.decorate.fileicon,
       :value => @record.container_node.lives_on.name.to_s,
       :link  => url_for_only_path(
         :action     => 'show',
@@ -120,23 +121,7 @@ module ContainerGroupHelper::TextualSummary
   end
 
   def textual_group_container_statuses_summary
-    TextualGroup.new(_("Container Statuses Summary"), %i(waiting running terminated))
-  end
-
-  def container_statuses_summary
-    @container_statuses_summary ||= @record.container_states_summary
-  end
-
-  def textual_waiting
-    container_statuses_summary[:waiting] || 0
-  end
-
-  def textual_running
-    container_statuses_summary[:running] || 0
-  end
-
-  def textual_terminated
-    container_statuses_summary[:terminated] || 0
+    TextualGroup.new(_("Container Statuses Summary"), %i[waiting running terminated])
   end
 
   def textual_compliance_history

@@ -1,13 +1,7 @@
 class TreeBuilderImagesFilter < TreeBuilderVmsFilter
-  def tree_init_options(_tree_name)
-    super.update(:leaf => 'ManageIQ::Providers::CloudManager::Template')
-  end
-
-  def set_locals_for_render
-    locals = super
-    locals.merge!(:tree_id   => "images_filter_treebox",
-                  :tree_name => "images_filter_tree",
-                  :autoload  => false)
+  def initialize(*args)
+    @root_class = 'ManageIQ::Providers::CloudManager::Template'
+    super(*args)
   end
 
   def root_options

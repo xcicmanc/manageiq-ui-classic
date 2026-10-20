@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::TemplateCloudsCenter < ApplicationHelper::Tool
   button_group('image_vmdb', [
     select(
       :image_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :enabled => false,
@@ -66,32 +66,13 @@ class ApplicationHelper::Toolbar::TemplateCloudsCenter < ApplicationHelper::Tool
           :confirm      => N_("Warning: The selected items and ALL of their components will be permanently removed!"),
           :enabled      => false,
           :onwhen       => "1+"),
-        separator,
-        button(
-          :image_right_size,
-          'ff ff-database-squeezed fa-lg',
-          N_('CPU/Memory Recommendations of selected item'),
-          N_('Right-Size Recommendations'),
-          :url_parms    => "main_div",
-          :send_checked => true,
-          :enabled      => false,
-          :onwhen       => "1"),
-        button(
-          :image_reconfigure,
-          'pficon pficon-edit fa-lg',
-          N_('Reconfigure the Memory/CPUs of selected items'),
-          N_('Reconfigure Selected items'),
-          :url_parms    => "main_div",
-          :send_checked => true,
-          :enabled      => false,
-          :onwhen       => "1+"),
       ]
     ),
   ])
   button_group('image_lifecycle', [
     select(
       :image_lifecycle_choice,
-      'pficon pficon-add-circle-o fa-lg',
+      nil,
       t = N_('Lifecycle'),
       t,
       :items => [
@@ -111,7 +92,7 @@ class ApplicationHelper::Toolbar::TemplateCloudsCenter < ApplicationHelper::Tool
   button_group('image_policy', [
     select(
       :image_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :enabled => false,
@@ -126,15 +107,16 @@ class ApplicationHelper::Toolbar::TemplateCloudsCenter < ApplicationHelper::Tool
           :send_checked => true,
           :enabled      => false,
           :onwhen       => "1+"),
-        button(
-          :image_policy_sim,
-          'fa fa-play-circle-o fa-lg',
-          N_('View Policy Simulation for the selected items'),
-          N_('Policy Simulation'),
-          :url_parms    => "main_div",
-          :send_checked => true,
-          :enabled      => false,
-          :onwhen       => "1+"),
+        # TODO: Add this button back when the page is fixed
+        # button(
+        #   :image_policy_sim,
+        #   'fa fa-play-circle-o fa-lg',
+        #   N_('View Policy Simulation for the selected items'),
+        #   N_('Policy Simulation'),
+        #   :url_parms    => "main_div",
+        #   :send_checked => true,
+        #   :enabled      => false,
+        #   :onwhen       => "1+"),
         button(
           :image_tag,
           'pficon pficon-edit fa-lg',

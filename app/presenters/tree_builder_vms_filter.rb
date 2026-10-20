@@ -1,14 +1,16 @@
 class TreeBuilderVmsFilter < TreeBuilder
-  def tree_init_options(_tree_name)
-    {
-      :open_all => true,
-      :leaf     => 'ManageIQ::Providers::InfraManager::Vm'
-    }
+  include TreeBuilderFiltersMixin
+
+  def initialize(*args)
+    @root_class ||= 'ManageIQ::Providers::InfraManager::Vm'
+    super(*args)
   end
 
-  def set_locals_for_render
-    locals = super
-    locals.merge!(:tree_id => "vms_filter_treebox", :tree_name => "vms_filter_tree", :allow_reselect => true)
+  def tree_init_options
+    {
+      :open_all       => true,
+      :allow_reselect => true
+    }
   end
 
   def root_options
@@ -18,17 +20,11 @@ class TreeBuilderVmsFilter < TreeBuilder
     }
   end
 
-  def x_get_tree_roots(count_only, _options)
-    objects =
-      [
-        {:id => "global", :text => _("Global Filters"), :icon => "pficon pficon-folder-close", :tip => _("Global Shared Filters"), :selectable => false},
-        {:id => "my",     :text => _("My Filters"),     :icon => "pficon pficon-folder-close", :tip => _("My Personal Filters"),   :selectable => false}
-      ]
-    count_only_or_objects(count_only, objects)
+  def x_get_tree_roots
+    count_only_or_objects(false, FILTERS.values)
   end
 
-  def x_get_tree_custom_kids(object, count_only, options)
-    objects = MiqSearch.where(:db => options[:leaf]).filters_by_type(object[:id])
-    count_only_or_objects(count_only, objects, 'description')
+  def x_get_tree_custom_kids(object, count_only)
+    count_only_or_filter_kids(@root_class, object, count_only)
   end
 end

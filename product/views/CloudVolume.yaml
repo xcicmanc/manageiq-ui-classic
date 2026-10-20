@@ -21,6 +21,7 @@ db: CloudVolume
 cols:
 - name
 - size
+- health_state
 - status
 - volume_type
 - bootable
@@ -33,6 +34,9 @@ include:
   ext_management_system:
     columns:
     - name
+  physical_storage:
+    columns:
+    - name
 
 # Included tables and columns for query performance
 # include_for_find:
@@ -41,20 +45,24 @@ include:
 col_order:
 - name
 - size
+- health_state
 - status
 - volume_type
 - bootable
 - availability_zone.name
+- physical_storage.name
 - ext_management_system.name
 
 # Column titles, in order
 headers:
 - Name
 - Size
+- Health State
 - Status
 - Type
 - Bootable?
 - Availability Zone
+- Physical Storage
 - Storage Manager
 
 # Condition(s) string for the SQL query

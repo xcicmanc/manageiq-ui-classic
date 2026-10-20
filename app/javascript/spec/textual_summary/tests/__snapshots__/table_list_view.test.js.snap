@@ -1,0 +1,205 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`TableListView renders just fine... 1`] = `
+<div>
+  <ul
+    class="cds--accordion miq-structured-list-accordion table_list_view cds--accordion--start"
+  >
+    <li
+      class="cds--accordion__item cds--accordion__item--active"
+    >
+      <button
+        aria-controls="accordion-item-_r_0_"
+        aria-expanded="true"
+        class="cds--accordion__heading"
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          class="cds--accordion__arrow"
+          fill="currentColor"
+          focusable="false"
+          height="16"
+          preserveAspectRatio="xMidYMid meet"
+          viewBox="0 0 16 16"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M11 8 6 13 5.3 12.3 9.6 8 5.3 3.7 6 3z"
+          />
+        </svg>
+        <div
+          class="cds--accordion__title"
+          dir="auto"
+        >
+          Tables with the Most Rows
+        </div>
+      </button>
+      <div
+        class="cds--accordion__wrapper"
+      >
+        <div
+          class="cds--accordion__content"
+          id="accordion-item-_r_0_"
+        >
+          <div
+            aria-label="Structured list"
+            class="cds--structured-list miq-structured-list table_list_view"
+            role="table"
+          >
+            <div
+              class="cds--structured-list-thead"
+              role="rowgroup"
+            >
+              <div
+                class="cds--structured-list-row cds--structured-list-row--header-row"
+                role="row"
+                tabindex="0"
+              >
+                <span
+                  class="cds--structured-list-th list_header"
+                  dir="auto"
+                  role="columnheader"
+                >
+                  Name
+                </span>
+                <span
+                  class="cds--structured-list-th list_header"
+                  dir="auto"
+                  role="columnheader"
+                >
+                  Rows
+                </span>
+              </div>
+            </div>
+            <div
+              class="cds--structured-list-tbody"
+              role="rowgroup"
+            >
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="0"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td label_header"
+                  dir="auto"
+                  role="cell"
+                >
+                  vim_performance_states
+                </div>
+                <div
+                  class="cds--structured-list-td content_value object_item"
+                  dir="auto"
+                  role="cell"
+                  title="vim_performance_states"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="miqTreeActivateNode('vmdb_tree', 'tb-10000000000181');"
+                    to="miqTreeActivateNode('vmdb_tree', 'tb-10000000000181');"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="multi_row_cell"
+                      >
+                        <div
+                          class="sub_row_item"
+                          title=""
+                        >
+                          <div
+                            class="sub_value"
+                          >
+                            <div
+                              class="wrap_text"
+                            />
+                          </div>
+                        </div>
+                        <div
+                          class="sub_row_item"
+                          title=""
+                        >
+                          <div
+                            class="sub_value"
+                          >
+                            <div
+                              class="wrap_text"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+              </div>
+              <div
+                class="cds--structured-list-row not-clickable"
+                role="row"
+                tabindex="1"
+                title=""
+              >
+                <div
+                  class="cds--structured-list-td label_header"
+                  dir="auto"
+                  role="cell"
+                >
+                  miq_report_result_details
+                </div>
+                <div
+                  class="cds--structured-list-td content_value object_item"
+                  dir="auto"
+                  role="cell"
+                  title="miq_report_result_details"
+                >
+                  <a
+                    class="cds--link cell_link"
+                    href="miqTreeActivateNode('vmdb_tree', 'tb-10000000000197');"
+                    to="miqTreeActivateNode('vmdb_tree', 'tb-10000000000197');"
+                  >
+                    <div
+                      class="content"
+                    >
+                      <div
+                        class="multi_row_cell"
+                      >
+                        <div
+                          class="sub_row_item"
+                          title=""
+                        >
+                          <div
+                            class="sub_value"
+                          >
+                            <div
+                              class="wrap_text"
+                            />
+                          </div>
+                        </div>
+                        <div
+                          class="sub_row_item"
+                          title=""
+                        >
+                          <div
+                            class="sub_value"
+                          >
+                            <div
+                              class="wrap_text"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </li>
+  </ul>
+</div>
+`;

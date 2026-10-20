@@ -3,8 +3,14 @@ class TreeBuilderRolesByServer < TreeBuilderDiagnostics
 
   private
 
-  def x_get_tree_roots(_count_only, _options)
+  def x_get_tree_roots
     x_get_tree_miq_servers
+  end
+
+  def override(node, _object)
+    if @sb[:diag_selected_id] && node.key == "#{self.class.get_prefix_for_model(@sb[:diag_selected_model]) || 'svr'}-#{@sb[:diag_selected_id]}"
+      node.selected = true
+    end
   end
 
   def x_get_tree_miq_servers

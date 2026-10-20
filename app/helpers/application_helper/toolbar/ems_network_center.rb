@@ -7,7 +7,7 @@ class ApplicationHelper::Toolbar::EmsNetworkCenter < ApplicationHelper::Toolbar:
       nil),
     select(
       :ems_network_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -16,14 +16,14 @@ class ApplicationHelper::Toolbar::EmsNetworkCenter < ApplicationHelper::Toolbar:
           'fa fa-refresh fa-lg',
           N_('Refresh relationships and power states for all items related to this Network Provider'),
           N_('Refresh Relationships and Power States'),
-          :confirm => N_("Refresh relationships and power states for all items related to this Network Provider?")),
+          :confirm => N_("Refresh relationships and power states for all items related to this Network Provider?"),
+          :klass   => ApplicationHelper::Button::EmsRefresh),
         separator,
         button(
           :ems_network_edit,
           'pficon pficon-edit fa-lg',
           t = N_('Edit this Network Provider'),
-          t,
-          :klass => ApplicationHelper::Button::EmsNetwork),
+          t),
         button(
           :ems_network_delete,
           'pficon pficon-delete fa-lg',
@@ -37,7 +37,7 @@ class ApplicationHelper::Toolbar::EmsNetworkCenter < ApplicationHelper::Toolbar:
   button_group('ems_network_policy', [
     select(
       :ems_network_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :items => [
@@ -57,7 +57,7 @@ class ApplicationHelper::Toolbar::EmsNetworkCenter < ApplicationHelper::Toolbar:
   button_group('ems_network_monitoring', [
     select(
       :ems_network_monitoring_choice,
-      'ff ff-monitoring fa-lg',
+      nil,
       t = N_('Monitoring'),
       t,
       :items => [

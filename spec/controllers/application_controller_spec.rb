@@ -1,52 +1,102 @@
 require 'ostruct'
 
 describe ApplicationController do
-  context "#find_record_with_rbac" do
+  describe "#report_only" do
+    let(:group) { FactoryBot.create(:miq_group, :miq_user_role => FactoryBot.create(:miq_user_role, :features => %w[everything])) }
+    let(:user)  { FactoryBot.create(:user, :miq_groups => [group]) }
+    let(:report_title) { "VMs using thin provisioned disks" }
+    let(:report) { FactoryBot.create(:miq_report, :title => report_title) }
+    let(:report_result_for_report) { FactoryBot.create(:miq_report_result, :miq_group => group, :miq_report_id => report.id, :report => report) }
+    let(:widget_title) { "Widget: VMs using thin provisioned disks" }
+    let(:widget) { FactoryBot.create(:miq_widget, :widget => widget_title) }
+    let(:widget_content) { FactoryBot.create(:miq_widget_content, :miq_widget => widget) }
+    let(:report_for_widget) { FactoryBot.create(:miq_report, :title => widget_title) }
+    let(:report_result_for_widget) { FactoryBot.create(:miq_report_result, :miq_group => group, :miq_report => report_for_widget, :report => report_for_widget, :report_source => MiqWidget::WIDGET_REPORT_SOURCE) }
+
+    before do
+      login_as user
+    end
+
+    it "uses correct variables for rendering result of report" do
+      controller.instance_variable_set(:@sb, :pages => { :rr_id => report_result_for_report.id })
+      controller.params = {:rr_id => report_result_for_report.id}
+
+      expect(controller).to receive(:render).with('shared/show_report', :layout => 'report_only')
+      controller.send(:report_only)
+
+      expect(controller.instance_variable_get(:@report_title)).to eq(report_title)
+      expect(controller.instance_variable_get(:@report)).to eq(report)
+      expect(controller.instance_variable_get(:@ght_type)).to eq('tabular')
+      expect(controller.instance_variable_get(:@render_chart)).to be_falsey
+    end
+
+    it "uses correct variables for rendering result of report" do
+      controller.instance_variable_set(:@sb, :pages => { :rr_id => report_result_for_widget.id })
+      controller.params = {:rr_id => report_result_for_widget.id}
+
+      expect(controller).to receive(:render).with('shared/show_report', :layout => 'report_only')
+      controller.send(:report_only)
+
+      expect(controller.instance_variable_get(:@report_title)).to eq(widget_title)
+      expect(controller.instance_variable_get(:@report)).to eq(report_for_widget)
+      expect(controller.instance_variable_get(:@ght_type)).to eq('tabular')
+      expect(controller.instance_variable_get(:@render_chart)).to be_falsey
+    end
+  end
+
+  describe "#find_record_with_rbac" do
     before do
       EvmSpecHelper.create_guid_miq_server_zone
       controller.instance_variable_set(:@sb, {})
-      ur = FactoryGirl.create(:miq_user_role)
+      ur = FactoryBot.create(:miq_user_role)
       rptmenu = {:report_menus => [["Configuration Management", ["Hosts", ["Hosts Summary", "Hosts Summary"]]]]}
-      group = FactoryGirl.create(:miq_group, :miq_user_role => ur, :settings => rptmenu)
-      login_as FactoryGirl.create(:user, :miq_groups => [group])
+      group = FactoryBot.create(:miq_group, :miq_user_role => ur, :settings => rptmenu)
+      login_as FactoryBot.create(:user, :miq_groups => [group])
     end
 
-    it "Verify Invalid input flash error message when invalid id is passed in" do
-      expect { controller.send(:find_record_with_rbac, ExtManagementSystem, "invalid") }.to raise_error(RuntimeError, "Can't access selected records")
+    it "considers it an bad request when no id is passed in" do
+      expect { controller.send(:find_record_with_rbac, ExtManagementSystem, nil) }.to raise_error(ActionController::BadRequest, "Can't access records without an id")
     end
 
-    it "Verify flash error message when passed in id no longer exists in database" do
-      expect { controller.send(:find_record_with_rbac, ExtManagementSystem, "1") }.to raise_error(RuntimeError, match(/Can't access selected records/))
+    it "considers it an auth error when invalid id is passed in" do
+      expect { controller.send(:find_record_with_rbac, ExtManagementSystem, "invalid") }.to raise_error(MiqException::RbacPrivilegeException, "Can't access selected records")
     end
 
-    it "Verify record gets set when valid id is passed in" do
-      ems = FactoryGirl.create(:ext_management_system)
+    it "considers it an auth error when id no longer exists in database or is RBAC filtered out" do
+      expect { controller.send(:find_record_with_rbac, ExtManagementSystem, "1") }.to raise_error(MiqException::RbacPrivilegeException, "Can't access selected records")
+    end
+
+    it "verify record gets set when valid id is passed in" do
+      ems = FactoryBot.create(:ext_management_system)
       expect(controller.send(:find_record_with_rbac, ExtManagementSystem, ems.id)).to eq(ems)
     end
   end
 
-  context "#assert_privileges" do
+  describe "#assert_privileges" do
     before do
-      EvmSpecHelper.seed_specific_product_features("host_new", "host_edit", "perf_reload")
-      feature = MiqProductFeature.find_all_by_identifier(["host_new"])
-      login_as FactoryGirl.create(:user, :features => feature)
+      EvmSpecHelper.seed_specific_product_features("host_compare", "host_edit", "perf_reload")
+      feature = MiqProductFeature.find_all_by_identifier(["host_compare"])
+      login_as FactoryBot.create(:user, :features => feature)
     end
 
     it "should not raise an error for feature that user has access to" do
-      expect { controller.send(:assert_privileges, "host_new") }.not_to raise_error
+      expect($audit_log).to receive(:success)
+      expect { controller.send(:assert_privileges, "host_compare") }.not_to raise_error
     end
 
     it "should raise an error for feature that user does not have access to" do
       msg = "The user is not authorized for this task or item."
+      expect($audit_log).to receive(:failure)
       expect { controller.send(:assert_privileges, "host_edit") }.to raise_error(MiqException::RbacPrivilegeException, msg)
     end
 
     it "should not raise an error for common hidden feature under a hidden parent" do
+      expect($audit_log).to receive(:success)
       expect { controller.send(:assert_privileges, "perf_reload") }.not_to raise_error
     end
   end
 
-  context "#previous_breadcrumb_url" do
+  describe "#previous_breadcrumb_url" do
     it "should return url when 2 entries" do
       controller.instance_variable_set(:@breadcrumbs, [{:url => "test_url"}, 'placeholder'])
       expect(controller.send(:previous_breadcrumb_url)).to eq("test_url")
@@ -61,71 +111,61 @@ describe ApplicationController do
     end
   end
 
-  context "#find_checked_items" do
-    it "returns empty array when button is pressed from summary screen with params as symbol" do
-      controller.instance_variable_set(:@_params, :id => "1")
-      expect(controller.send(:find_checked_items)).to eq([])
+  describe '#last_screen_url' do
+    it 'returns the last url' do
+      controller.instance_variable_set(:@breadcrumbs, [{:url => 'previous_url'}, {:url => 'last_url'}])
+      expect(controller.send(:last_screen_url)).to eq('last_url')
     end
 
-    it "returns empty array when button is pressed from summary screen with params as string" do
-      controller.instance_variable_set(:@_params, "id" => "1")
-      expect(controller.send(:find_checked_items)).to eq([])
+    it 'raises error' do
+      controller.instance_variable_set(:@breadcrumbs, [])
+      expect { controller.send(:previous_breadcrumb_url) }.to raise_error(NoMethodError)
+    end
+  end
+
+  describe "#find_checked_items" do
+    it "returns array with id when button is pressed from summary screen with params as symbol" do
+      controller.params = {:id => "1"}
+      expect(controller.send(:find_checked_items)).to eq(["1"])
+    end
+
+    it "returns array with id when button is pressed from summary screen with params as string" do
+      controller.params = {"id" => "1"}
+      expect(controller.send(:find_checked_items)).to eq(["1"])
     end
 
     it "returns list of items selected from list view" do
-      controller.instance_variable_set(:@_params, :miq_grid_checks => "1, 2, 3, 4")
+      controller.params = {:miq_grid_checks => "1, 2, 3, 4"}
       expect(controller.send(:find_checked_items)).to eq([1, 2, 3, 4])
     end
   end
 
-  context "#render_gtl_view_tb?" do
-    before do
-      controller.instance_variable_set(:@layout, "host")
-      controller.instance_variable_set(:@gtl_type, "list")
-    end
-
-    it "returns true for list views" do
-      controller.instance_variable_set(:@_params, :action => "show_list")
-      expect(controller.send(:render_gtl_view_tb?)).to be_truthy
-    end
-
-    it "returns true for list views when navigating thru relationships" do
-      controller.instance_variable_set(:@_params, :action => "show")
-      expect(controller.send(:render_gtl_view_tb?)).to be_truthy
-    end
-
-    it "returns false for sub list views" do
-      controller.instance_variable_set(:@_params, :action => "host_services")
-      expect(controller.send(:render_gtl_view_tb?)).to be_falsey
-    end
-  end
-
-  context "#prov_redirect" do
-    let(:user) { FactoryGirl.create(:user, :features => "vm_migrate") }
+  describe "#prov_redirect" do
+    let(:user) { FactoryBot.create(:user, :features => "vm_migrate") }
     before do
       allow(User).to receive(:server_timezone).and_return("UTC")
       login_as user
-      controller.request.parameters[:pressed] = "vm_migrate"
+      controller.params[:pressed] = "vm_migrate"
     end
 
-    it "returns flash message when Migrate button is pressed with list containing SCVMM VM" do
-      vm1 = FactoryGirl.create(:vm_vmware)
-      vm2 = FactoryGirl.create(:vm_microsoft)
-      controller.instance_variable_set(:@_params, :pressed         => "vm_migrate",
-                                                  :miq_grid_checks => "#{vm1.id},#{vm2.id}")
+    it "returns flash message when Migrate button is pressed with list containing an unsupported VM" do
+      vm1 = FactoryBot.create(:vm_vmware)
+      vm2 = FactoryBot.create(:vm_ovirt)
+      controller.params = {:pressed         => "vm_migrate",
+                           :miq_grid_checks => "#{vm1.id},#{vm2.id}"}
       controller.set_response!(response)
       controller.send(:prov_redirect, "migrate")
       expect(assigns(:flash_array).first[:message]).to include("does not apply to at least one of the selected")
     end
 
-    let(:ems)     { FactoryGirl.create(:ext_management_system) }
-    let(:storage) { FactoryGirl.create(:storage) }
+    let(:ems)     { FactoryBot.create(:ext_management_system) }
+    let(:storage) { FactoryBot.create(:storage) }
 
     it "sets variables when Migrate button is pressed with list of VMware VMs" do
-      vm1 = FactoryGirl.create(:vm_vmware, :storage => storage, :ext_management_system => ems)
-      vm2 = FactoryGirl.create(:vm_vmware, :storage => storage, :ext_management_system => ems)
-      controller.instance_variable_set(:@_params, :pressed         => "vm_migrate",
-                                                  :miq_grid_checks => "#{vm1.id},#{vm2.id}")
+      vm1 = FactoryBot.create(:vm_vmware, :storage => storage, :ext_management_system => ems)
+      vm2 = FactoryBot.create(:vm_vmware, :storage => storage, :ext_management_system => ems)
+      controller.params = {:pressed         => "vm_migrate",
+                           :miq_grid_checks => "#{vm1.id},#{vm2.id}"}
       controller.set_response!(response)
       controller.send(:prov_redirect, "migrate")
       expect(controller.send(:flash_errors?)).to be_falsey
@@ -133,40 +173,38 @@ describe ApplicationController do
     end
   end
 
-  context "#prov_redirect" do
+  describe "#prov_redirect" do
     before do
-      login_as FactoryGirl.create(:user, :features => "image_miq_request_new")
+      login_as FactoryBot.create(:user, :features => "image_miq_request_new")
       allow(User).to receive(:server_timezone).and_return("UTC")
-      controller.request.parameters[:pressed] = "image_miq_request_new"
+      controller.params[:pressed] = "image_miq_request_new"
       controller.instance_variable_set(:@explorer, true)
     end
 
     it "returns flash message when Provisioning button is pressed from list and selected Image is archived" do
-      template = FactoryGirl.create(:miq_template,
+      template = FactoryBot.create(:miq_template,
                                     :name     => "template 1",
                                     :vendor   => "vmware",
                                     :location => "template1.vmtx")
-      controller.instance_variable_set(:@_params,
-                                       :pressed         => "image_miq_request_new",
-                                       :miq_grid_checks => template.id.to_s)
+      controller.params = {:pressed         => "image_miq_request_new",
+                           :miq_grid_checks => template.id.to_s}
       controller.set_response!(response)
       expect(controller).not_to receive(:vm_pre_prov)
       controller.send(:prov_redirect)
       expect(assigns(:flash_array).first[:message]).to include("does not apply to at least one of the selected")
     end
 
-    let(:ems)     { FactoryGirl.create(:ems_openstack) }
-    let(:storage) { FactoryGirl.create(:storage) }
+    let(:ems)     { FactoryBot.create(:ems_openstack) }
+    let(:storage) { FactoryBot.create(:storage) }
 
     it "sets provisioning data and skips pre provisioning dialog" do
-      template = FactoryGirl.create(:template_openstack,
+      template = FactoryBot.create(:template_openstack,
                                     :name                  => "template 1",
                                     :vendor                => "vmware",
                                     :location              => "template1.vmtx",
                                     :ext_management_system => ems)
-      controller.instance_variable_set(:@_params,
-                                       :pressed         => "image_miq_request_new",
-                                       :miq_grid_checks => template.id.to_s)
+      controller.params = {:pressed         => "image_miq_request_new",
+                           :miq_grid_checks => template.id.to_s}
       controller.instance_variable_set(:@breadcrumbs, [])
       controller.instance_variable_set(:@sb, {})
       controller.set_response!(response)
@@ -177,9 +215,45 @@ describe ApplicationController do
       expect(controller.send(:flash_errors?)).to be_falsey
       expect(assigns(:org_controller)).to eq("vm")
     end
+
+    context 'setting proper template klass type for various controllers' do
+      subject { controller.instance_variable_get(:@template_klass_type) }
+
+      %w(ems_cluster ems_infra host resource_pool storage vm_infra).each do |ctrl|
+        context "#{ctrl} controller" do
+          before do
+            allow(controller).to receive(:assert_privileges)
+            allow(controller).to receive(:performed?)
+            allow(controller).to receive(:template_types_for_controller).and_call_original
+            controller.params = {:controller => ctrl, :pressed => 'vm_miq_request_new'}
+          end
+
+          it 'returns proper template type while provisioning VMs' do
+            controller.send(:prov_redirect)
+            expect(subject).to eq('infra')
+          end
+        end
+      end
+
+      %w(auth_key_pair_cloud availability_zone cloud_tenant ems_cloud host_aggregate orchestration_stack vm_cloud).each do |ctrl|
+        context "#{ctrl} controller" do
+          before do
+            allow(controller).to receive(:assert_privileges)
+            allow(controller).to receive(:performed?)
+            allow(controller).to receive(:template_types_for_controller).and_call_original
+            controller.params = {:controller => ctrl, :pressed => 'vm_miq_request_new'}
+          end
+
+          it 'returns proper template type while provisioning instances' do
+            controller.send(:prov_redirect)
+            expect(subject).to eq('cloud')
+          end
+        end
+      end
+    end
   end
 
-  context "#determine_record_id_for_presenter" do
+  describe "#determine_record_id_for_presenter" do
     context "when in a form" do
       before do
         controller.instance_variable_set(:@in_a_form, true)
@@ -219,40 +293,50 @@ describe ApplicationController do
       end
     end
 
-    context "#get_view" do
-      it 'calculates grid hash condition' do
-        controller.instance_variable_set(:@force_no_grid_xml, false)
-        controller.instance_variable_set(:@force_grid_xml, true)
-        controller.instance_variable_set(:@gtl_type, "list")
+  end
 
-        view = OpenStruct.new
-        view.db = "MiqProvision"
-        expect(controller.send(:grid_hash_conditions, view)).to eq(false)
-        view.db = "Build"
-        expect(controller.send(:grid_hash_conditions, view)).to eq(false)
-        view.db = "ContainerBuild"
-        expect(controller.send(:grid_hash_conditions, view)).to eq(true)
-        controller.instance_variable_set(:@force_no_grid_xml, true)
-        expect(controller.send(:grid_hash_conditions, view)).to eq(false)
-      end
+  describe "#get_view" do
+    it "does not load default selected search on tagging screen" do
+      search = FactoryBot.create(:miq_search, :name => 'sds')
+      user = FactoryBot.create(:user_with_group, :settings => {:default_search => {:Host => search.id}})
+      login_as user
+      session[:settings] = {:default_search => {:Host => search.id},
+                            :views          => {:persistentvolume => 'list'},
+                            :perpage        => {:list => 10}}
+      controller.instance_variable_set(:@settings, :default_search => {:Host => search.id})
+
+      controller.instance_variable_set(:@edit, :tagging => "Host")
+      expect(controller).to_not receive(:load_default_search)
+      controller.send(:get_view, "Host", :gtl_dbname => :host)
+    end
+
+    it "handles oversized-integers via search text" do
+      EvmSpecHelper.local_miq_server
+
+      controller.instance_variable_set(:@explorer, true)
+      controller.params = {:search => {:text => (2**63).to_s}} # 1 higher than PG bigint max
+
+      expect do
+        controller.send(:get_view, "Host", {}, true)
+      end.to_not raise_error # should not raise a PG::NumericValueOutOfRange
     end
   end
 
   describe "#build_user_emails_for_edit" do
-    before :each do
+    before do
       EvmSpecHelper.local_miq_server
       MiqUserRole.seed
 
-      role = MiqUserRole.find_by_name("EvmRole-operator")
+      role = MiqUserRole.find_by(:name => "EvmRole-operator")
 
-      group1 = FactoryGirl.create(:miq_group, :miq_user_role => role, :description => "Group1")
-      @user1 = FactoryGirl.create(:user, :userid => "User1", :miq_groups => [group1], :email => "user1@test.com")
+      group1 = FactoryBot.create(:miq_group, :miq_user_role => role, :description => "Group1")
+      @user1 = FactoryBot.create(:user, :userid => "User1", :miq_groups => [group1], :email => "user1@test.com")
 
-      group2 = FactoryGirl.create(:miq_group, :miq_user_role => role, :description => "Group2")
-      @user2 = FactoryGirl.create(:user, :userid => "User2", :miq_groups => [group2], :email => "user2@test.com")
+      group2 = FactoryBot.create(:miq_group, :miq_user_role => role, :description => "Group2")
+      @user2 = FactoryBot.create(:user, :userid => "User2", :miq_groups => [group2], :email => "user2@test.com")
 
-      current_group = FactoryGirl.create(:miq_group, :miq_user_role => role, :description => "Current Group")
-      @current_user = FactoryGirl.create(:user, :userid => "Current User", :miq_groups => [current_group, group1],
+      current_group = FactoryBot.create(:miq_group, :miq_user_role => role, :description => "Current Group")
+      @current_user = FactoryBot.create(:user, :userid => "Current User", :miq_groups => [current_group, group1],
                                                 :email => "current_user@test.com")
 
       login_as @current_user
@@ -261,7 +345,7 @@ describe ApplicationController do
     end
 
     it "finds users with groups which belongs to current user's groups" do
-      user_ids = User.with_current_user_groups.collect(&:userid)
+      user_ids = User.with_groups(@current_user.miq_groups.pluck(:id)).collect(&:userid)
       expect(user_ids).to include(@current_user.userid)
       expect(user_ids).to include(@user1.userid)
     end
@@ -299,6 +383,21 @@ describe ApplicationController do
     end
   end
 
+  describe '#perpage_key' do
+    {
+      'miqreportresult' => :reports,
+      'job'             => :job_task,
+      'miqtask'         => :job_task,
+      'host'            => :list,
+    }.each do |dbname, response|
+      context "key is #{dbname}" do
+        it "returns with #{response}" do
+          expect(controller.send(:perpage_key, dbname)).to eq(response)
+        end
+      end
+    end
+  end
+
   describe "#replace_trees_by_presenter" do
     let(:tree_1) { double(:name => 'tree_1', :type => 'tree_1') }
     let(:tree_2) { double(:name => 'tree_2', :type => 'tree_2') }
@@ -310,6 +409,77 @@ describe ApplicationController do
       allow(tree_2).to receive(:locals_for_render).and_return(:bs_tree => {})
       expect(presenter).to receive(:reload_tree).with(any_args).twice
       controller.send(:reload_trees_by_presenter, presenter, trees)
+    end
+  end
+
+  describe "#flash_errors?" do
+    it "returns true when errors are present in flash_array" do
+      controller.instance_variable_set(:@flash_array, [:message => "Error message", :level => :error])
+      expect(controller.send(:flash_errors?)).to be_truthy
+    end
+
+    it "returns false when there no errors are present in flash_array" do
+      controller.instance_variable_set(:@flash_array, [:message => "Foo message"])
+      expect(controller.send(:flash_errors?)).to be_falsey
+    end
+  end
+
+  describe "#flash_warnings?" do
+    it "returns true when errors are present in flash_array" do
+      controller.instance_variable_set(:@flash_array, [:message => "Warning message", :level => :warning])
+      expect(controller.send(:flash_warnings?)).to be_truthy
+    end
+
+    it "returns false when no warnings are present in flash_array" do
+      controller.instance_variable_set(:@flash_array, [:message => "Foo message"])
+      expect(controller.send(:flash_warnings?)).to be_falsey
+    end
+  end
+
+  describe '#search_clear' do
+    before do
+      controller.instance_variable_set(:@breadcrumbs, [{:url => 'last url'}])
+      controller.instance_variable_set(:@sb, :search_text => 'Search text')
+    end
+
+    it 'sets @search_text and @sb[:search_text] to nil' do
+      allow(controller).to receive(:javascript_redirect)
+      controller.send(:search_clear)
+      expect(controller.instance_variable_get(:@search_text)).to be_nil
+      expect(controller.instance_variable_get(:@sb)[:search_text]).to be_nil
+    end
+
+    it 'calls javascript_redirect for non-explorer' do
+      expect(controller).to receive(:javascript_redirect).with('last url')
+      controller.send(:search_clear)
+    end
+
+    context 'explorer screen' do
+      before { controller.params = {:in_explorer => 'true'} }
+
+      it 'calls reload' do
+        expect(controller).to receive(:reload)
+        controller.send(:search_clear)
+      end
+    end
+  end
+
+  describe '#assert_accordion_and_tree_privileges' do
+    let(:features) do
+      [
+        ApplicationController::Feature.new_with_hash(
+          :role     => 'infra_networking',
+          :role_any => true,
+          :name     => 'infra_networking',
+          :title    => _('Switches')
+        )
+      ]
+    end
+
+    it 'fails if the feature is not found' do
+      allow(controller).to receive(:features).and_return(features)
+
+      expect { controller.send(:assert_accordion_and_tree_privileges, 'infra_networking_tree') }.to raise_error(MiqException::RbacPrivilegeException)
     end
   end
 

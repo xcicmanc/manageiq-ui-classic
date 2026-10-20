@@ -1,0 +1,108 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`NotificationMessage component blank message should not render message 1`] = `<div />`;
+
+exports[`NotificationMessage component invalid type should not render message 1`] = `
+<div>
+  <div
+    class="miq-notification-message-container alert alert-info"
+  >
+    <span
+      class="pficon fa fa-regular fa-question-circle"
+    />
+    <strong>
+      No message will be displayed
+    </strong>
+  </div>
+</div>
+`;
+
+exports[`NotificationMessage component should render error message 1`] = `
+<div>
+  <div
+    class="miq-notification-message-container alert alert-danger"
+  >
+    <span
+      class="pficon pficon-error-circle-o"
+    />
+    <strong>
+      Error message goes here
+    </strong>
+  </div>
+</div>
+`;
+
+exports[`NotificationMessage component should render information message 1`] = `
+<div>
+  <div
+    class="miq-notification-message-container alert alert-info"
+  >
+    <span
+      class="pficon pficon-info"
+    />
+    <strong>
+      Information message goes here
+    </strong>
+  </div>
+</div>
+`;
+
+exports[`NotificationMessage component should render success message 1`] = `
+<div>
+  <div
+    class="miq-notification-message-container alert alert-success"
+  >
+    <span
+      class="pficon pficon-ok"
+    />
+    <strong>
+      Success message goes here
+    </strong>
+  </div>
+</div>
+`;
+
+exports[`NotificationMessage component should render warning message 1`] = `
+<div>
+  <div
+    class="miq-notification-message-container alert alert-warning"
+  >
+    <span
+      class="pficon pficon-warning-triangle-o"
+    />
+    <strong>
+      Warning message goes here
+    </strong>
+  </div>
+</div>
+`;
+
+exports[`NotificationMessage component unknown error type message should be rendered with blank type 1`] = `
+<div>
+  <div
+    class="miq-notification-message-container alert alert-info"
+  >
+    <span
+      class="pficon fa fa-regular fa-question-circle"
+    />
+    <strong>
+      Message goes here
+    </strong>
+  </div>
+</div>
+`;
+
+exports[`NotificationMessage component unknown error type message should be rendered with no type 1`] = `
+<div>
+  <div
+    class="miq-notification-message-container alert alert-info"
+  >
+    <span
+      class="pficon fa fa-regular fa-question-circle"
+    />
+    <strong>
+      Message goes here
+    </strong>
+  </div>
+</div>
+`;

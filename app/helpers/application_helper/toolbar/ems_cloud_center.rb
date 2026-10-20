@@ -7,7 +7,7 @@ class ApplicationHelper::Toolbar::EmsCloudCenter < ApplicationHelper::Toolbar::B
       nil),
     select(
       :ems_cloud_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -16,7 +16,8 @@ class ApplicationHelper::Toolbar::EmsCloudCenter < ApplicationHelper::Toolbar::B
           'fa fa-refresh fa-lg',
           N_('Refresh relationships and power states for all items related to this Cloud Provider'),
           N_('Refresh Relationships and Power States'),
-          :confirm => N_("Refresh relationships and power states for all items related to this Cloud Provider?")),
+          :confirm => N_("Refresh relationships and power states for all items related to this Cloud Provider?"),
+          :klass   => ApplicationHelper::Button::EmsRefresh),
         separator,
         button(
           :ems_cloud_user_sync,
@@ -44,7 +45,7 @@ class ApplicationHelper::Toolbar::EmsCloudCenter < ApplicationHelper::Toolbar::B
   button_group('ems_cloud_policy', [
     select(
       :ems_cloud_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :items => [
@@ -70,7 +71,7 @@ class ApplicationHelper::Toolbar::EmsCloudCenter < ApplicationHelper::Toolbar::B
   button_group('ems_cloud_monitoring', [
     select(
       :ems_cloud_monitoring_choice,
-      'ff ff-monitoring fa-lg',
+      nil,
       t = N_('Monitoring'),
       t,
       :items => [
@@ -87,7 +88,7 @@ class ApplicationHelper::Toolbar::EmsCloudCenter < ApplicationHelper::Toolbar::B
   button_group('ems_cloud_authentication', [
     select(
       :ems_cloud_authentication_choice,
-      'fa fa-lock fa-lg',
+      nil,
       t = N_('Authentication'),
       t,
       :items => [
@@ -98,6 +99,46 @@ class ApplicationHelper::Toolbar::EmsCloudCenter < ApplicationHelper::Toolbar::B
           N_('Re-check Authentication Status'),
           :klass => ApplicationHelper::Button::GenericFeatureButton,
           :options => {:feature => :authentication_status}),
+      ]
+    ),
+  ])
+  button_group('ems_cloud', [
+    twostate(
+      :view_dashboard,
+      'fa fa-tachometer fa-1xplus',
+      N_('Dashboard View'),
+      nil,
+      :url       => "/",
+      :url_parms => "?display=dashboard",
+      :klass     => ApplicationHelper::Button::ViewDashboard
+    ),
+    twostate(
+      :view_summary,
+      'fa fa-th-list',
+      N_('Summary View'),
+      nil,
+      :url       => "/",
+      :url_parms => "?display=main"
+    ),
+  ])
+  button_group('ems_native_console', [
+    select(
+      :ems_native_console,
+      nil,
+      N_('Remote Access'),
+      N_('Access'),
+      :items => [
+        button(
+          :ems_native_console,
+          'pficon pficon-screen fa-lg',
+          N_('Open a native console for this cloud provider'),
+          N_('Native Console'),
+          :keepSpinner => true,
+          :url         => "launch_console",
+          :confirm     => N_("Open native console for this provider"),
+          :klass       => ApplicationHelper::Button::NativeConsole,
+          :popup       => true
+        )
       ]
     ),
   ])

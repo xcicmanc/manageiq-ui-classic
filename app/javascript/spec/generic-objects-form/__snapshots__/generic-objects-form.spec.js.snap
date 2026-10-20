@@ -1,0 +1,1983 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Generic Object Form Component should render adding a new generic object 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class="cds--form-item cds--text-input-wrapper"
+    >
+      <div
+        class="cds--text-input__label-wrapper"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="name"
+        >
+          <span
+            aria-hidden="true"
+            class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+          >
+            *
+          </span>
+          Name
+        </label>
+      </div>
+      <div
+        class="cds--text-input__field-outer-wrapper"
+      >
+        <div
+          class="cds--text-input__field-wrapper"
+        >
+          <input
+            class="cds--text-input"
+            id="name"
+            maxlength="255"
+            name="name"
+            type="text"
+            value=""
+          />
+          <span
+            aria-atomic="true"
+            aria-live="assertive"
+            class="cds--text-input__counter-alert"
+            role="alert"
+          />
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--form-item cds--text-input-wrapper"
+    >
+      <div
+        class="cds--text-input__label-wrapper"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="description"
+        >
+          <span
+            aria-hidden="true"
+            class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+          >
+            *
+          </span>
+          Description
+        </label>
+      </div>
+      <div
+        class="cds--text-input__field-outer-wrapper"
+      >
+        <div
+          class="cds--text-input__field-wrapper"
+        >
+          <input
+            class="cds--text-input"
+            id="description"
+            maxlength="255"
+            name="description"
+            type="text"
+            value=""
+          />
+          <span
+            aria-atomic="true"
+            aria-live="assertive"
+            class="cds--text-input__counter-alert"
+            role="alert"
+          />
+        </div>
+      </div>
+    </div>
+    <div
+      class=""
+      id="generic-objects-field-array-attributes"
+      name="generic-objects-field-array-attributes"
+    >
+      <fieldset
+        class="cds--fieldset formGroup-0-2-9"
+      >
+        <legend
+          class="cds--label"
+        >
+          Attributes
+        </legend>
+        <div>
+          None
+          <div
+            class="addContainer-0-2-7"
+          >
+            <button
+              class="add-0-2-6 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--primary"
+              id="add-attributes"
+              type="button"
+            >
+              Add
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16,4c6.6,0,12,5.4,12,12s-5.4,12-12,12S4,22.6,4,16S9.4,4,16,4 M16,2C8.3,2,2,8.3,2,16s6.3,14,14,14s14-6.3,14-14 S23.7,2,16,2z"
+                />
+                <path
+                  d="M24 15 17 15 17 8 15 8 15 15 8 15 8 17 15 17 15 24 17 24 17 17 24 17z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <div
+      class=""
+      id="generic-objects-field-array-associations"
+      name="generic-objects-field-array-associations"
+    >
+      <fieldset
+        class="cds--fieldset formGroup-0-2-9"
+      >
+        <legend
+          class="cds--label"
+        >
+          Associations
+        </legend>
+        <div>
+          None
+          <div
+            class="addContainer-0-2-7"
+          >
+            <button
+              class="add-0-2-6 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--primary"
+              id="add-associations"
+              type="button"
+            >
+              Add
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16,4c6.6,0,12,5.4,12,12s-5.4,12-12,12S4,22.6,4,16S9.4,4,16,4 M16,2C8.3,2,2,8.3,2,16s6.3,14,14,14s14-6.3,14-14 S23.7,2,16,2z"
+                />
+                <path
+                  d="M24 15 17 15 17 8 15 8 15 15 8 15 8 17 15 17 15 24 17 24 17 17 24 17z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <div
+      class=""
+      id="generic-objects-field-array-methods"
+      name="generic-objects-field-array-methods"
+    >
+      <fieldset
+        class="cds--fieldset formGroup-0-2-9"
+      >
+        <legend
+          class="cds--label"
+        >
+          Methods
+        </legend>
+        <div>
+          None
+          <div
+            class="addContainer-0-2-7"
+          >
+            <button
+              class="add-0-2-6 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--primary"
+              id="add-methods"
+              type="button"
+            >
+              Add
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16,4c6.6,0,12,5.4,12,12s-5.4,12-12,12S4,22.6,4,16S9.4,4,16,4 M16,2C8.3,2,2,8.3,2,16s6.3,14,14,14s14-6.3,14-14 S23.7,2,16,2z"
+                />
+                <path
+                  d="M24 15 17 15 17 8 15 8 15 15 8 15 8 17 15 17 15 24 17 24 17 17 24 17z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <div
+      class=""
+      id="file_section"
+      name="file_section"
+    >
+      <div
+        class="file-upload"
+      >
+        <label
+          class="cds--label"
+        >
+          Custom Image File
+        </label>
+        <br />
+        <label
+          class="file-upload-label"
+          disabled=""
+        >
+          No File Chosen
+        </label>
+        <span
+          class="file-button"
+          tabindex="0"
+        >
+          <label
+            class="file-button-label"
+            for="file_upload"
+          >
+            <span
+              class="buttonText"
+            >
+              Choose File
+            </span>
+            <input
+              class="file-upload-input"
+              id="file_upload"
+              name="file_upload"
+              type="file"
+              value=""
+            />
+          </label>
+        </span>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Add
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`Generic Object Form Component should render editing a generic object with an existing image 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class="cds--form-item cds--text-input-wrapper"
+    >
+      <div
+        class="cds--text-input__label-wrapper"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="name"
+        >
+          <span
+            aria-hidden="true"
+            class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+          >
+            *
+          </span>
+          Name
+        </label>
+      </div>
+      <div
+        class="cds--text-input__field-outer-wrapper"
+      >
+        <div
+          class="cds--text-input__field-wrapper"
+        >
+          <input
+            class="cds--text-input"
+            id="name"
+            maxlength="255"
+            name="name"
+            type="text"
+            value="Generic Object"
+          />
+          <span
+            aria-atomic="true"
+            aria-live="assertive"
+            class="cds--text-input__counter-alert"
+            role="alert"
+          />
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--form-item cds--text-input-wrapper"
+    >
+      <div
+        class="cds--text-input__label-wrapper"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="description"
+        >
+          <span
+            aria-hidden="true"
+            class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+          >
+            *
+          </span>
+          Description
+        </label>
+      </div>
+      <div
+        class="cds--text-input__field-outer-wrapper"
+      >
+        <div
+          class="cds--text-input__field-wrapper"
+        >
+          <input
+            class="cds--text-input"
+            id="description"
+            maxlength="255"
+            name="description"
+            type="text"
+            value="this is a test"
+          />
+          <span
+            aria-atomic="true"
+            aria-live="assertive"
+            class="cds--text-input__counter-alert"
+            role="alert"
+          />
+        </div>
+      </div>
+    </div>
+    <div
+      class=""
+      id="generic-objects-field-array-attributes"
+      name="generic-objects-field-array-attributes"
+    >
+      <fieldset
+        class="cds--fieldset formGroup-0-2-9"
+      >
+        <legend
+          class="cds--label"
+        >
+          Attributes
+        </legend>
+        <div>
+          <div>
+            <div
+              class="cds--form-item cds--text-input-wrapper"
+            >
+              <div
+                class="cds--text-input__label-wrapper"
+              >
+                <label
+                  class="cds--label"
+                  dir="auto"
+                  for="attributes[0].attributes_name"
+                >
+                  Name
+                </label>
+              </div>
+              <div
+                class="cds--text-input__field-outer-wrapper"
+              >
+                <div
+                  class="cds--text-input__field-wrapper"
+                >
+                  <input
+                    class="cds--text-input"
+                    id="attributes[0].attributes_name"
+                    name="attributes[0].attributes_name"
+                    type="text"
+                    value="this_is_a_string"
+                  />
+                  <span
+                    aria-atomic="true"
+                    aria-live="assertive"
+                    class="cds--text-input__counter-alert"
+                    role="alert"
+                  />
+                </div>
+              </div>
+            </div>
+            <div
+              class="cds--form-item"
+            >
+              <div
+                class="cds--select"
+              >
+                <label
+                  class="cds--label"
+                  dir="auto"
+                  for="attributes[0].type"
+                >
+                  Type
+                </label>
+                <div
+                  class="cds--select-input__wrapper"
+                >
+                  <select
+                    class="cds--select-input"
+                    id="attributes[0].type"
+                    name="attributes[0].type"
+                    title=""
+                  >
+                    <option
+                      class="cds--select-option"
+                      label="<Choose>"
+                      value=""
+                    >
+                      &lt;Choose&gt;
+                    </option>
+                    <option
+                      class="cds--select-option"
+                      label="Boolean"
+                      value="boolean"
+                    >
+                      Boolean
+                    </option>
+                    <option
+                      class="cds--select-option"
+                      label="String"
+                      value="string"
+                    >
+                      String
+                    </option>
+                  </select>
+                  <svg
+                    aria-hidden="true"
+                    class="cds--select__arrow"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 16 16"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <button
+              class="remove-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+              id="remove-attributes[0]"
+              type="button"
+            >
+              Remove
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 15H24V17H8z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="addContainer-0-2-7"
+          >
+            <button
+              class="add-0-2-6 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--primary"
+              id="add-attributes"
+              type="button"
+            >
+              Add
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16,4c6.6,0,12,5.4,12,12s-5.4,12-12,12S4,22.6,4,16S9.4,4,16,4 M16,2C8.3,2,2,8.3,2,16s6.3,14,14,14s14-6.3,14-14 S23.7,2,16,2z"
+                />
+                <path
+                  d="M24 15 17 15 17 8 15 8 15 15 8 15 8 17 15 17 15 24 17 24 17 17 24 17z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <div
+      class=""
+      id="generic-objects-field-array-associations"
+      name="generic-objects-field-array-associations"
+    >
+      <fieldset
+        class="cds--fieldset formGroup-0-2-9"
+      >
+        <legend
+          class="cds--label"
+        >
+          Associations
+        </legend>
+        <div>
+          <div>
+            <div
+              class="cds--form-item cds--text-input-wrapper"
+            >
+              <div
+                class="cds--text-input__label-wrapper"
+              >
+                <label
+                  class="cds--label"
+                  dir="auto"
+                  for="associations[0].associations_name"
+                >
+                  Name
+                </label>
+              </div>
+              <div
+                class="cds--text-input__field-outer-wrapper"
+              >
+                <div
+                  class="cds--text-input__field-wrapper"
+                >
+                  <input
+                    class="cds--text-input"
+                    id="associations[0].associations_name"
+                    name="associations[0].associations_name"
+                    type="text"
+                    value="bottle_neck"
+                  />
+                  <span
+                    aria-atomic="true"
+                    aria-live="assertive"
+                    class="cds--text-input__counter-alert"
+                    role="alert"
+                  />
+                </div>
+              </div>
+            </div>
+            <div
+              class="cds--list-box__wrapper class"
+            >
+              <label
+                class="cds--label"
+                dir="auto"
+                for="associations[0].class"
+                id="downshift-_r_9_-label"
+              >
+                Class
+              </label>
+              <div
+                class="cds--combo-box cds--list-box"
+              >
+                <div
+                  class="cds--list-box__field"
+                >
+                  <input
+                    aria-activedescendant=""
+                    aria-autocomplete="list"
+                    aria-controls="downshift-_r_9_-menu"
+                    aria-expanded="false"
+                    aria-haspopup="listbox"
+                    aria-labelledby="downshift-_r_9_-label"
+                    autocomplete="off"
+                    class="cds--text-input"
+                    id="associations[0].class"
+                    name="associations[0].class"
+                    placeholder="<Choose>"
+                    role="combobox"
+                    tabindex="0"
+                    title="Bottleneck Event"
+                    type="text"
+                    value="Bottleneck Event"
+                  />
+                  <button
+                    aria-label="Clear selected item"
+                    class="cds--list-box__selection"
+                    tabindex="-1"
+                    title="Clear selected item"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="16"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 32 32"
+                      width="16"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    aria-controls="downshift-_r_9_-menu"
+                    aria-expanded="false"
+                    aria-label="Open"
+                    class="cds--list-box__menu-icon"
+                    id="downshift-_r_9_-toggle-button"
+                    tabindex="-1"
+                    title="Open"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="16"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 16 16"
+                      width="16"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <ul
+                  aria-labelledby="downshift-_r_9_-label"
+                  class="cds--list-box__menu"
+                  id="downshift-_r_9_-menu"
+                  role="listbox"
+                />
+              </div>
+            </div>
+            <button
+              class="remove-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+              id="remove-associations[0]"
+              type="button"
+            >
+              Remove
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 15H24V17H8z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div>
+            <div
+              class="cds--form-item cds--text-input-wrapper"
+            >
+              <div
+                class="cds--text-input__label-wrapper"
+              >
+                <label
+                  class="cds--label"
+                  dir="auto"
+                  for="associations[1].associations_name"
+                >
+                  Name
+                </label>
+              </div>
+              <div
+                class="cds--text-input__field-outer-wrapper"
+              >
+                <div
+                  class="cds--text-input__field-wrapper"
+                >
+                  <input
+                    class="cds--text-input"
+                    id="associations[1].associations_name"
+                    name="associations[1].associations_name"
+                    type="text"
+                    value="project"
+                  />
+                  <span
+                    aria-atomic="true"
+                    aria-live="assertive"
+                    class="cds--text-input__counter-alert"
+                    role="alert"
+                  />
+                </div>
+              </div>
+            </div>
+            <div
+              class="cds--list-box__wrapper class"
+            >
+              <label
+                class="cds--label"
+                dir="auto"
+                for="associations[1].class"
+                id="downshift-_r_d_-label"
+              >
+                Class
+              </label>
+              <div
+                class="cds--combo-box cds--list-box"
+              >
+                <div
+                  class="cds--list-box__field"
+                >
+                  <input
+                    aria-activedescendant=""
+                    aria-autocomplete="list"
+                    aria-controls="downshift-_r_d_-menu"
+                    aria-expanded="false"
+                    aria-haspopup="listbox"
+                    aria-labelledby="downshift-_r_d_-label"
+                    autocomplete="off"
+                    class="cds--text-input"
+                    id="associations[1].class"
+                    name="associations[1].class"
+                    placeholder="<Choose>"
+                    role="combobox"
+                    tabindex="0"
+                    title="Performance - Container Project"
+                    type="text"
+                    value="Performance - Container Project"
+                  />
+                  <button
+                    aria-label="Clear selected item"
+                    class="cds--list-box__selection"
+                    tabindex="-1"
+                    title="Clear selected item"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="16"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 32 32"
+                      width="16"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    aria-controls="downshift-_r_d_-menu"
+                    aria-expanded="false"
+                    aria-label="Open"
+                    class="cds--list-box__menu-icon"
+                    id="downshift-_r_d_-toggle-button"
+                    tabindex="-1"
+                    title="Open"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="16"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 16 16"
+                      width="16"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <ul
+                  aria-labelledby="downshift-_r_d_-label"
+                  class="cds--list-box__menu"
+                  id="downshift-_r_d_-menu"
+                  role="listbox"
+                />
+              </div>
+            </div>
+            <button
+              class="remove-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+              id="remove-associations[1]"
+              type="button"
+            >
+              Remove
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 15H24V17H8z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="addContainer-0-2-7"
+          >
+            <button
+              class="add-0-2-6 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--primary"
+              id="add-associations"
+              type="button"
+            >
+              Add
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16,4c6.6,0,12,5.4,12,12s-5.4,12-12,12S4,22.6,4,16S9.4,4,16,4 M16,2C8.3,2,2,8.3,2,16s6.3,14,14,14s14-6.3,14-14 S23.7,2,16,2z"
+                />
+                <path
+                  d="M24 15 17 15 17 8 15 8 15 15 8 15 8 17 15 17 15 24 17 24 17 17 24 17z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <div
+      class=""
+      id="generic-objects-field-array-methods"
+      name="generic-objects-field-array-methods"
+    >
+      <fieldset
+        class="cds--fieldset formGroup-0-2-9"
+      >
+        <legend
+          class="cds--label"
+        >
+          Methods
+        </legend>
+        <div>
+          <div>
+            <div
+              class="cds--form-item cds--text-input-wrapper"
+            >
+              <div
+                class="cds--text-input__label-wrapper"
+              >
+                <label
+                  class="cds--label"
+                  dir="auto"
+                  for="methods[0].methods_name"
+                >
+                  Name
+                </label>
+              </div>
+              <div
+                class="cds--text-input__field-outer-wrapper"
+              >
+                <div
+                  class="cds--text-input__field-wrapper"
+                >
+                  <input
+                    class="cds--text-input"
+                    id="methods[0].methods_name"
+                    name="methods[0].methods_name"
+                    type="text"
+                    value="method"
+                  />
+                  <span
+                    aria-atomic="true"
+                    aria-live="assertive"
+                    class="cds--text-input__counter-alert"
+                    role="alert"
+                  />
+                </div>
+              </div>
+            </div>
+            <button
+              class="remove-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+              id="remove-methods[0]"
+              type="button"
+            >
+              Remove
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 15H24V17H8z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="addContainer-0-2-7"
+          >
+            <button
+              class="add-0-2-6 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--primary"
+              id="add-methods"
+              type="button"
+            >
+              Add
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16,4c6.6,0,12,5.4,12,12s-5.4,12-12,12S4,22.6,4,16S9.4,4,16,4 M16,2C8.3,2,2,8.3,2,16s6.3,14,14,14s14-6.3,14-14 S23.7,2,16,2z"
+                />
+                <path
+                  d="M24 15 17 15 17 8 15 8 15 15 8 15 8 17 15 17 15 24 17 24 17 17 24 17z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <div
+      class=""
+      id="edit_section"
+      name="edit_section"
+    >
+      <div>
+        <label
+          class="cds--label"
+          for="file_edit"
+        >
+          Current Custom Image File
+        </label>
+        <br />
+        <div
+          class="edit-div"
+        >
+          <img
+            alt="Uploaded Image"
+            class="edit-image"
+            id="imageDisplay"
+            src="http://localhost:3000/pictures/52.png"
+          />
+          <span
+            class="cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--bottom cds--tooltip cds--icon-tooltip"
+          >
+            <div
+              class="cds--tooltip-trigger__wrapper"
+            >
+              <button
+                aria-labelledby="tooltip-_r_j_"
+                class="edit-button cds--btn cds--btn--primary cds--btn--icon-only"
+                name="file_edit"
+                type="button"
+                value=""
+              >
+                <svg
+                  aria-hidden="true"
+                  fill="currentColor"
+                  focusable="false"
+                  height="16"
+                  preserveAspectRatio="xMidYMid meet"
+                  viewBox="0 0 32 32"
+                  width="16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 12H14V24H12z"
+                  />
+                  <path
+                    d="M18 12H20V24H18z"
+                  />
+                  <path
+                    d="M4,6V8H6V28a2,2,0,0,0,2,2H24a2,2,0,0,0,2-2V8h2V6ZM8,28V8H24V28Z"
+                  />
+                  <path
+                    d="M12 2H20V4H12z"
+                  />
+                </svg>
+              </button>
+            </div>
+            <span
+              aria-hidden="true"
+              class="cds--popover"
+              id="tooltip-_r_j_"
+              role="tooltip"
+            >
+              <span
+                class="cds--popover-content cds--tooltip-content"
+              >
+                Delete File
+              </span>
+              <span
+                class="cds--popover-caret"
+              />
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+    <div
+      hidden=""
+    >
+      <div>
+        <div
+          class="cds--toggle"
+        >
+          <button
+            aria-checked="false"
+            class="cds--toggle__button"
+            id="image_update"
+            role="switch"
+            type="button"
+          />
+          <div
+            class="cds--toggle__label"
+            for="image_update"
+            id="image_update_label"
+          >
+            <div
+              class="cds--toggle__appearance"
+            >
+              <div
+                class="cds--toggle__switch"
+              />
+              <span
+                aria-hidden="true"
+                class="cds--toggle__text"
+                dir="auto"
+              >
+                Off
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Save
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary cds--btn--disabled"
+        disabled=""
+        type="button"
+      >
+        Reset
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`Generic Object Form Component should render editing a generic object without an existing image 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class="cds--form-item cds--text-input-wrapper"
+    >
+      <div
+        class="cds--text-input__label-wrapper"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="name"
+        >
+          <span
+            aria-hidden="true"
+            class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+          >
+            *
+          </span>
+          Name
+        </label>
+      </div>
+      <div
+        class="cds--text-input__field-outer-wrapper"
+      >
+        <div
+          class="cds--text-input__field-wrapper"
+        >
+          <input
+            class="cds--text-input"
+            id="name"
+            maxlength="255"
+            name="name"
+            type="text"
+            value="Generic Object"
+          />
+          <span
+            aria-atomic="true"
+            aria-live="assertive"
+            class="cds--text-input__counter-alert"
+            role="alert"
+          />
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--form-item cds--text-input-wrapper"
+    >
+      <div
+        class="cds--text-input__label-wrapper"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="description"
+        >
+          <span
+            aria-hidden="true"
+            class="ddorg__carbon-component-mapper_is-required isRequired-0-2-4"
+          >
+            *
+          </span>
+          Description
+        </label>
+      </div>
+      <div
+        class="cds--text-input__field-outer-wrapper"
+      >
+        <div
+          class="cds--text-input__field-wrapper"
+        >
+          <input
+            class="cds--text-input"
+            id="description"
+            maxlength="255"
+            name="description"
+            type="text"
+            value="this is a test"
+          />
+          <span
+            aria-atomic="true"
+            aria-live="assertive"
+            class="cds--text-input__counter-alert"
+            role="alert"
+          />
+        </div>
+      </div>
+    </div>
+    <div
+      class=""
+      id="generic-objects-field-array-attributes"
+      name="generic-objects-field-array-attributes"
+    >
+      <fieldset
+        class="cds--fieldset formGroup-0-2-9"
+      >
+        <legend
+          class="cds--label"
+        >
+          Attributes
+        </legend>
+        <div>
+          <div>
+            <div
+              class="cds--form-item cds--text-input-wrapper"
+            >
+              <div
+                class="cds--text-input__label-wrapper"
+              >
+                <label
+                  class="cds--label"
+                  dir="auto"
+                  for="attributes[0].attributes_name"
+                >
+                  Name
+                </label>
+              </div>
+              <div
+                class="cds--text-input__field-outer-wrapper"
+              >
+                <div
+                  class="cds--text-input__field-wrapper"
+                >
+                  <input
+                    class="cds--text-input"
+                    id="attributes[0].attributes_name"
+                    name="attributes[0].attributes_name"
+                    type="text"
+                    value="this_is_a_string"
+                  />
+                  <span
+                    aria-atomic="true"
+                    aria-live="assertive"
+                    class="cds--text-input__counter-alert"
+                    role="alert"
+                  />
+                </div>
+              </div>
+            </div>
+            <div
+              class="cds--form-item"
+            >
+              <div
+                class="cds--select"
+              >
+                <label
+                  class="cds--label"
+                  dir="auto"
+                  for="attributes[0].type"
+                >
+                  Type
+                </label>
+                <div
+                  class="cds--select-input__wrapper"
+                >
+                  <select
+                    class="cds--select-input"
+                    id="attributes[0].type"
+                    name="attributes[0].type"
+                    title=""
+                  >
+                    <option
+                      class="cds--select-option"
+                      label="<Choose>"
+                      value=""
+                    >
+                      &lt;Choose&gt;
+                    </option>
+                    <option
+                      class="cds--select-option"
+                      label="Boolean"
+                      value="boolean"
+                    >
+                      Boolean
+                    </option>
+                    <option
+                      class="cds--select-option"
+                      label="String"
+                      value="string"
+                    >
+                      String
+                    </option>
+                  </select>
+                  <svg
+                    aria-hidden="true"
+                    class="cds--select__arrow"
+                    fill="currentColor"
+                    focusable="false"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 16 16"
+                    width="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <button
+              class="remove-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+              id="remove-attributes[0]"
+              type="button"
+            >
+              Remove
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 15H24V17H8z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="addContainer-0-2-7"
+          >
+            <button
+              class="add-0-2-6 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--primary"
+              id="add-attributes"
+              type="button"
+            >
+              Add
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16,4c6.6,0,12,5.4,12,12s-5.4,12-12,12S4,22.6,4,16S9.4,4,16,4 M16,2C8.3,2,2,8.3,2,16s6.3,14,14,14s14-6.3,14-14 S23.7,2,16,2z"
+                />
+                <path
+                  d="M24 15 17 15 17 8 15 8 15 15 8 15 8 17 15 17 15 24 17 24 17 17 24 17z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <div
+      class=""
+      id="generic-objects-field-array-associations"
+      name="generic-objects-field-array-associations"
+    >
+      <fieldset
+        class="cds--fieldset formGroup-0-2-9"
+      >
+        <legend
+          class="cds--label"
+        >
+          Associations
+        </legend>
+        <div>
+          <div>
+            <div
+              class="cds--form-item cds--text-input-wrapper"
+            >
+              <div
+                class="cds--text-input__label-wrapper"
+              >
+                <label
+                  class="cds--label"
+                  dir="auto"
+                  for="associations[0].associations_name"
+                >
+                  Name
+                </label>
+              </div>
+              <div
+                class="cds--text-input__field-outer-wrapper"
+              >
+                <div
+                  class="cds--text-input__field-wrapper"
+                >
+                  <input
+                    class="cds--text-input"
+                    id="associations[0].associations_name"
+                    name="associations[0].associations_name"
+                    type="text"
+                    value="bottle_neck"
+                  />
+                  <span
+                    aria-atomic="true"
+                    aria-live="assertive"
+                    class="cds--text-input__counter-alert"
+                    role="alert"
+                  />
+                </div>
+              </div>
+            </div>
+            <div
+              class="cds--list-box__wrapper class"
+            >
+              <label
+                class="cds--label"
+                dir="auto"
+                for="associations[0].class"
+                id="downshift-_r_t_-label"
+              >
+                Class
+              </label>
+              <div
+                class="cds--combo-box cds--list-box"
+              >
+                <div
+                  class="cds--list-box__field"
+                >
+                  <input
+                    aria-activedescendant=""
+                    aria-autocomplete="list"
+                    aria-controls="downshift-_r_t_-menu"
+                    aria-expanded="false"
+                    aria-haspopup="listbox"
+                    aria-labelledby="downshift-_r_t_-label"
+                    autocomplete="off"
+                    class="cds--text-input"
+                    id="associations[0].class"
+                    name="associations[0].class"
+                    placeholder="<Choose>"
+                    role="combobox"
+                    tabindex="0"
+                    title="Bottleneck Event"
+                    type="text"
+                    value="Bottleneck Event"
+                  />
+                  <button
+                    aria-label="Clear selected item"
+                    class="cds--list-box__selection"
+                    tabindex="-1"
+                    title="Clear selected item"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="16"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 32 32"
+                      width="16"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    aria-controls="downshift-_r_t_-menu"
+                    aria-expanded="false"
+                    aria-label="Open"
+                    class="cds--list-box__menu-icon"
+                    id="downshift-_r_t_-toggle-button"
+                    tabindex="-1"
+                    title="Open"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="16"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 16 16"
+                      width="16"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <ul
+                  aria-labelledby="downshift-_r_t_-label"
+                  class="cds--list-box__menu"
+                  id="downshift-_r_t_-menu"
+                  role="listbox"
+                />
+              </div>
+            </div>
+            <button
+              class="remove-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+              id="remove-associations[0]"
+              type="button"
+            >
+              Remove
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 15H24V17H8z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div>
+            <div
+              class="cds--form-item cds--text-input-wrapper"
+            >
+              <div
+                class="cds--text-input__label-wrapper"
+              >
+                <label
+                  class="cds--label"
+                  dir="auto"
+                  for="associations[1].associations_name"
+                >
+                  Name
+                </label>
+              </div>
+              <div
+                class="cds--text-input__field-outer-wrapper"
+              >
+                <div
+                  class="cds--text-input__field-wrapper"
+                >
+                  <input
+                    class="cds--text-input"
+                    id="associations[1].associations_name"
+                    name="associations[1].associations_name"
+                    type="text"
+                    value="project"
+                  />
+                  <span
+                    aria-atomic="true"
+                    aria-live="assertive"
+                    class="cds--text-input__counter-alert"
+                    role="alert"
+                  />
+                </div>
+              </div>
+            </div>
+            <div
+              class="cds--list-box__wrapper class"
+            >
+              <label
+                class="cds--label"
+                dir="auto"
+                for="associations[1].class"
+                id="downshift-_r_11_-label"
+              >
+                Class
+              </label>
+              <div
+                class="cds--combo-box cds--list-box"
+              >
+                <div
+                  class="cds--list-box__field"
+                >
+                  <input
+                    aria-activedescendant=""
+                    aria-autocomplete="list"
+                    aria-controls="downshift-_r_11_-menu"
+                    aria-expanded="false"
+                    aria-haspopup="listbox"
+                    aria-labelledby="downshift-_r_11_-label"
+                    autocomplete="off"
+                    class="cds--text-input"
+                    id="associations[1].class"
+                    name="associations[1].class"
+                    placeholder="<Choose>"
+                    role="combobox"
+                    tabindex="0"
+                    title="Performance - Container Project"
+                    type="text"
+                    value="Performance - Container Project"
+                  />
+                  <button
+                    aria-label="Clear selected item"
+                    class="cds--list-box__selection"
+                    tabindex="-1"
+                    title="Clear selected item"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="16"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 32 32"
+                      width="16"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    aria-controls="downshift-_r_11_-menu"
+                    aria-expanded="false"
+                    aria-label="Open"
+                    class="cds--list-box__menu-icon"
+                    id="downshift-_r_11_-toggle-button"
+                    tabindex="-1"
+                    title="Open"
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      fill="currentColor"
+                      focusable="false"
+                      height="16"
+                      preserveAspectRatio="xMidYMid meet"
+                      viewBox="0 0 16 16"
+                      width="16"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <ul
+                  aria-labelledby="downshift-_r_11_-label"
+                  class="cds--list-box__menu"
+                  id="downshift-_r_11_-menu"
+                  role="listbox"
+                />
+              </div>
+            </div>
+            <button
+              class="remove-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+              id="remove-associations[1]"
+              type="button"
+            >
+              Remove
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 15H24V17H8z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="addContainer-0-2-7"
+          >
+            <button
+              class="add-0-2-6 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--primary"
+              id="add-associations"
+              type="button"
+            >
+              Add
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16,4c6.6,0,12,5.4,12,12s-5.4,12-12,12S4,22.6,4,16S9.4,4,16,4 M16,2C8.3,2,2,8.3,2,16s6.3,14,14,14s14-6.3,14-14 S23.7,2,16,2z"
+                />
+                <path
+                  d="M24 15 17 15 17 8 15 8 15 15 8 15 8 17 15 17 15 24 17 24 17 17 24 17z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <div
+      class=""
+      id="generic-objects-field-array-methods"
+      name="generic-objects-field-array-methods"
+    >
+      <fieldset
+        class="cds--fieldset formGroup-0-2-9"
+      >
+        <legend
+          class="cds--label"
+        >
+          Methods
+        </legend>
+        <div>
+          <div>
+            <div
+              class="cds--form-item cds--text-input-wrapper"
+            >
+              <div
+                class="cds--text-input__label-wrapper"
+              >
+                <label
+                  class="cds--label"
+                  dir="auto"
+                  for="methods[0].methods_name"
+                >
+                  Name
+                </label>
+              </div>
+              <div
+                class="cds--text-input__field-outer-wrapper"
+              >
+                <div
+                  class="cds--text-input__field-wrapper"
+                >
+                  <input
+                    class="cds--text-input"
+                    id="methods[0].methods_name"
+                    name="methods[0].methods_name"
+                    type="text"
+                    value="method"
+                  />
+                  <span
+                    aria-atomic="true"
+                    aria-live="assertive"
+                    class="cds--text-input__counter-alert"
+                    role="alert"
+                  />
+                </div>
+              </div>
+            </div>
+            <button
+              class="remove-0-2-8 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--danger"
+              id="remove-methods[0]"
+              type="button"
+            >
+              Remove
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 15H24V17H8z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="addContainer-0-2-7"
+          >
+            <button
+              class="add-0-2-6 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--primary"
+              id="add-methods"
+              type="button"
+            >
+              Add
+              <svg
+                aria-hidden="true"
+                class="cds--btn__icon"
+                fill="currentColor"
+                focusable="false"
+                height="32"
+                preserveAspectRatio="xMidYMid meet"
+                viewBox="0 0 32 32"
+                width="32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16,4c6.6,0,12,5.4,12,12s-5.4,12-12,12S4,22.6,4,16S9.4,4,16,4 M16,2C8.3,2,2,8.3,2,16s6.3,14,14,14s14-6.3,14-14 S23.7,2,16,2z"
+                />
+                <path
+                  d="M24 15 17 15 17 8 15 8 15 15 8 15 8 17 15 17 15 24 17 24 17 17 24 17z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <div
+      class=""
+      id="file_section"
+      name="file_section"
+    >
+      <div
+        class="file-upload"
+      >
+        <label
+          class="cds--label"
+        >
+          Custom Image File
+        </label>
+        <br />
+        <label
+          class="file-upload-label"
+          disabled=""
+        >
+          No File Chosen
+        </label>
+        <span
+          class="file-button"
+          tabindex="0"
+        >
+          <label
+            class="file-button-label"
+            for="file_upload"
+          >
+            <span
+              class="buttonText"
+            >
+              Choose File
+            </span>
+            <input
+              class="file-upload-input"
+              id="file_upload"
+              name="file_upload"
+              type="file"
+              value=""
+            />
+          </label>
+        </span>
+      </div>
+    </div>
+    <div
+      hidden=""
+    >
+      <div>
+        <div
+          class="cds--toggle"
+        >
+          <button
+            aria-checked="true"
+            class="cds--toggle__button"
+            id="image_update"
+            role="switch"
+            type="button"
+          />
+          <div
+            class="cds--toggle__label"
+            for="image_update"
+            id="image_update_label"
+          >
+            <div
+              class="cds--toggle__appearance"
+            >
+              <div
+                class="cds--toggle__switch cds--toggle__switch--checked"
+              />
+              <span
+                aria-hidden="true"
+                class="cds--toggle__text"
+                dir="auto"
+              >
+                On
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Save
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary cds--btn--disabled"
+        disabled=""
+        type="button"
+      >
+        Reset
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;

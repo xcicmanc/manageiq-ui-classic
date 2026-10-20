@@ -1,13 +1,10 @@
 class TreeBuilderStorage < TreeBuilder
+  include TreeBuilderFiltersMixin
+
   private
 
-  def tree_init_options(_tree_name)
-    {:leaf => "Storage"}
-  end
-
-  def set_locals_for_render
-    locals = super
-    locals.merge!(:autoload => true, :allow_reselect => true)
+  def tree_init_options
+    {:lazy => true, :allow_reselect => true}
   end
 
   def root_options
@@ -17,17 +14,11 @@ class TreeBuilderStorage < TreeBuilder
     }
   end
 
-  def x_get_tree_roots(count_only, _options)
-    objects =
-      [
-        {:id => "global", :text => _("Global Filters"), :icon => "pficon pficon-folder-close", :tip => _("Global Shared Filters"), :selectable => false},
-        {:id => "my",     :text => _("My Filters"),     :icon => "pficon pficon-folder-close", :tip => _("My Personal Filters"),   :selectable => false}
-      ]
-    count_only_or_objects(count_only, objects)
+  def x_get_tree_roots
+    count_only_or_objects(false, FILTERS.values)
   end
 
-  def x_get_tree_custom_kids(object, count_only, options)
-    objects = MiqSearch.where(:db => options[:leaf]).filters_by_type(object[:id])
-    count_only_or_objects(count_only, objects, 'description')
+  def x_get_tree_custom_kids(object, count_only)
+    count_only_or_filter_kids("Storage", object, count_only)
   end
 end

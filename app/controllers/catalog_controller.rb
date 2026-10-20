@@ -1,13 +1,16 @@
 class CatalogController < ApplicationController
   include AutomateTreeHelper
-  include ServiceDialogCreationMixin
+  include Mixins::ServiceDialogCreationMixin
+  include Mixins::BreadcrumbsMixin
+  include Mixins::AutomationMixin
+  include Mixins::ImageValidationMixin
 
   before_action :check_privileges
   before_action :get_session_data
   after_action :cleanup_action
   after_action :set_session_data
-
   helper ProvisionCustomizeHelper
+  helper MiqAeClassHelper # need the playbook_label
 
   def self.model
     @model ||= ServiceTemplate
@@ -17,11 +20,14 @@ class CatalogController < ApplicationController
     @table_name ||= "service_template"
   end
 
+  def index
+    flash_to_session
+    redirect_to(:action => 'explorer')
+  end
+
   CATALOG_X_BUTTON_ALLOWED_ACTIONS = {
     'ab_button_new'                 => :ab_button_new,
     'ab_button_edit'                => :ab_button_edit,
-    'ab_button_delete'              => :ab_button_delete,
-    'ab_group_delete'               => :ab_group_delete,
     'ab_group_edit'                 => :ab_group_edit,
     'ab_group_new'                  => :ab_group_new,
     'ab_group_reorder'              => :ab_group_reorder,
@@ -31,10 +37,11 @@ class CatalogController < ApplicationController
     'atomic_catalogitem_edit'       => :servicetemplate_edit,
     'atomic_catalogitem_new'        => :servicetemplate_edit,
     'catalogitem_edit'              => :servicetemplate_edit,
+    'catalogitem_copy'              => :servicetemplate_copy,
     'catalogitem_new'               => :servicetemplate_edit,
 
-    'catalogitem_delete'            => :st_delete,
     'catalogitem_tag'               => :st_tags_edit,
+    'catalogitem_ownership'         => :servicetemplate_ownership,
 
     'orchestration_template_add'    => :ot_add,
     'orchestration_template_edit'   => :ot_edit,
@@ -47,12 +54,23 @@ class CatalogController < ApplicationController
   }.freeze
 
   ORCHESTRATION_TEMPLATES_NODES = {
-    'ManageIQ::Providers::Amazon::CloudManager::OrchestrationTemplate'    => "otcfn",
-    'ManageIQ::Providers::Openstack::CloudManager::OrchestrationTemplate' => "othot",
-    'ManageIQ::Providers::Azure::CloudManager::OrchestrationTemplate'     => "otazu",
-    'ManageIQ::Providers::Openstack::CloudManager::VnfdTemplate'          => "otvnf",
-    'ManageIQ::Providers::Vmware::CloudManager::OrchestrationTemplate'    => "otvap"
+    'ManageIQ::Providers::Amazon::CloudManager::OrchestrationTemplate'     => "otcfn",
+    'ManageIQ::Providers::Openstack::CloudManager::OrchestrationTemplate'  => "othot",
+    'ManageIQ::Providers::Azure::CloudManager::OrchestrationTemplate'      => "otazu",
+    'ManageIQ::Providers::AzureStack::CloudManager::OrchestrationTemplate' => "otazs",
+    'ManageIQ::Providers::Openstack::CloudManager::VnfdTemplate'           => "otvnf",
+    'ManageIQ::Providers::Vmware::CloudManager::OrchestrationTemplate'     => "otvap",
+    'ManageIQ::Providers::Vmware::InfraManager::OrchestrationTemplate'     => "otovf"
   }.freeze
+
+  # when methods are evaluated from this constant and return true that means: column is displayed
+  DISPLAY_GTL_METHODS = [
+    :user_super_admin?
+  ].freeze
+
+  def user_super_admin?
+    current_user.super_admin_user?
+  end
 
   def x_button
     # setting this here so it can be used in the common code
@@ -60,24 +78,104 @@ class CatalogController < ApplicationController
     generic_x_button(CATALOG_X_BUTTON_ALLOWED_ACTIONS)
   end
 
+  EDIT_CATALOG_FEATURES = %w[
+    atomic_catalogitem_edit
+    catalogitem_edit
+    atomic_catalogitem_new
+    catalogitem_new
+  ].freeze
+
+  def assert_privileges_for_servicetemplate_edit
+    if params[:pressed].present? && EDIT_CATALOG_FEATURES.include?(params[:pressed])
+      assert_privileges(params[:pressed])
+    elsif params[:button].blank?
+      assert_privileges('atomic_catalogitem_edit')
+    end
+  end
+
   def servicetemplate_edit
-    assert_privileges(params[:pressed]) if params[:pressed].present?
-    checked_id = find_checked_items.first || params[:id]
+    assert_privileges_for_servicetemplate_edit
+
+    @checked_id = find_checked_items.first || params[:id]
     @sb[:cached_waypoint_ids] = MiqAeClass.waypoint_ids_for_state_machines
-    @record = checked_id.present? ? find_record_with_rbac(ServiceTemplate, checked_id) : ServiceTemplate.new
+    @record = @checked_id.present? ? find_record_with_rbac(ServiceTemplate, @checked_id) : ServiceTemplate.new
     @sb[:st_form_active_tab] = "basic"
     composite_type = @record.service_type == "composite"
-    new_atomic_item = params[:pressed] == "atomic_catalogitem_new" ||
-      (params[:button].present? &&
-       session[:edit][:new][:service_type] == "atomic")
-    if checked_id.present? && composite_type || checked_id.nil? && !new_atomic_item
+    new_atomic_item = params[:pressed] == "atomic_catalogitem_new" || (params[:button].present? && session[:edit][:new][:service_type] == "atomic")
+    if @checked_id.present? && composite_type || @checked_id.nil? && !new_atomic_item
       st_edit
     else
       atomic_st_edit
     end
   end
 
+  def ot_orchestration_managers
+    assert_privileges("orchestration_templates_view")
+
+    render :json => available_orchestration_managers_for_template_type(params['template_type'])
+  end
+
+  def servicetemplate_copy
+    assert_privileges("catalogitem_edit")
+
+    @checked_id = find_checked_items.first || params[:id]
+    @record = find_record_with_rbac(ServiceTemplate, @checked_id)
+    if !@record.template_valid?
+      add_flash(_("This item is not valid and cannot be copied."), :error)
+      javascript_flash
+    elsif @record.type == 'ServiceTemplateAnsiblePlaybook'
+      add_flash(_("ServiceTemplateAnsiblePlaybook cannot be copied."), :error)
+      javascript_flash
+    else
+      @tabactive = false
+      @in_a_form = true
+      @edit = {}
+      session[:changed] = false
+      replace_right_cell(:action => "copy_catalog")
+    end
+  end
+
+  def save_copy_catalog
+    assert_privileges("catalogitem_edit")
+
+    record = find_record_with_rbac(ServiceTemplate, params[:id])
+    message = nil
+    if record.present?
+      saved = record.template_copy(params[:name], :copy_tags => params[:copy_tags])
+    else
+      saved = false
+      message = _("Record not found.")
+    end
+    render :json => {:message => message}, :status => saved ? 200 : 400
+  end
+
+  def servicetemplate_copy_cancel
+    assert_privileges("catalogitem_new")
+
+    add_flash(_("Copy of a Service Catalog Item was cancelled by the user"), :warning)
+    @sb[:action] = @edit = @record = nil
+    @in_a_form = false
+    replace_right_cell(:replace_trees => trees_to_replace([:sandt]))
+  end
+
+  def servicetemplate_copy_saved
+    assert_privileges("catalogitem_new")
+
+    add_flash(_("Copy of a Service Catalog Item was successfully saved"))
+    @sb[:action] = @edit = @record = nil
+    @in_a_form = false
+    replace_right_cell(:replace_trees => trees_to_replace(%i[sandt svccat stcat]))
+  end
+
+  def servicetemplates_names
+    assert_privileges("catalog_items_view")
+
+    render :json => {:names => Rbac.filtered(ServiceTemplate).pluck(:name)}
+  end
+
   def atomic_st_edit
+    assert_privileges(params[:id] ? 'atomic_catalogitem_edit' : 'atomic_catalogitem_new')
+
     # reset the active tree back to :sandt_tree, it was changed temporairly to display automate entry point tree in a popup div
     self.x_active_tree = 'sandt_tree'
     case params[:button]
@@ -88,22 +186,34 @@ class CatalogController < ApplicationController
       else
         add_flash(_("Add of new Service Catalog Item was cancelled by the user"))
       end
-      @edit = @record = nil
+      @sb[:action] = @edit = @record = nil
       @in_a_form = false
       replace_right_cell
     when "save", "add"
       assert_privileges("atomic_catalogitem_#{params[:button] == "save" ? "edit" : "new"}")
       atomic_req_submit
-    when "reset", nil  # Reset or first time in
+    when "reset", nil # Reset or first time in
       @_params[:org_controller] = "service_template"
       if params[:button] == "reset"
         add_flash(_("All changes have been reset"), :warning)
       end
       if !@record.id.nil? && need_prov_dialogs?(@record.prov_type)
-        prov_set_form_vars(MiqRequest.find(@record.service_resources[0].resource_id))      # Set vars from existing request
+        request = MiqRequest.find_by(:id => @record.service_resources[0].resource_id) if @record.service_resources[0]&.resource_id
+        if request
+          prov_set_form_vars(request) # Set vars from existing request
+        else
+          # Request-backed catalog items can outlive the original request. In that case,
+          # initialize a new provisioning workflow using the catalog item's provision type.
+          @edit ||= {}
+          @edit[:new] ||= {}
+          @edit[:current] ||= {}
+          @edit[:st_prov_type] = @record.prov_type
+          @edit[:new][:st_prov_type] = @record.prov_type
+          prov_set_form_vars
+        end
       else
         # prov_set_form_vars
-        @edit ||= {}                                    # Set default vars
+        @edit ||= {} # Set default vars
         @edit[:new] ||= {}
         @edit[:current] ||= {}
         @edit[:key] = "prov_edit__new"
@@ -123,16 +233,17 @@ class CatalogController < ApplicationController
   end
 
   def atomic_form_field_changed
+    assert_privileges(session&.fetch_path(:edit, :rec_id) ? "atomic_catalogitem_edit" : "atomic_catalogitem_new")
+
     # need to check req_id in session since we are using common code for prov requests and atomic ST screens
     id = session[:edit][:req_id] || "new"
+    @checked_id ||= 'new'
     return unless load_edit("prov_edit__#{id}", "replace_cell__explorer")
     get_form_vars
-    changed = (@edit[:new] != @edit[:current])
-    # Build Catalog Items tree unless @edit[:ae_tree_select]
-    build_ae_tree(:catalog, :automate_tree) if params[:display] || params[:template_id] || params[:manager_id]
+    build_automate_tree(:automate_catalog) if automate_tree_needed?
     if params[:st_prov_type] # build request screen for selected item type
       @_params[:org_controller] = "service_template"
-      if ansible_playbook?
+      if ansible_playbook_type? || terraform_template_type?
         @record = ServiceTemplate.new
         # waiting for back-end PR to be merged to implement this
         # if false
@@ -143,35 +254,75 @@ class CatalogController < ApplicationController
       else
         prov_set_form_vars if need_prov_dialogs?(params[:st_prov_type])
         @record = class_service_template(params[:st_prov_type]).new
-        set_form_vars
+
         @edit[:new][:st_prov_type] = params[:st_prov_type] if params[:st_prov_type]
         @edit[:new][:service_type] = "atomic"
-        default_entry_point(@edit[:new][:st_prov_type],
-                            @edit[:new][:service_type])
+
+        set_form_vars
+        default_entry_point(@edit[:new][:st_prov_type], @edit[:new][:service_type])
         @edit[:rec_id] = @record.try(:id)
         @tabactive = @edit[:new][:current_tab_key]
       end
+      @edit[:current] = copy_hash(@edit[:new])
     end
+
+    changed = (@edit[:new] != @edit[:current])
+
+    if changed && @edit[:new][:ovf_template_id]
+      ovf_template = ManageIQ::Providers::Vmware::InfraManager::OrchestrationTemplate.find_by(:id => @edit[:new][:ovf_template_id])
+      @edit[:new][:src_vm_id] = @edit[:new][:ovf_template_id]
+      ovf_template.refresh_field_values(@edit[:new])
+
+      @edit[:available_folders] = ovf_template.allowed_folders
+                                              .collect { |m| [m.last, m.first] }
+                                              .sort
+      @edit[:available_resource_pools] = ovf_template.allowed_resource_pools
+                                                     .collect { |m| [m.last, m.first] }
+                                                     .sort
+      @edit[:available_datacenters] = ovf_template.allowed_datacenters
+                                                  .collect { |m| [m.last, m.first] }
+                                                  .sort
+      @edit[:available_hosts] = ovf_template.allowed_hosts
+                                            .collect { |h| [h.name, h.id] }
+                                            .sort
+      @edit[:available_storages] = ovf_template.allowed_storages
+                                               .collect { |s| [s.name, s.id] }
+                                               .sort
+    end
+
     render :update do |page|
       page << javascript_prologue
-      if @edit[:new][:st_prov_type] == "generic_ansible_playbook"
+      if @edit[:new][:st_prov_type] == "generic_terraform_template"
+        page.replace("form_div", :partial => "tt_react_form")
+        page << javascript_hide("form_buttons_div")
+      elsif @edit[:new][:st_prov_type] == "generic_ansible_playbook"
         page.replace("form_div", :partial => "st_angular_form")
         page << javascript_hide("form_buttons_div")
       else
         # for generic/orchestration type tabs do not show up on screen
         # as there is only a single tab when form is initialized
         # when display in catalog is checked, replace div so tabs can be redrawn
-        page.replace("form_div", :partial => "st_form") if params[:st_prov_type] ||
-          (params[:display] && @edit[:new][:st_prov_type].starts_with?("generic"))
-        page.replace("basic_info_div", :partial => "form_basic_info") if params[:display] ||
-          params[:template_id] || params[:manager_id]
-        if params[:display]
+        if (params[:st_prov_type] || (params[:display] && @edit[:new][:st_prov_type].starts_with?("generic"))) || params[:ovf_template_id]
+          page.replace("form_div", :partial => "st_form")
+        elsif params[:display]
           page << "miq_tabs_show_hide('#details_tab', '#{(params[:display] == "1")}')"
+        elsif automate_tree_needed?
+          page.replace("basic_info_div", :partial => "form_basic_info")
+        end
+        page.replace_html("provision_entry_point", :partial => "provision_entry_point") if params[:provision_entry_point_type]
+        page.replace_html("reconfigure_entry_point", :partial => "reconfigure_entry_point") if params[:reconfigure_entry_point_type]
+        page.replace_html("retire_entry_point", :partial => "retire_entry_point") if params[:retire_entry_point_type]
+
+        %w[fqname reconfigure_fqname retire_fqname].each do |name|
+          if params[name.to_sym] && @edit[:new][name.to_sym].present?
+            page << "$('##{name}_remove').attr('disabled', false);"
+          end
         end
         if changed != session[:changed]
           page << javascript_for_miq_button_visibility(changed)
           session[:changed] = changed
         end
+        page.replace_html("price_span", @edit[:new][:code_currency])
         page << set_spinner_off
       end
     end
@@ -179,22 +330,27 @@ class CatalogController < ApplicationController
 
   # VM or Template show selected, redirect to proper controller
   def show
+    assert_privileges("catalog_items_view")
+
+    @sb[:action] = nil
     @explorer = true if request.xml_http_request? # Ajax request means in explorer
-    record = ServiceTemplate.find_by_id(from_cid(params[:id]))
+    record = ServiceTemplate.find(params[:id])
     if !@explorer
       tree_node_id = TreeBuilder.build_node_id(record)
-      redirect_to :controller => "catalog",
+      redirect_to(:controller => "catalog",
                   :action     => "explorer",
-                  :id         => tree_node_id
+                  :id         => tree_node_id)
       return
     else
-      redirect_to :action => 'show', :controller => record.class.base_model.to_s.underscore, :id => record.id
+      redirect_to(:action => 'show', :controller => record.class.base_model.to_s.underscore, :id => record.id)
     end
   end
 
   def explorer
     @explorer = true
     @lastaction = "explorer"
+    @report_deleted = params[:report_deleted] == 'true' if params[:report_deleted]
+    @sb[:action] = nil
 
     # if AJAX request, replace right cell, and return
     if request.xml_http_request?
@@ -202,19 +358,19 @@ class CatalogController < ApplicationController
       return
     end
 
-    build_accordions_and_trees
-
     if params[:id] && !params[:button] # If a tree node id came in, show in one of the trees
       @nodetype, id = parse_nodetype_and_id(params[:id])
       self.x_active_tree   = 'sandt_tree'
       self.x_active_accord = 'sandt'
-      st = ServiceTemplate.find_by_id(from_cid(params[:id].split("-").last))
-      prefix = st.service_template_catalog_id ? "stc-#{to_cid(st.service_template_catalog_id)}_st-" : "-Unassigned_st-"
-      self.x_node = "#{prefix}#{to_cid(id)}"
+      st = ServiceTemplate.find(params[:id].split("-").last)
+      prefix = st.service_template_catalog_id ? "stc-#{st.service_template_catalog_id}_st-" : "-Unassigned_st-"
+      self.x_node = "#{prefix}#{id}"
       get_node_info(x_node)
     else
       @in_a_form = false
     end
+
+    build_accordions_and_trees
 
     if params[:commit] == "Upload" && session.fetch_path(:edit, :new, :sysprep_enabled, 1) == "Sysprep Answer File"
       upload_sysprep_file
@@ -222,7 +378,9 @@ class CatalogController < ApplicationController
     end
     template_locals = {:locals => {:controller => "catalog"}}
     template_locals[:locals].merge!(fetch_playbook_details) if need_ansible_locals?
+    template_locals[:locals].merge!(fetch_terraform_template_details) if need_terraform_locals?
     template_locals[:locals].merge!(fetch_ct_details) if need_container_template_locals?
+    template_locals[:locals].merge!(fetch_ovf_template_details) if need_ovf_template_locals?
 
     render :layout => "application", :action => "explorer", :locals => template_locals
   end
@@ -238,55 +396,47 @@ class CatalogController < ApplicationController
   def identify_catalog(id = nil)
     kls = TreeBuilder.get_model_for_prefix(@nodetype) == "MiqTemplate" ? VmOrTemplate : ServiceTemplate
     @record = identify_record(id || params[:id], kls)
+    @tenants_tree = build_tenants_tree if kls == ServiceTemplate # Build the tree with available tenants for the Catalog Item/Bundle
+    add_flash(_("This item is invalid"), :warning) unless @flash_array || @record.try(:template_valid?)
   end
 
   # ST clicked on in the explorer right cell
   def x_show
+    @sb[:action] = nil
     @explorer = true
     if x_active_tree == :stcat_tree
+      assert_privileges("st_catalog_view")
+
       if params[:rec_id]
         # link to Catalog Item clicked on catalog summary screen
         self.x_active_tree = :sandt_tree
         self.x_active_accord = 'sandt'
-        @record = ServiceTemplate.find_by_id(from_cid(params[:rec_id]))
+        @record = ServiceTemplate.find(params[:rec_id])
       else
-        @record = ServiceTemplateCatalog.find_by_id(from_cid(params[:id]))
+        @record = ServiceTemplateCatalog.find(params[:id])
       end
+    elsif x_active_tree == :sandt_tree
+      assert_privileges("catalog_items_view")
+
+      identify_catalog(params[:id])
+      @record ||= ServiceTemplateCatalog.find(params[:id])
     elsif x_active_tree == :ot_tree
-      @record ||= OrchestrationTemplate.find_by_id(from_cid(params[:id]))
+      assert_privileges("orchestration_templates_view")
+
+      @record ||= OrchestrationTemplate.find(params[:id])
     else
-      identify_catalog(from_cid(params[:id]))
-      @record ||= ServiceTemplateCatalog.find_by_id(from_cid(params[:id]))
+      assert_privileges("svc_catalog_provision", "svc_catalog_archive", "svc_catalog_unarchive")
+
+      identify_catalog(params[:id])
+      @record ||= ServiceTemplateCatalog.find(params[:id])
     end
-    params[:id] = x_build_node_id(@record, x_tree(x_active_tree))  # Get the tree node id
+    params[:id] = x_build_node_id(@record) # Get the tree node id
     tree_select
   end
 
-  def st_delete
-    assert_privileges("catalogitem_delete")
-    elements = []
-    if params[:id]
-      elements.push(params[:id])
-      process_sts(elements, 'destroy') unless elements.empty?
-      if @flash_array.nil?
-        add_flash(_("The selected Catalog Item was deleted"))
-        self.x_node = "root"
-      end
-    else # showing 1 element, delete it
-      elements = find_checked_ids_with_rbac(ServiceTemplate)
-      if elements.empty?
-        add_flash(_("No Service Catalog Items were selected for deletion"), :error)
-      end
-      process_sts(elements, 'destroy') unless elements.empty?
-      add_flash(n_("The selected %{number} Catalog Item was deleted",
-                   "The selected %{number} Catalog Items were deleted",
-                   elements.length) % {:number => elements.length}) unless flash_errors?
-    end
-    params[:id] = nil
-    replace_right_cell(:replace_trees => trees_to_replace([:sandt, :svccat]))
-  end
-
   def st_edit
+    assert_privileges(params[:id] ? 'catalogitem_edit' : 'catalogitem_new')
+
     # reset the active tree back to :sandt_tree, it was changed temporairly to display automate entry point tree in a popup div
     self.x_active_tree = 'sandt_tree'
     case params[:button]
@@ -297,11 +447,12 @@ class CatalogController < ApplicationController
       else
         add_flash(_("Add of new Catalog Bundle was cancelled by the user"))
       end
-      @edit = @record = nil
+      @sb[:action] = @edit = @record = nil
       @in_a_form = false
       replace_right_cell
     when "save", "add"
       return unless load_edit("st_edit__#{params[:id] || "new"}", "replace_cell__explorer")
+
       get_form_vars
       if @edit[:new][:name].blank?
         add_flash(_("Name is required"), :error)
@@ -311,13 +462,14 @@ class CatalogController < ApplicationController
         add_flash(_("Resource must be selected"), :error)
       end
       add_flash(_("Provisioning Entry Point is required"), :error) if @edit[:new][:fqname].blank?
+      validate_price
       dialog_catalog_check
 
       if @flash_array
         javascript_flash
         return
       end
-      @st = @edit[:rec_id] ? ServiceTemplate.find_by_id(@edit[:rec_id]) : ServiceTemplate.new
+      @st = @edit[:rec_id] ? ServiceTemplate.find(@edit[:rec_id]) : ServiceTemplate.new
       st_set_record_vars(@st)
       if @add_rsc
         if @st.save
@@ -331,10 +483,10 @@ class CatalogController < ApplicationController
           @changed = session[:changed] = false
           @in_a_form = false
           @edit = session[:edit] = @record = nil
-          replace_right_cell(:replace_trees => trees_to_replace([:sandt, :svccat, :stcat]))
+          replace_right_cell(:replace_trees => trees_to_replace(%i[sandt svccat stcat]))
         else
-          @st.errors.each do |field, msg|
-            add_flash("#{field.to_s.capitalize} #{msg}", :error)
+          @st.errors.each do |error|
+            add_flash("#{error.attribute.to_s.capitalize} #{error.message}", :error)
           end
           @changed = session[:changed] = (@edit[:new] != @edit[:current])
           javascript_flash
@@ -343,7 +495,7 @@ class CatalogController < ApplicationController
         javascript_flash
         return
       end
-    when "reset", nil  # Reset or first time in
+    when "reset", nil # Reset or first time in
       st_set_form_vars
       if params[:button] == "reset"
         add_flash(_("All changes have been reset"), :warning)
@@ -356,12 +508,16 @@ class CatalogController < ApplicationController
 
   # AJAX driven routine to check for changes in ANY field on the form
   def st_form_field_changed
-    return unless load_edit("st_edit__#{params[:id]}", "replace_cell__explorer")
+    assert_privileges(session&.fetch_path(:edit, :rec_id) ? "catalogitem_edit" : "catalogitem_new")
+
+    id = session[:edit][:rec_id] || 'new'
+    return unless load_edit("st_edit__#{id}", "replace_cell__explorer")
+
     @group_idx = false
     default_entry_point("generic", "composite") if params[:display]
     st_get_form_vars
     changed = (@edit[:new] != @edit[:current])
-    build_ae_tree(:catalog, :automate_tree) # Build Catalog Items tree
+    build_automate_tree(:automate_catalog) # Build Catalog Items tree
     render :update do |page|
       page << javascript_prologue
       page.replace("basic_info_div", :partial => "form_basic_info") if params[:resource_id] || params[:display]
@@ -371,7 +527,6 @@ class CatalogController < ApplicationController
       end
       if changed != session[:changed]
         session[:changed] = changed
-        page << "ManageIQ.changes = true;"
         page << javascript_for_miq_button_visibility(changed)
       end
       page << "miqSparkle(false);"
@@ -379,69 +534,71 @@ class CatalogController < ApplicationController
   end
 
   def st_upload_image
+    assert_privileges("st_catalog_edit")
+
     err = false
+    identify_catalog(params[:id])
+    image_file = params.dig(:upload, :image)
     if params[:pressed]
-      identify_catalog(params[:id])
       @record.picture = nil
       @record.save
       msg = _("Custom Image successfully removed")
-    elsif params[:upload] && params[:upload][:image] &&
-          params[:upload][:image].respond_to?(:read)
-      identify_catalog(params[:id])
-      ext = params[:upload][:image].original_filename.split(".").last.downcase
-      if !["png", "jpg"].include?(ext)
-        msg = _("Custom Image must be a .png or .jpg file")
-        err = true
-      else
-        picture = {:content   => params[:upload][:image].read,
-                   :extension => ext}
-        if @record.picture.nil?
-          @record.picture = Picture.new(picture)
-        else
-          @record.picture.update(picture)
-        end
-        @record.save
-        msg = _("Custom Image file \"%{name}\" successfully uploaded") %
-              {:name => params[:upload][:image].original_filename}
-      end
-    else
-      identify_catalog(params[:id])
+    elsif !image_file&.respond_to?(:read)
       msg = _("Use the Choose file button to locate a .png or .jpg image file")
       err = true
+    elsif !valid_image_file?(image_file)
+      msg = _("Custom Image must be a .png or .jpg file")
+      err = true
+    else
+      ext = image_file.original_filename.split(".").last.downcase
+      picture = {:content => image_file.read, :extension => ext}
+      if @record.picture.nil?
+        @record.picture = Picture.new(picture)
+      else
+        @record.picture.update(picture)
+      end
+      @record.save
+      msg = _("Custom Image file \"%{name}\" successfully uploaded") %
+            {:name => image_file.original_filename}
     end
-    params[:id] = x_build_node_id(@record)  # Get the tree node id
+    params[:id] = x_build_node_id(@record) # Get the tree node id
     add_flash(msg, err == true ? :error : nil)
     respond_to do |format|
-      format.js { replace_right_cell }
-      format.html do                # HTML, send error screen
+      format.js { replace_right_cell(:replace_trees => trees_to_replace(%i[sandt svccat stcat])) }
+      format.html do # HTML, send error screen
         explorer
       end
-      format.any { head :not_found }  # Anything else, just send 404
+      format.any { head :not_found } # Anything else, just send 404
     end
   end
 
   def resource_delete
+    assert_new_or_edit_by_service_type
+
     return unless load_edit("st_edit__#{params[:id]}", "replace_cell__explorer")
+
     @edit[:new][:rsc_groups][params[:grp_id].to_i].each do |r|
-      if r[:id].to_s == params[:rec_id]
-        @edit[:new][:available_resources][r[:resource_id]] = r[:name]       # add it back to available resources pulldown
-        @edit[:new][:selected_resources].delete(r[:resource_id])            # delete it from to selected resources
-        @edit[:new][:rsc_groups][params[:grp_id].to_i].delete(r)            # delete element from group
-        rearrange_provision_order(@edit[:new][:rsc_groups], r[:provision_index])
-      end
+      next if r[:id].to_s != params[:rec_id]
+
+      @edit[:new][:available_resources][r[:resource_id]] = r[:name] # add it back to available resources pulldown
+      @edit[:new][:selected_resources].delete(r[:resource_id]) # delete it from to selected resources
+      @edit[:new][:rsc_groups][params[:grp_id].to_i].delete(r) # delete element from group
+      rearrange_provision_order(@edit[:new][:rsc_groups], r[:provision_index])
     end
 
     # if resource has been deleted from group, rearrange groups incase group is now empty.
     rearrange_groups_array
-    build_ae_tree(:catalog, :automate_tree) # Build Catalog Items tree
+    build_automate_tree(:automate_catalog) # Build Catalog Items tree
     changed = (@edit[:new] != @edit[:current])
+    @available_catalogs = available_catalogs.sort # Get available catalogs with tenants and ancestors
+    @tenants_tree = build_tenants_tree # Build the tree with available tenants
+    fetch_zones
     render :update do |page|
       page << javascript_prologue
       page.replace("basic_info_div", :partial => "form_basic_info")
       page.replace("resources_info_div", :partial => "form_resources_info")
       if changed != session[:changed]
         session[:changed] = changed
-        page << "ManageIQ.changes = true;"
         page << javascript_for_miq_button_visibility(changed)
       end
       page << "miqSparkle(false);"
@@ -450,7 +607,7 @@ class CatalogController < ApplicationController
 
   # Edit user or group tags
   def st_tags_edit
-    assert_privileges("catalogitem_edit")
+    assert_privileges("catalogitem_tag")
     tags_edit("ServiceTemplate")
   end
 
@@ -467,8 +624,8 @@ class CatalogController < ApplicationController
       x_edit_tags_cancel
     when "save", "add"
       x_edit_tags_save
-    when "reset", nil  # Reset or first time in
-      x_edit_tags_reset(klass)  # pass in the DB
+    when "reset", nil # Reset or first time in
+      x_edit_tags_reset(klass) # pass in the DB
     end
   end
 
@@ -486,38 +643,79 @@ class CatalogController < ApplicationController
   end
   helper_method :need_prov_dialogs?
 
+  def assert_new_or_edit_by_service_type
+    service_type = session&.fetch_path(:edit, :current, :service_type)
+    edit_feature = "atomic_catalogitem_edit"
+    new_feature  = "atomic_catalogitem_new"
+
+    if service_type == "composite"
+      edit_feature = "catalogitem_edit"
+      new_feature  = "catalogitem_new"
+    end
+
+    assert_privileges(session&.fetch_path(:edit, :rec_id) ? edit_feature : new_feature)
+  end
+
+  private :assert_new_or_edit_by_service_type
+
   def ae_tree_select_toggle
+    assert_new_or_edit_by_service_type
+
     @edit = session[:edit]
     self.x_active_tree = :sandt_tree
-    at_tree_select_toggle(get_ae_tree_edit_key(@edit[:ae_field_typ]))
-    x_node_set(@edit[:active_id], :automate_tree) if params[:button] == 'submit'
+    at_tree_select_toggle(:automate_catalog, get_ae_tree_edit_key(@edit[:ae_field_typ]))
+    x_node_set(@edit[:active_id], :automate_catalog_tree) if params[:button] == 'submit'
     session[:edit] = @edit
   end
 
+  # Method to open the workflows dialog box
+  # params[:field]    => :fqname || :retire_fqname || :reconfigure_fqname
+  # params[:selected] => Holds the value of the *_configuration_script_id
+  def embedded_workflows_modal
+    @edit = session[:edit]
+    type = ENTRY_POINT_TYPES[params[:field].to_sym][:type]
+    render :update do |page|
+      page << javascript_prologue
+      page.replace_html("#{type}-workflows", :partial => "embedded_workflows_modal",
+                                             :locals  => {
+                                               :field    => params[:field],
+                                               :selected => params[:selected],
+                                               :type     => type,
+                                             })
+      page << javascript_show(params[:field])
+      page << javascript_show("#{params[:field]}_modal")
+      page << "$('##{params[:type]}_modal').addClass('modal fade in');"
+    end
+  end
+
   def ae_tree_select_discard
+    assert_new_or_edit_by_service_type
+
     ae_tree_key = get_ae_tree_edit_key(params[:typ])
     @edit = session[:edit]
     @edit[:new][params[:typ]] = nil
     @edit[:new][ae_tree_key] = ''
-    # build_ae_tree(:catalog, :automate_tree) # Build Catalog Items tree unless @edit[:ae_tree_select]
+    # build_automate_tree(:automate_catalog) # Build Catalog Items tree unless @edit[:ae_tree_select]
     render :update do |page|
       page << javascript_prologue
       @changed = (@edit[:new] != @edit[:current])
-      x_node_set(@edit[:active_id], :automate_tree)
+      x_node_set(@edit[:active_id], :automate_catalog_tree)
       page << javascript_hide("ae_tree_select_div")
       page << javascript_hide("blocker_div")
-      page << javascript_hide("#{ae_tree_key}_div")
+      page << "$('##{ae_tree_key}_remove').attr('disabled', true);"
       page << "$('##{ae_tree_key}').val('#{@edit[:new][ae_tree_key]}');"
       page << "$('##{ae_tree_key}').prop('title', '#{@edit[:new][ae_tree_key]}');"
       @edit[:ae_tree_select] = false
       page << javascript_for_miq_button_visibility(@changed)
-      page << "miqTreeActivateNodeSilently('automate_tree', 'root');"
+      page << "miqTreeActivateNodeSilently('automate_catalog_tree', 'root');"
       page << "miqSparkle(false);"
     end
     session[:edit] = @edit
   end
 
   def ae_tree_select
+    assert_new_or_edit_by_service_type
+
     @edit = session[:edit]
     at_tree_select(get_ae_tree_edit_key(@edit[:ae_field_typ]))
     session[:edit] = @edit
@@ -531,11 +729,11 @@ class CatalogController < ApplicationController
     @right_cell_text = _("Order Service \"%{name}\"") % {:name => st.name}
     ra = nil
     st.resource_actions.each do |r|
-      if r.action.downcase == "provision" && r.dialog_id
-        # find the first provision action, run the dialog
-        ra = r
-        break
-      end
+      next unless r.action.downcase == "provision" && r.dialog_id
+
+      # find the first provision action, run the dialog
+      ra = r
+      break
     end
     if ra
       @explorer = true
@@ -546,12 +744,8 @@ class CatalogController < ApplicationController
       options[:dialog_locals] = DialogLocalService.new.determine_dialog_locals_for_svc_catalog_provision(
         ra, st, svc_catalog_provision_finish_submit_endpoint
       )
-
-      if Settings.product.old_dialog_user_ui
-        dialog_initialize(ra, options)
-      else
-        replace_right_cell(:action => "dialog_provision", :dialog_locals => options[:dialog_locals])
-      end
+      @in_a_form = true
+      replace_right_cell(:action => "dialog_provision", :dialog_locals => options[:dialog_locals])
     else
       # if catalog item has no dialog and provision button was pressed from list view
       add_flash(_("No Ordering Dialog is available"), :warning)
@@ -559,7 +753,15 @@ class CatalogController < ApplicationController
     end
   end
 
+  def servicetemplate_ownership
+    @explorer = true
+    set_ownership
+    replace_right_cell(:action => 'ownership')
+  end
+
   def st_catalog_edit
+    assert_privileges((params[:id] || session&.fetch_path(:edit, :rec_id)) ? "st_catalog_edit" : "st_catalog_new")
+
     case params[:button]
     when "cancel"
       if session[:edit][:rec_id]
@@ -567,84 +769,22 @@ class CatalogController < ApplicationController
       else
         add_flash(_("Add of new Catalog was cancelled by the user"))
       end
-      @edit = nil
+      @sb[:action] = @edit = nil
       @in_a_form = false
       replace_right_cell
     when "save", "add"
-      assert_privileges("st_catalog_#{params[:id] ? "edit" : "new"}")
-      return unless load_edit("st_catalog_edit__#{params[:id] || "new"}", "replace_cell__explorer")
-
-      @stc = @edit[:rec_id] ? ServiceTemplateCatalog.find_by_id(@edit[:rec_id]) : ServiceTemplateCatalog.new
-      st_catalog_set_record_vars(@stc)
-      begin
-        @stc.save
-      rescue => bang
-        add_flash(_("Error during 'Catalog Edit': %{error_message}") % {:error_message => bang.message}, :error)
-      else
-        if @stc.errors.empty?
-          add_flash(_("Catalog \"%{name}\" was saved") % {:name => @edit[:new][:name]})
-        else
-          @stc.errors.each do |field, msg|
-            add_flash("#{field.to_s.capitalize} #{msg}", :error)
-          end
-          javascript_flash
-          return
-        end
-      end
+      add_flash(_("Catalog \"%{name}\" was saved") % {:name => params[:name]})
       @changed = session[:changed] = false
       @in_a_form = false
       @edit = session[:edit] = nil
-      replace_right_cell(:replace_trees => trees_to_replace([:sandt, :svccat, :stcat]))
-    when "reset", nil  # Reset or first time in
+      replace_right_cell(:replace_trees => trees_to_replace(%i[sandt svccat stcat]))
+    when nil # First time in
       st_catalog_set_form_vars
-      if params[:button] == "reset"
-        add_flash(_("All changes have been reset"), :warning)
-      end
       @changed = session[:changed] = false
       replace_right_cell(:action => "st_catalog_edit")
-      return
+      nil
     end
   end
-
-  def st_catalog_form_field_changed
-    id = session[:edit][:rec_id] || "new"
-    return unless load_edit("st_catalog_edit__#{id}", "replace_cell__explorer")
-    st_catalog_get_form_vars
-    changed = (@edit[:new] != @edit[:current])
-    render :update do |page|
-      page << javascript_prologue
-      page.replace(@refresh_div, :partial => @refresh_partial) if @refresh_div
-      page << javascript_for_miq_button_visibility(changed)
-      page << "miqSparkle(false);"
-    end
-  end
-
-  def process_sts(sts, task, _display_name = nil)
-    ServiceTemplate.where(:id => sts).order("lower(name)").each do |st|
-      id = st.id
-      st_name = st.name
-      audit = {:event        => "st_record_delete",
-               :message      => _("[%{name}] Record deleted") % {:name => st_name},
-               :target_id    => id,
-               :target_class => "ServiceTemplate",
-               :userid       => session[:userid]}
-      begin
-        st.public_send(task.to_sym) if st.respond_to?(task)    # Run the task
-      rescue => bang
-        add_flash(_("Service Catalog Item \"%{name}\": Error during '%{task}': %{error_message}") %
-          {:name => st_name, :task => task, :error_message => bang.message}, :error)
-      else
-        if st.errors
-          st.errors.each do |field, msg|
-            add_flash("#{field.to_s.capitalize} #{msg}", :error)
-          end
-        else
-          AuditEvent.success(audit)
-        end
-      end
-    end
-  end
-  private :process_sts
 
   def template_to_node_name(object)
     ORCHESTRATION_TEMPLATES_NODES[object.class.name]
@@ -676,40 +816,13 @@ class CatalogController < ApplicationController
   def ot_copy
     assert_privileges("orchestration_template_copy")
     ot_edit_set_form_vars(_("Copying %{record_name}"))
-    @edit[:new][:name] = @edit[:current][:name] = _("Copy of %{name}") % {:name => @edit[:new][:name]}
+    @edit[:new][:name] = @edit[:current][:name] = _("Copy of %{field}") % {:field => @edit[:new][:name]}
     replace_right_cell(:action => "ot_copy")
-  end
-
-  def ot_edit_submit
-    self.x_active_tree = 'ot_tree'
-    case params[:button]
-    when "cancel"
-      ot_edit_submit_cancel
-    when "save"
-      ot_edit_submit_save
-    when "reset"
-      ot_edit_submit_reset
-    end
-  end
-
-  def ot_form_field_changed
-    dialog_creation_form_field_changed("ot_edit__#{params[:id]}")
-  end
-
-  def ot_copy_submit
-    case params[:button]
-    when "cancel"
-      ot_copy_submit_cancel
-    when "add"
-      ot_copy_submit_add
-    end
   end
 
   def ot_remove_submit
     assert_privileges("orchestration_template_remove")
-    checked = find_checked_items
-    checked[0] = params[:id] if checked.blank? && params[:id]
-    elements = find_checked_records_with_rbac(OrchestrationTemplate, checked)
+    elements = find_records_with_rbac(OrchestrationTemplate, checked_or_params)
     elements.each do |ot|
       if ot.in_use?
         add_flash(_("Orchestration template \"%{name}\" is read-only and cannot be deleted.") %
@@ -718,7 +831,7 @@ class CatalogController < ApplicationController
         begin
           ot.remote_proxy = true
           ot.destroy
-        rescue => bang
+        rescue StandardError => bang
           add_flash(_("Error during 'Orchestration Template Deletion': %{error_message}") %
             {:error_message => bang.message}, :error)
         else
@@ -726,24 +839,14 @@ class CatalogController < ApplicationController
         end
       end
     end
-    if elements.length > 1
-      self.x_node = 'root'
-    else
-      self.x_node = "xx-#{template_to_node_name(elements[0])}"
-    end
+    self.x_node = elements.length > 1 ? 'root' : "xx-#{template_to_node_name(elements[0])}"
     replace_right_cell(:replace_trees => trees_to_replace([:ot]))
   end
 
   def ot_add
     assert_privileges("orchestration_template_add")
     ot_type = x_node == "root" ? "ManageIQ::Providers::Amazon::CloudManager::OrchestrationTemplate" : node_name_to_template_name(x_node)
-    @edit = {:new => {:name        => "",
-                      :description => "",
-                      :content     => "",
-                      :type        => ot_type,
-                      :draft       => false,
-                      :manager_id  => ''}}
-    @edit[:new][:available_managers] = available_orchestration_managers_for_template_type(ot_type)
+    @edit = {:new => {:type => ot_type}}
     @edit[:current] = @edit[:new].dup
     @edit[:key] = "ot_add__new"
     @right_cell_text = _("Adding a new Orchestration Template")
@@ -751,60 +854,26 @@ class CatalogController < ApplicationController
     replace_right_cell(:action => "ot_add")
   end
 
-  def ot_add_submit
-    case params[:button]
-    when "cancel"
-      ot_add_submit_cancel
-    when "add"
-      ot_add_submit_save
-    end
-  end
-
-  def ot_add_form_field_changed
-    return unless load_edit("ot_add__new", "replace_cell__explorer")
-    copy_params_if_set(@edit[:new], params, %i(name description type content manager_id))
-    @edit[:new][:draft] = params[:draft] == "true" if params[:draft]
-    @edit[:new][:available_managers] = available_orchestration_managers_for_template_type(params[:type])
-
-    render :update do |page|
-      page << javascript_prologue
-      page << javascript_hide("buttons_off")
-      page << javascript_show("buttons_on")
-      page << "miqSparkle(false);"
-      page.replace("form_div", :partial => "ot_add") if params[:type]
-    end
-  end
-
   def service_dialog_from_ot
     assert_privileges("service_dialog_from_ot")
-    ot = OrchestrationTemplate.find_by_id(params[:id])
+    ot = OrchestrationTemplate.find(params[:id])
     @right_cell_text = _("Adding a new Service Dialog from Orchestration Template \"%{name}\"") % {:name => ot.name}
-    @edit = {:new    => {:dialog_name => ""},
-             :key    => "ot_edit__#{ot.id}",
-             :rec_id => ot.id}
+    # id for create service dialog from ot for react form
+    @edit = {:rec_id => ot.id}
     @in_a_form = true
     replace_right_cell(:action => "service_dialog_from_ot")
-  end
-
-  def service_dialog_from_ot_submit
-    case params[:button]
-    when "cancel"
-      service_dialog_from_ot_submit_cancel
-    when "save"
-      service_dialog_from_ot_submit_save
-    end
   end
 
   def ot_show
     assert_privileges("orchestration_templates_view")
     id = params.delete(:id)
-    ot = OrchestrationTemplate.find_by_id(id)
+    ot = OrchestrationTemplate.find(id)
     self.x_active_tree = :ot_tree
     self.x_active_accord = 'ot'
     x_tree_init(:ot_tree, :ot, "OrchestrationTemplate") unless x_tree
     ot_type = template_to_node_name(ot)
     x_tree[:open_nodes].push("xx-#{ot_type}") unless x_tree[:open_nodes].include?("xx-#{ot_type}")
-    self.x_node = "ot-#{to_cid(ot.id)}"
+    self.x_node = "ot-#{ot.id}"
     x_tree[:open_nodes].push(x_node)
     add_flash(params[:flash_message]) if params.key?(:flash_message)
     explorer
@@ -812,17 +881,70 @@ class CatalogController < ApplicationController
 
   private
 
+  # Method to return the entry point name and its automation type
+  # Used for summary and edit pages.
+  def resource_action_entry_point(resource_action)
+    cs_id = resource_action.configuration_script_id
+    if cs_id
+      workflow = ConfigurationScriptPayload.find_by(:id => cs_id)
+      {:name => workflow&.name, :type => embedded_workflow_key, :configuration_script_id => cs_id}
+    else
+      {:name => resource_action.fqname, :type => embedded_automate_key, :configuration_script_id => nil}
+    end
+  end
+
+  def build_tenants_tree
+    tenants = @record ? @record.additional_tenants : Tenant.where(:id => @edit[:new][:tenant_ids])
+    catalog_bundle = @edit.present? && @edit[:key] && @edit[:key].starts_with?('st_edit') # Get the info if adding/editing Catalog Item or Bundle; not important if only displaying
+    TreeBuilderTenants.new('tenants_tree', @sb, true, :additional_tenants => tenants, :selectable => @edit.present?, :show_tenant_tree => ansible_playbook_type? || terraform_template_type?, :catalog_bundle => catalog_bundle)
+  end
+
   def svc_catalog_provision_finish_submit_endpoint
     role_allows?(:feature => "miq_request_show_list", :any => true) ? "/miq_request/show_list" : "/catalog/explorer"
   end
 
-  def ansible_playbook?
-    prov_type = params[:st_prov_type] ? params[:st_prov_type] : @record.prov_type
-    ansible_playbook = prov_type == "generic_ansible_playbook"
-    @current_region = MiqRegion.my_region.region if ansible_playbook
-    ansible_playbook
+  def ansible_playbook_type?
+    prov_type = if params[:st_prov_type]
+                  params[:st_prov_type]
+                elsif @record
+                  @record.prov_type
+                elsif @edit
+                  @edit[:new][:st_prov_type]
+                end
+    if prov_type == 'generic_ansible_playbook'
+      @current_region = MiqRegion.my_region.region
+    end
+    prov_type == 'generic_ansible_playbook'
   end
-  helper_method :ansible_playbook?
+
+  def terraform_template_type?
+    prov_type = if params[:st_prov_type]
+                  params[:st_prov_type]
+                elsif @record
+                  @record.prov_type
+                elsif @edit
+                  @edit[:new][:st_prov_type]
+                end
+    if prov_type == 'generic_terraform_template'
+      @current_region = MiqRegion.my_region.region
+    end
+    prov_type == 'generic_terraform_template'
+  end
+
+  # Get all the available Catalogs
+  def available_catalogs
+    Rbac.filtered(ServiceTemplateCatalog.all).collect do |sc|
+      if sc.tenant.present?
+        tenant_names = []
+        sc.tenant.ancestor_ids.map do |t|
+          tenant_names.push(Tenant.find_by(:id => t).name)
+        end
+        tenant_names.push(sc.tenant.name)
+        tenant_names = tenant_names.join("/")
+      end
+      [tenant_names.present? ? "#{tenant_names}/" + sc.name : sc.name, sc.id]
+    end
+  end
 
   def remove_resources_display(remove_resources)
     case remove_resources
@@ -839,39 +961,47 @@ class CatalogController < ApplicationController
   helper_method :remove_resources_display
 
   def features
-    [{:role     => "svc_catalog_accord",
-      :role_any => true,
-      :name     => :svccat,
-      :title    => _("Service Catalogs")},
+    [
+      {
+        :role     => "svc_catalog_accord",
+        :role_any => true,
+        :name     => :svccat,
+        :title    => _("Service Catalogs")
+      },
 
-     {:role     => "catalog_items_accord",
-      :role_any => true,
-      :name     => :sandt,
-      :title    => _("Catalog Items")},
-
-     {:role     => "orchestration_templates_accord",
-      :role_any => true,
-      :name     => :ot,
-      :title    => _("Orchestration Templates")},
-
-     {:role     => "st_catalog_accord",
-      :role_any => true,
-      :name     => :stcat,
-      :title    => _("Catalogs")},
-    ].map do |hsh|
-      ApplicationController::Feature.new_with_hash(hsh)
-    end
+      {
+        :role     => "catalog_items_accord",
+        :role_any => true,
+        :name     => :sandt,
+        :title    => _("Catalog Items")
+      },
+      {
+        :role     => "orchestration_templates_accord",
+        :role_any => true,
+        :name     => :ot,
+        :title    => _("Orchestration Templates")
+      },
+      {
+        :role     => "st_catalog_accord",
+        :role_any => true,
+        :name     => :stcat,
+        :title    => _("Catalogs")
+      }
+    ].map { |hsh| ApplicationController::Feature.new_with_hash(hsh) }
   end
 
   def class_service_template(prov_type)
-    prov_type.starts_with?('generic') ?
-      prov_type.gsub(/(generic)(_.*)?/, 'service_template\2').classify.constantize :
-      ServiceTemplate
+    if content_library?
+      ManageIQ::Providers::Vmware::InfraManager::OvfServiceTemplate
+    else
+      ServiceTemplate.class_from_prov_type(prov_type)
+    end
   end
 
   def atomic_req_submit
     id = session[:edit][:req_id] || "new"
     return unless load_edit("prov_edit__#{id}", "show_list")
+
     if @edit[:new][:name].blank?
       # check for service template required fields before creating a request
       add_flash(_("Name is required"), :error)
@@ -879,24 +1009,52 @@ class CatalogController < ApplicationController
     if @edit[:new][:st_prov_type] == 'generic' && @edit[:new][:generic_subtype].blank?
       add_flash(_('Subtype is required.'), :error)
     end
-    add_flash(_("Provisioning Entry Point is required"), :error) if @edit[:new][:fqname].blank?
 
+    # for Ansible Tower items, check for Provider first
+    if @edit[:new][:st_prov_type] == 'generic_ansible_tower' || @edit[:new][:st_prov_type] == 'generic_awx' || @edit[:new][:st_prov_type] == 'generic_terraform_enterprise'
+      if @edit[:new][:manager_id].blank?
+        add_flash(_("Provider is required, please select one from the list"), :error)
+      elsif @edit[:new][:template_id].blank?
+        # ensure Job Template is selected as well, required field
+        add_flash(_("Template is required, please select one from the list"), :error)
+      end
+    end
+
+    # For Orchestration catalog item, reverse edit flow and check Template selection first
+    if @edit[:new][:st_prov_type] == 'generic_orchestration'
+      if @edit[:new][:template_id].blank?
+        add_flash(_("Orchestration Template is required, please select one from the list"), :error)
+      elsif @edit[:new][:manager_id].blank?
+        # ensure Provider is selectied, required field
+        add_flash(_("Provider is required, please select one from the list"), :error)
+      end
+    end
+
+    # For Content Library OVF TEmplate catalog item
+    if @edit[:new][:st_prov_type] == 'generic_ovf_template'
+      add_flash(_("OVF Template is required, please select one from the list"), :error) if @edit[:new][:ovf_template_id].blank?
+      add_flash(_("Resource Pool is required, please select one from the list"), :error) if @edit[:new][:resource_pool_id].blank?
+      validate_vm_name if @edit[:new][:vm_name].present?
+    end
+
+    add_flash(_("Provisioning Entry Point is required"), :error) if @edit[:new][:fqname].blank?
+    validate_price
     # Check for a Dialog if Display in Catalog is selected
     dialog_catalog_check
 
     # Check the validity of the entry points
-    %w(fqname reconfigure_fqname retire_fqname).each do |fqname|
-      if @edit[:new][fqname.to_sym].present? &&
-         MiqAeClass.find_homonymic_instances_across_domains(current_user, @edit[:new][fqname.to_sym]).empty?
-        level = :error
-        msg = _('Please correct invalid %{adjective} Entry Point prior to saving')
+    %i[fqname reconfigure_fqname retire_fqname].each do |fqname|
+      type = entry_point_fields(fqname)[:type]
+      if embedded_automate(@edit[:new][type])
+        next if @edit[:new][fqname].blank? || !MiqAeClass.find_homonymic_instances_across_domains(current_user, @edit[:new][fqname]).empty?
+
         case fqname
-        when 'fqname'
-          add_flash(msg % {:adjective => _("Provisioning")}, level)
-        when 'reconfigure_fqname'
-          add_flash(msg % {:adjective => _("Reconfigure")}, level)
-        when 'retire_fqname'
-          add_flash(msg % {:adjective => _("Retirement")}, level)
+        when :fqname
+          add_flash(_('Please correct invalid Provisioning Entry Point prior to saving'), :error)
+        when :reconfigure_fqname
+          add_flash(_('Please correct invalid Reconfigure Entry Point prior to saving'), :error)
+        when :retire_fqname
+          add_flash(_('Please correct invalid Retirement Entry Point prior to saving'), :error)
         end
       end
     end
@@ -904,9 +1062,9 @@ class CatalogController < ApplicationController
     # set request for non generic ST
     if @edit[:wf] && need_prov_dialogs?(@edit[:new][:st_prov_type])
       request = @edit[:wf].make_request(@edit[:req_id], @edit[:new])
-      if request && request.errors.present?
-        request.errors.each do |field, msg|
-          add_flash("#{field.to_s.capitalize} #{msg}", :error)
+      if request && request&.errors.present?
+        request.errors.each do |error|
+          add_flash("#{error.attribute.to_s.capitalize} #{error.message}", :error)
         end
       else
         validate_fields
@@ -917,18 +1075,29 @@ class CatalogController < ApplicationController
       javascript_flash
       return
     end
-    get_form_vars   # need to get long_description
+    get_form_vars # need to get long_description
     if @edit[:new][:st_prov_type] == "generic_container_template"
-      st = @edit[:rec_id] ?
-        ServiceTemplateContainerTemplate.find_by(:id => @edit[:rec_id]).update_catalog_item(add_container_template_vars) :
-        ServiceTemplateContainerTemplate.create_catalog_item(add_container_template_vars)
+      st = if @edit[:rec_id]
+             ServiceTemplateContainerTemplate.find_by(:id => @edit[:rec_id]).update_catalog_item(add_container_template_vars)
+           else
+             ServiceTemplateContainerTemplate.create_catalog_item(add_container_template_vars)
+           end
+    elsif @edit[:new][:st_prov_type] == 'generic_ovf_template'
+      st = if @edit[:rec_id]
+             ManageIQ::Providers::Vmware::InfraManager::OvfServiceTemplate.find_by(:id => @edit[:rec_id]).update_catalog_item(set_record_vars_ovf_template)
+           else
+             ManageIQ::Providers::Vmware::InfraManager::OvfServiceTemplate.create_catalog_item(set_record_vars_ovf_template, User.current_user)
+           end
     else
-      st = @edit[:rec_id] ?
-        ServiceTemplate.find_by(:id => @edit[:rec_id]) :
-        class_service_template(@edit[:new][:st_prov_type]).new
+      st = if @edit[:rec_id]
+             ServiceTemplate.find_by(:id => @edit[:rec_id])
+           else
+             class_service_template(@edit[:new][:st_prov_type]).new
+           end
       common_st_record_vars(st)
-      add_orchestration_template_vars(st) if st.kind_of?(ServiceTemplateOrchestration)
-      add_ansible_tower_job_template_vars(st) if st.kind_of?(ServiceTemplateAnsibleTower)
+      add_orchestration_template_vars(st)  if st.kind_of?(ServiceTemplateOrchestration)
+      add_configuration_script_vars(st)    if st.kind_of?(ServiceTemplateAutomation) && !need_prov_dialogs?(@edit[:new][:st_prov_type])
+      add_server_profile_template_vars(st) if @edit[:new][:st_prov_type] == 'cisco_intersight'
       st.service_type = "atomic"
 
       if request
@@ -936,6 +1105,8 @@ class CatalogController < ApplicationController
         st.add_resource(request) if need_prov_dialogs?(@edit[:new][:st_prov_type])
       end
     end
+    st.currency = @edit[:new][:currency] ? Currency.find_by(:id => @edit[:new][:currency].to_i) : nil
+    st.price    = st.currency ? @edit[:new][:price] : nil if @edit[:new][:price]
 
     if st.save
       set_resource_action(st) unless st.kind_of?(ServiceTemplateContainerTemplate)
@@ -944,10 +1115,10 @@ class CatalogController < ApplicationController
       @changed = session[:changed] = false
       @in_a_form = false
       @edit = session[:edit] = @record = nil
-      replace_right_cell(:replace_trees => trees_to_replace([:sandt, :svccat, :stcat]))
+      replace_right_cell(:replace_trees => trees_to_replace(%i[sandt svccat stcat]))
     else
-      st.errors.each do |field, msg|
-        add_flash("#{field.to_s.capitalize} #{msg}", :error)
+      st.errors.each do |error|
+        add_flash("#{error.attribute.to_s.capitalize} #{error.message}", :error)
       end
       @changed = session[:changed] = (@edit[:new] != @edit[:current])
       javascript_flash
@@ -957,21 +1128,12 @@ class CatalogController < ApplicationController
   def service_template_list(scope, options = {})
     @no_checkboxes = x_active_tree == :svccat_tree
     if x_active_tree == :svccat_tree
-      @gtl_buttons = ["view_list", "view_tile"]
       @gtl_small_tiles = true
-      if role_allows?(:feature => 'svc_catalog_provision')
-        @row_button = {:label    => _("Order"),
-                       :function => "miqOrderService",
-                       :title    => _("Order this Service")} # Show a button instead of the checkbox
-      end
+      @row_button = true if role_allows?(:feature => 'svc_catalog_provision') # Show a button instead of the checkbox
+      options[:gtl_dbname] = :catalog
     end
     options[:named_scope] = scope
     process_show_list(options)
-  end
-
-  def ot_edit_get_form_vars
-    copy_params_if_set(@edit[:new], params, %i(name description dialog_name manager_id))
-    @edit[:new][:draft] = params[:draft] == "true" if params[:draft]
   end
 
   def ot_edit_set_form_vars(right_cell_text)
@@ -993,216 +1155,22 @@ class CatalogController < ApplicationController
     @in_a_form = true
   end
 
-  def ot_edit_submit_cancel
-    add_flash(_("Edit of Orchestration Template \"%{name}\" was cancelled by the user") %
-      {:name => session[:edit][:new][:name]})
-    @in_a_form = false
-    @edit = @record = nil
-    replace_right_cell
-  end
-
-  def ot_edit_submit_save
-    assert_privileges("orchestration_template_edit")
-    id = params[:id]
-    return unless load_edit("ot_edit__#{id}", "replace_cell__explorer")
-    if params.key?(:template_content) && params[:template_content] == ""
-      render_flash(_("New template content cannot be empty"), :error)
-    else
-      ot = OrchestrationTemplate.find_by_id(@edit[:rec_id])
-      ot.name = @edit[:new][:name]
-      ot.description = @edit[:new][:description]
-      ot.ems_id = @edit[:new][:manager_id]
-      ot.remote_proxy = true
-      unless ot.in_use?
-        ot.content = params[:template_content]
-        ot.draft = @edit[:new][:draft]
-      end
-      begin
-        ot.save_as_orderable!
-      rescue => bang
-        render_flash(_("Error during 'Orchestration Template Edit': %{error_message}") %
-          {:error_message => bang.message}, :error)
-      else
-        add_flash(_("Orchestration Template \"%{name}\" was saved") % {:name => @edit[:new][:name]})
-        @changed = session[:changed] = false
-        @in_a_form = false
-        @edit = session[:edit] = nil
-        replace_right_cell(:replace_trees => trees_to_replace([:ot]))
-      end
-    end
-  end
-
-  def ot_edit_submit_reset
-    add_flash(_("All changes have been reset"), :warning)
-    ot_edit_set_form_vars(_("Editing %{record_name}"))
-    @changed = session[:changed] = false
-    replace_right_cell(:action => "ot_edit")
-  end
-
-  def ot_copy_submit_cancel
-    add_flash(_("Copy of Orchestration Template \"%{name}\" was cancelled by the user") %
-      {:name => session[:edit][:current][:name]})
-    @in_a_form = false
-    @edit = @record = nil
-    replace_right_cell
-  end
-
-  def ot_copy_submit_add
-    assert_privileges("orchestration_template_copy")
-    id = params[:original_ot_id]
-    return unless load_edit("ot_edit__#{id}", "replace_cell__explorer")
-    old_ot = OrchestrationTemplate.find_by_id(id)
-    if params[:template_content] == old_ot.content
-      render_flash(
-        _("Unable to create a new template copy \"%{name}\": old and new template content have to differ.") %
-          {:name => @edit[:new][:name]}, :error)
-    elsif params[:template_content].nil? || params[:template_content] == ""
-      render_flash(_("Unable to create a new template copy \"%{name}\": new template content cannot be empty.") %
-        {:name => @edit[:new][:name]}, :error)
-    else
-      ot = OrchestrationTemplate.new(
-        :name         => @edit[:new][:name],
-        :description  => @edit[:new][:description],
-        :type         => old_ot.type,
-        :content      => params[:template_content],
-        :draft        => @edit[:new][:draft] == true || @edit[:new][:draft] == "true",
-        :ems_id       => @edit[:new][:manager_id],
-        :remote_proxy => true)
-      begin
-        ot.save_as_orderable!
-      rescue => bang
-        render_flash(_("Error during 'Orchestration Template Copy': %{error_message}") %
-          {:error_message => bang.message}, :error)
-      else
-        add_flash(_("Orchestration Template \"%{name}\" was saved") % {:name => @edit[:new][:name]})
-        x_node_elems = x_node.split('-')
-        if !x_node_elems[2].nil? && x_node_elems[2] != to_cid(ot.id)
-          x_node_elems[2] = to_cid(ot.id)
-          self.x_node = x_node_elems.join('-')
-        end
-
-        @changed = session[:changed] = false
-        @in_a_form = false
-        @edit = session[:edit] = nil
-        replace_right_cell(:replace_trees => trees_to_replace([:ot]))
-      end
-    end
-  end
-
-  def ot_add_submit_cancel
-    add_flash(_("Creation of a new Orchestration Template was cancelled by the user"))
-    @in_a_form = false
-    @edit = @record = nil
-    replace_right_cell
-  end
-
-  def ot_add_submit_save
-    assert_privileges("orchestration_template_add")
-    load_edit("ot_add__new", "replace_cell__explorer")
-    template_types = %w(
-      ManageIQ::Providers::Openstack::CloudManager::OrchestrationTemplate
-      ManageIQ::Providers::Amazon::CloudManager::OrchestrationTemplate
-      ManageIQ::Providers::Azure::CloudManager::OrchestrationTemplate
-      ManageIQ::Providers::Openstack::CloudManager::VnfdTemplate
-      ManageIQ::Providers::Vmware::CloudManager::OrchestrationTemplate
-    )
-    if !template_types.include?(@edit[:new][:type])
-      render_flash(_("\"%{type}\" is not a valid Orchestration Template type") % {:type => @edit[:new][:type]}, :error)
-    elsif params[:content].nil? || params[:content].strip == ""
-      render_flash(_("Error during Orchestration Template creation: new template content cannot be empty"), :error)
-    else
-      ot = OrchestrationTemplate.new(
-        :name         => @edit[:new][:name],
-        :description  => @edit[:new][:description],
-        :type         => @edit[:new][:type],
-        :content      => params[:content],
-        :draft        => @edit[:new][:draft],
-        :ems_id       => @edit[:new][:manager_id],
-        :remote_proxy => true)
-      begin
-        ot.save_as_orderable!
-      rescue => bang
-        render_flash(_("Error during 'Orchestration Template creation': %{error_message}") %
-          {:error_message => bang.message}, :error)
-      else
-        add_flash(_("Orchestration Template \"%{name}\" was saved") % {:name => @edit[:new][:name]})
-        subtree = template_to_node_name(ot)
-        x_tree[:open_nodes].push(subtree) unless x_tree[:open_nodes].include?(subtree)
-        ot_type = template_to_node_name(ot)
-        self.x_node = "xx-%{type}_ot-%{cid}" % {:type => ot_type,
-                                                :cid  => to_cid(ot.id)}
-        x_tree[:open_nodes].push(x_node)
-        @changed = session[:changed] = false
-        @in_a_form = false
-        @edit = session[:edit] = nil
-        replace_right_cell(:replace_trees => trees_to_replace([:ot]))
-      end
-    end
-  end
-
-  def service_dialog_from_ot_submit_cancel
-    add_flash(_("Creation of a new Service Dialog was cancelled by the user"))
-    @in_a_form = false
-    @edit = @record = nil
-    replace_right_cell
-  end
-
-  def service_dialog_from_ot_submit_save
-    assert_privileges("service_dialog_from_ot")
-    load_edit("ot_edit__#{params[:id]}", "replace_cell__explorer")
-    begin
-      ot = OrchestrationTemplate.find_by_id(params[:id])
-      Dialog::OrchestrationTemplateServiceDialog.new.create_dialog(@edit[:new][:dialog_name], ot)
-    rescue => bang
-      add_flash(_("Error when creating a Service Dialog from Orchestration Template: %{error_message}") %
-        {:error_message => bang.message}, :error)
-      javascript_flash
-    else
-      add_flash(_("Service Dialog \"%{name}\" was successfully created") %
-        {:name => @edit[:new][:dialog_name]}, :success)
-      @in_a_form = false
-      @edit = @record = nil
-      replace_right_cell
-    end
-  end
-
-  def st_catalog_get_form_vars
-    case params[:button]
-    when 'right' then move_cols_left_right('right')
-    when 'left' then  move_cols_left_right('left')
-    else copy_params_if_set(@edit[:new], params, %i(name description))
-    end
-  end
-
   def st_catalog_set_form_vars
     checked = find_checked_items
     checked[0] = params[:id] if checked.blank? && params[:id]
 
     @record = checked[0] ? find_record_with_rbac(ServiceTemplateCatalog, checked[0]) : ServiceTemplateCatalog.new
-    @right_cell_text = @record.id ?
-        _("Editing Catalog \"%{name}\"") % {:name => @record.name} : _("Adding a new Catalog")
+    @right_cell_text = if @record.id
+                         _("Editing Catalog \"%{name}\"") % {:name => @record.name}
+                       else
+                         _("Adding a new Catalog")
+                       end
     @edit = {}
-    @edit[:key] = "st_catalog_edit__#{@record.id || "new"}"
     @edit[:new] = {}
-    @edit[:current] = {}
     @edit[:rec_id] = @record.id
     @edit[:new][:name] = @record.name
-    @edit[:new][:description]  = @record.description
-    @edit[:new][:fields] = @record.service_templates.collect { |st| [st.name, st.id] }.sort
-
-    @edit[:new][:available_fields] = ServiceTemplate.all
-                                     .select  { |st| st.service_template_catalog.nil? && st.display }
-                                     .collect { |st| [st.name, st.id] }
-                                     .sort
-
-    @edit[:current] = copy_hash(@edit[:new])
+    @edit[:current] = {} # because of locking tree in replace_right_cell method
     @in_a_form = true
-  end
-
-  def st_catalog_set_record_vars(stc)
-    stc.name = @edit[:new][:name]
-    stc.description = @edit[:new][:description]
-    stc.service_templates = @edit[:new][:fields].collect { |sf| ServiceTemplate.find_by_id(sf[1]) }
   end
 
   def st_catalog_delete
@@ -1220,7 +1188,7 @@ class CatalogController < ApplicationController
       process_elements(elements, ServiceTemplateCatalog, "destroy") unless elements.empty?
     end
     params[:id] = nil
-    replace_right_cell(:replace_trees => trees_to_replace([:sandt, :svccat, :stcat]))
+    replace_right_cell(:replace_trees => trees_to_replace(%i[sandt svccat stcat]))
   end
 
   def trees_to_replace(trees)
@@ -1233,24 +1201,37 @@ class CatalogController < ApplicationController
     trees_to_replace
   end
 
+  # Method to prepare the data needed for resource_actions
+  # prefix[:name] = 'Provision' || 'Reconfigure' || 'Retirement'
+  # prefix[:type] = :provision || :reconfigure || :retire
+  # key           = :fqname || :reconfigure_fqname || :retire_fqname
+  def entry_point_keys
+    ENTRY_POINT_TYPES.map do |key, prefix|
+      {
+        :name               => prefix[:name],
+        :automate_edit_key  => key,
+        :type_key           => "#{prefix[:type]}_entry_point_type".to_sym,
+        :workflows_edit_key => "#{prefix[:type]}_configuration_script_id".to_sym
+      }
+    end
+  end
+
   def set_resource_action(st)
     d = @edit[:new][:dialog_id].nil? ? nil : Dialog.where(:id => @edit[:new][:dialog_id]).first
-    actions = [
-      {:name => 'Provision', :edit_key => :fqname},
-      {:name => 'Reconfigure', :edit_key => :reconfigure_fqname},
-      {:name => 'Retirement', :edit_key => :retire_fqname}
-    ]
-    actions.each do |action|
-      ra = st.resource_actions.find_by_action(action[:name])
-      if ra.nil? && !@edit[:new][action[:edit_key]].blank?
-        attrs = {:action        => action[:name],
-                 :ae_attributes => {:service_action => action[:name]}}
-        ra = st.resource_actions.build(attrs)
-      end
-      if @edit[:new][action[:edit_key]].blank?
+
+    entry_point_keys.each do |action|
+      ra = st.resource_actions
+             .create_with(
+               :configuration_script_id => @edit[:new][action[:workflows_edit_key]],
+               :ae_attributes           => {:service_action => action[:name]}
+             )
+             .find_or_initialize_by(:action => action[:name])
+      if @edit[:new][action[:automate_edit_key]].blank? && @edit[action[:workflows_edit_key]].blank?
         st.resource_actions.where(:action => action[:name]).first.try(:destroy)
       else
-        ra.update_attributes(:dialog => d, :fqname => @edit[:new][action[:edit_key]])
+        fqname                  = @edit[:new][action[:automate_edit_key]]  if @edit[:new][action[:type_key]] == embedded_automate_key
+        configuration_script_id = @edit[:new][action[:workflows_edit_key]] if @edit[:new][action[:type_key]] == embedded_workflow_key
+        ra.update!(:dialog => d, :fqname => fqname, :configuration_script_id => configuration_script_id)
       end
     end
   end
@@ -1262,10 +1243,17 @@ class CatalogController < ApplicationController
     st.long_description = @edit[:new][:display] ? @edit[:new][:long_description] : nil
     st.provision_cost = @edit[:new][:provision_cost]
     st.display = @edit[:new][:display]
-    st.service_template_catalog = @edit[:new][:catalog_id].nil? ?
-      nil : ServiceTemplateCatalog.find_by_id(@edit[:new][:catalog_id])
+    st.service_template_catalog = if @edit[:new][:catalog_id].blank?
+                                    nil
+                                  else
+                                    ServiceTemplateCatalog.find(@edit[:new][:catalog_id])
+                                  end
     st.prov_type = @edit[:new][:st_prov_type]
     st.generic_subtype = @edit[:new][:generic_subtype] if @edit[:new][:st_prov_type] == 'generic'
+    st.zone_id = @edit[:new][:zone_id]
+    st.additional_tenants = Tenant.where(:id => @edit[:new][:tenant_ids]) # Selected Additional Tenants in the tree
+    st.currency = @edit[:new][:currency] ? Currency.find_by(:id => @edit[:new][:currency].to_i) : nil
+    st.price    = st.currency ? @edit[:new][:price] : nil if @edit[:new][:price]
   end
 
   def st_set_record_vars(st)
@@ -1274,7 +1262,7 @@ class CatalogController < ApplicationController
     @add_rsc = true
     unless @edit[:new][:selected_resources].empty?
       @edit[:new][:selected_resources].each do |r|
-        rsc = ServiceTemplate.find_by_id(r)
+        rsc = ServiceTemplate.find(r)
         @edit[:new][:rsc_groups].each_with_index do |groups, i|
           groups.each do |sr|
             options = {}
@@ -1286,16 +1274,15 @@ class CatalogController < ApplicationController
             options[:stop_delay] = sr[:stop_delay].to_i
             options[:scaling_min] = sr[:scaling_min].to_i
             options[:scaling_max] = sr[:scaling_max].to_i
-            if sr[:resource_id].to_s == rsc.id.to_s
-              begin
-                st.add_resource(rsc, options)
-              rescue MiqException::MiqServiceCircularReferenceError => bang
-                @add_rsc = false
-                add_flash(_("Error during 'Resource Add': %{error_message}") %
-                  {:error_message => bang.message}, :error)
-                break
-              else
-              end
+            next unless sr[:resource_id].to_s == rsc.id.to_s
+
+            begin
+              st.add_resource(rsc, options)
+            rescue MiqException::MiqServiceCircularReferenceError => bang
+              @add_rsc = false
+              add_flash(_("Error during 'Resource Add': %{error_message}") %
+                {:error_message => bang.message}, :error)
+              break
             end
           end
         end
@@ -1303,78 +1290,107 @@ class CatalogController < ApplicationController
     end
   end
 
-  # common code for both st/at get_form_vars
+  # common code for both st/at set_form_vars
   def set_form_vars
     @edit[:new][:name] = @record.name
-    @edit[:new][:description]  = @record.description
+    @edit[:new][:description] = @record.description
     @edit[:new][:long_description] = @record.long_description
     @edit[:new][:provision_cost] = @record.provision_cost
-    @edit[:new][:display]  = @record.display ? @record.display : false
+    @edit[:new][:display] = @record.display || false
     @edit[:new][:catalog_id] = @record.service_template_catalog.try(:id)
+    @edit[:new][:dialog_id] = nil # initialize
     @edit[:new][:st_prov_type] ||= @record.prov_type
     @edit[:new][:generic_subtype] = @record.generic_subtype || "custom" if @edit[:new][:st_prov_type] == 'generic'
-    @edit[:new][:available_catalogs] = Rbac.filtered(ServiceTemplateCatalog.all).collect do |stc|
-      [stc.tenant.present? && stc.tenant.ancestors.present? ? stc.name + " (#{stc.tenant.name})" : stc.name, stc.id]
-    end
-    @edit[:new][:available_catalogs] = @edit[:new][:available_catalogs].sort
+    @edit[:new][:tenant_ids] = @record.additional_tenant_ids
+    @tenants_tree = build_tenants_tree # Build the tree with available tenants
+    @available_catalogs = available_catalogs.sort # Get available catalogs with tenants and ancestors
+    @additional_tenants = @edit[:new][:tenant_ids].map(&:to_s) # Get ids of selected Additional Tenants in the Tenants tree
     available_orchestration_templates if @record.kind_of?(ServiceTemplateOrchestration)
-    available_ansible_tower_managers if @record.kind_of?(ServiceTemplateAnsibleTower)
-    available_container_managers if @record.kind_of?(ServiceTemplateContainerTemplate)
+    available_automation_managers     if @record.kind_of?(ServiceTemplateAutomation) && !need_prov_dialogs?(@edit[:new][:st_prov_type])
+    available_container_managers      if @record.kind_of?(ServiceTemplateContainerTemplate)
+    fetch_zones
+    @edit[:new][:zone_id] = @record.zone_id
 
-    # initialize fqnames
-    @edit[:new][:fqname] = @edit[:new][:reconfigure_fqname] = @edit[:new][:retire_fqname] = ""
+    @edit[:new][:currency] = @record.currency ? @record.currency.id : nil
+    @edit[:new][:code_currency] = @record.currency ? code_currency_label(@record.currency.id) : _("Price / Month")
+    @edit[:new][:price] = @record.price
+
+    # initialize entry_point fields and its type to nil
+    ENTRY_POINT_TYPES.each do |key, _prefix|
+      fields = entry_point_fields(key)
+      @edit[:new][key] = @edit[:new][fields[:type]] = @edit[:new][fields[:configuration_script_id]] = nil
+      @edit[:new][fields[:previous]] = {:embedded_automate => nil, :embedded_workflow => nil}
+      @edit[:new][fields[:type]] = default_entry_point_type
+    end
+
     @record.resource_actions.each do |ra|
       @edit[:new][:dialog_id] = ra.dialog_id.to_i
-      if ra.action.downcase == "provision"
-        @edit[:new][:fqname] = ra.fqname
+
+      # To display the automation_type and its entry point values in edit page.
+      entry_point = resource_action_entry_point(ra)
+
+      if ra.action.downcase == 'provision'
+        @edit[:new][:fqname] = entry_point[:name]
+        @edit[:new][:provision_entry_point_type] = entry_point[:type]
+        @edit[:new][:provision_configuration_script_id] = entry_point[:configuration_script_id]
       elsif ra.action.downcase == 'reconfigure'
-        @edit[:new][:reconfigure_fqname] = ra.fqname
-      elsif ra.action.downcase == "retirement"
-        @edit[:new][:retire_fqname] = ra.fqname
+        @edit[:new][:reconfigure_fqname] = entry_point[:name]
+        @edit[:new][:reconfigure_entry_point_type] = entry_point[:type]
+        @edit[:new][:reconfigure_configuration_script_id] = entry_point[:configuration_script_id]
+      elsif ra.action.downcase == 'retirement'
+        @edit[:new][:retire_fqname] = entry_point[:name]
+        @edit[:new][:retire_entry_point_type] = entry_point[:type]
+        @edit[:new][:retire_configuration_script_id] = entry_point[:configuration_script_id]
       end
     end
-    get_available_dialogs
-    if @record.id.blank?
-      @right_cell_text = _("Adding a new Service Catalog Item")
-    else
-      @right_cell_text = _("Editing Service Catalog Item \"%{name}\"") % {:name => @record.name}
-    end
-    build_ae_tree(:catalog, :automate_tree) # Build Catalog Items tree
+    load_available_dialogs
+    @right_cell_text = if @record.id.blank?
+                         _("Adding a new Service Catalog Item")
+                       else
+                         _("Editing Service Catalog Item \"%{name}\"") % {:name => @record.name}
+                       end
+    build_automate_tree(:automate_catalog) # Build Catalog Items tree
+    form_available_vars_ovf_template if @record.kind_of?(ManageIQ::Providers::Vmware::InfraManager::OvfServiceTemplate)
+  end
+
+  def fetch_zones
+    @zones = Zone.visible.in_my_region.order(Zone.arel_table[:description].lower).pluck(:description, :id)
   end
 
   def st_set_form_vars
     @edit = {}
-    @edit[:rec_id]   = @record.id
-    @edit[:key]     = "st_edit__#{@record.id || "new"}"
+    @edit[:rec_id] = @record.id
+    @edit[:key] = "st_edit__#{@record.id || "new"}"
     @edit[:url] = "servicetemplate_edit"
-    @edit[:new]     = {}
+    @edit[:new] = {}
     @edit[:current] = {}
     set_form_vars
-    default_entry_point("generic", "composite")
+    # Set the default entry points if the record not yet in the DB
+    default_entry_point("generic", "composite") if @record.id.nil?
     @edit[:new][:service_type] = "composite"
     @edit[:new][:rsc_groups] = []
     @edit[:new][:selected_resources] = []
 
     len = @record.service_resources.size
     len.times do |l|
-      if @record.group_has_resources?(l)
-        @edit[:new][:rsc_groups][l] ||= []
-        @record.each_group_resource(l) do |sr|
-          @edit[:new][:selected_resources].push(sr.resource_id)
-          # storing keys that are needed in ui in hash instead of storing an object
-          r = {}
-          r[:name] = sr.resource_name
-          r[:id] = sr.id
-          r[:resource_id] = sr.resource_id
-          r[:start_action] = sr.start_action ? sr.start_action : "Power On"
-          r[:stop_action] = sr.stop_action ? sr.stop_action : "Shutdown"
-          r[:start_delay] = sr.start_delay ? sr.start_delay : 0
-          r[:stop_delay] = sr.stop_delay ? sr.stop_delay : 0
-          r[:scaling_min] = sr.scaling_min ? sr.scaling_min : 1
-          r[:scaling_max] = sr.scaling_max ? sr.scaling_max : sr.scaling_min
-          r[:provision_index] = sr.provision_index ? sr.provision_index : 0
-          @edit[:new][:rsc_groups][l].push(r)
-        end
+      next unless @record.group_has_resources?(l)
+
+      @edit[:new][:rsc_groups][l] ||= []
+      @record.each_group_resource(l) do |sr|
+        @edit[:new][:selected_resources].push(sr.resource_id)
+        # storing keys that are needed in ui in hash instead of storing an object
+        r = {}
+        r[:name] = sr.resource_name
+        r[:id] = sr.id
+        r[:resource_id] = sr.resource_id
+        r[:start_action] = sr.start_action || "Power On"
+        r[:stop_action] = sr.stop_action || "Shutdown"
+        r[:start_delay] = sr.start_delay || 0
+        r[:stop_delay] = sr.stop_delay || 0
+        r[:scaling_min] = sr.scaling_min || 1
+        r[:scaling_max] = sr.scaling_max || sr.scaling_min
+        r[:provision_index] = sr.provision_index || 0
+        @edit[:new][:rsc_groups][l].push(r)
       end
     end
     # add one extra group to show in pulldown so resources can be moved into it.
@@ -1383,20 +1399,18 @@ class CatalogController < ApplicationController
 
     @edit[:new][:available_resources] = {}
     get_available_resources("ServiceTemplate")
-    get_available_dialogs
+    load_available_dialogs
     @edit[:current] = copy_hash(@edit[:new])
-    if @record.id.blank?
-      @right_cell_text = _("Adding a new Catalog Bundle")
-    else
-      @right_cell_text = _("Editing Catalog Bundle \"%{name}\"") % {:name => @record.name}
-    end
+    @right_cell_text = if @record.id.blank?
+                         _("Adding a new Catalog Bundle")
+                       else
+                         _("Editing Catalog Bundle \"%{name}\"") % {:name => @record.name}
+                       end
 
     @in_a_form = true
   end
 
   def rearrange_groups_array
-    # delete any empty groups, break if found a populated group
-    len = @edit[:new][:rsc_groups].length
     # keep count of how many groups are deleted
     g_idx = 0
     # flag to check whether an empty group was deleted so next group elements can be moved up
@@ -1417,10 +1431,10 @@ class CatalogController < ApplicationController
     # i.e if on screen resources were assigned to group 1 & 2, pulldown had 1,2,3 in it, now if all resources were moved to group 1, get rid of 3 from pulldown
     prev = 0
     @edit[:new][:rsc_groups].each_with_index do |g, i|
-      if i == 0
+      if i.zero?
         prev = g
       end
-      if i > 0 && prev.empty? && g.empty?
+      if i.positive? && prev.empty? && g.empty?
         @edit[:new][:rsc_groups].delete_at(i)
       end
       prev = g
@@ -1432,30 +1446,119 @@ class CatalogController < ApplicationController
 
   def get_available_resources(kls)
     @edit[:new][:available_resources] = {}
-    kls.constantize.where("type is null or type != 'ServiceTemplateAnsiblePlaybook'").select(:id, :name).each do |r|
-      @edit[:new][:available_resources][r.id] = r.name if  r.id.to_s != @edit[:rec_id].to_s &&
-                                                           !@edit[:new][:selected_resources].include?(r.id)  # don't add the servicetemplate record that's being edited, or add all vm templates
+    Rbac.filtered(kls.constantize.public_service_templates.where("(type is null or type != 'ServiceTemplateAnsiblePlaybook') and service_type != 'composite'")).select(:id, :name).each do |r|
+      # don't add the servicetemplate record that's being edited, or add all vm templates
+      if r.id.to_s != @edit[:rec_id].to_s && !@edit[:new][:selected_resources].include?(r.id)
+        @edit[:new][:available_resources][r.id] = r.name
+      end
     end
   end
 
+  # Returns true if the edit_new's field is 'embedded_automate'.
+  def automate_field(edit_new, field)
+    type = entry_point_fields(field)[:type]
+    embedded_automate(edit_new[type])
+  end
+
+  # Method to set the entry_point's type, value and previous value.
+  # type     = provision_entry_point_type || reconfigure_entry_point_type || retire_entry_point_type
+  # previous = fqname_previous || reconfigure_fqname_previous || retire_fqname_previous
   def default_entry_point(prov_type, service_type)
-    edit_new = @edit[:new]
     klass = class_service_template(prov_type)
-    edit_new[:fqname] = klass.default_provisioning_entry_point(service_type)
-    edit_new[:retire_fqname] = klass.default_retirement_entry_point
-    edit_new[:reconfigure_fqname] = klass.default_reconfiguration_entry_point
+    ENTRY_POINT_TYPES.each do |key, _prefix|
+      fields            = entry_point_fields(key)
+      type              = fields[:type]
+      previous          = fields[:previous]
+
+      # sets the type to embedded_automate || embedded_workflow
+      @edit[:new][type] = params[type] || default_entry_point_type
+
+      # sets the value of entry_point
+      is_automate       = embedded_automate(@edit[:new][type])
+      entry_point       = nil
+      if is_automate
+        entry_point = klass.default_provisioning_entry_point(service_type) if key == :fqname
+        entry_point = klass.default_retirement_entry_point if key == :retire_fqname
+        entry_point = klass.default_reconfiguration_entry_point if key == :reconfigure_fqname
+      end
+      @edit[:new][key] = is_automate ? entry_point : nil
+
+      # sets the value of previously selected entry_point_value
+      @edit[:new][previous] = {:embedded_automate => nil, :embedded_workflow => nil}
+      previous_type = is_automate ? embedded_automate_key : embedded_workflow_key
+      @edit[:new][previous][previous_type.to_sym] = @edit[:new][key]
+    end
   end
 
   def get_form_vars
-    copy_params_if_set(@edit[:new], params, %i(name description provision_cost catalog_id dialog_id generic_subtype long_description))
+    copy_params_if_present(@edit[:new], params, %i[st_prov_type name description provision_cost catalog_id dialog_id generic_subtype long_description zone_id price retire_fqname reconfigure_fqname fqname])
 
-    @edit[:new][:display] = params[:display] == "1" if params[:display]
+    @edit[:new][:display] = params[:display] == "1" if params[:display] # @edit[:new][:display] should't be changed if params[:display] is not set
     # saving it in @edit as well, to use it later because prov_set_form_vars resets @edit[:new]
-    @edit[:st_prov_type] = @edit[:new][:st_prov_type] = params[:st_prov_type] if params[:st_prov_type]
-    @edit[:new][:long_description] = @edit[:new][:long_description].to_s + "..." if params[:transOne]
+    @edit[:st_prov_type] = @edit[:new][:st_prov_type]
+    fetch_zones
+    checked_tenants if params[:check] # Save checked Additional Tenants to @edit
+
+    @tenants_tree = build_tenants_tree # Build the tree with available tenants
+    @available_catalogs = available_catalogs.sort # Get available catalogs with tenants and ancestors
+    @additional_tenants = @edit[:new][:tenant_ids].map(&:to_s) # Get ids of selected Additional Tenants in the Tenants tree
+
+    if params[:currency]
+      @edit[:new][:currency] = params[:currency].blank? ? nil : params[:currency].to_i
+      @edit[:new][:code_currency] = @edit[:new][:currency] ? code_currency_label(params[:currency]) : _('Price / Month')
+    end
+
+    if params[:server_profile_template_id]
+      @edit[:new][:server_profile_template_id] = params[:server_profile_template_id]
+    end
+
+    field_changed = params[:form_field_changed] ? true : false
+
+    ENTRY_POINT_TYPES.each do |key, prefix|
+      type_key = "#{prefix[:type]}_entry_point_type".to_sym
+      automation_type_changed = false
+      if params[type_key]
+        automation_type_changed = (params[type_key] != @edit[:new][type_key])
+        # Assigns the new entry_point type when the select box is changed.
+        @edit[:new][type_key] = params[type_key]
+      end
+
+      workflows_edit_key = "#{prefix[:type]}_configuration_script_id".to_sym
+      @edit[:new][workflows_edit_key] = params[workflows_edit_key] if params[workflows_edit_key]
+
+      restore_previous_entry_point(key, type_key) if field_changed && automation_type_changed
+    end
 
     get_form_vars_orchestration if @edit[:new][:st_prov_type] == 'generic_orchestration'
-    fetch_form_vars_ansible_or_ct if %w(generic_ansible_tower generic_container_template).include?(@edit[:new][:st_prov_type])
+    fetch_form_vars_ansible_or_ct if %w[generic_ansible_tower generic_awx generic_terraform_enterprise generic_container_template].include?(@edit[:new][:st_prov_type])
+    fetch_form_vars_ovf_template if @edit[:new][:st_prov_type] == 'generic_ovf_template'
+    fetch_form_vars_server_profile_templates if @edit[:new][:st_prov_type] == 'cisco_intersight'
+  end
+
+  # Method to display previously selected entry_point when automation_type is changed.
+  def restore_previous_entry_point(key, type_key)
+    current_entry_point = @edit[:new][key]
+    previous_type = embedded_automate(params[type_key]) ? embedded_workflow_key : embedded_automate_key
+    @edit[:new][key] = @edit[:new]["#{key}_previous".to_sym][params[type_key].to_sym]
+    @edit[:new]["#{key}_previous".to_sym][previous_type.to_sym] = current_entry_point
+  end
+
+  def code_currency_label(currency)
+    _('Price / Month (in %{currency})') % {:currency => Currency.find(currency).code}
+  end
+
+  def checked_tenants
+    new_id = params[:id].split('-').pop.to_i if params[:id].starts_with?('tn')
+    tenant = Tenant.find(new_id)
+    new_ids = [new_id] + tenant.descendants.pluck(:id)
+    tenant_ids = @edit[:new][:tenant_ids]
+    if params[:check] == '1' # Adding/checking Tenant(s) in the tree for the Catalog Item
+      tenant_ids += new_ids
+    elsif params[:check] == '0' # Unchecking selected Tenant(s)
+      new_ids += tenant.ancestors.pluck(:id)
+      new_ids.each { |t| tenant_ids.delete(t) }
+    end
+    @edit[:new][:tenant_ids] = tenant_ids.sort.uniq
   end
 
   def available_container_managers
@@ -1464,7 +1567,7 @@ class CatalogController < ApplicationController
     ct = ContainerTemplate.find_by(:id => @record.config_info[:provision][:container_template_id]) if @record.config_info[:provision] && @record.config_info[:provision][:container_template_id]
     @edit[:new][:template_id] = ct.try(:id)
     @edit[:new][:manager_id] = ct.try(:ext_management_system).try(:id)
-    available_job_or_container_templates(@edit[:new][:manager_id]) if @edit[:new][:manager_id]
+    available_container_templates(@edit[:new][:manager_id]) if @edit[:new][:manager_id]
   end
 
   def get_form_vars_orchestration
@@ -1489,7 +1592,8 @@ class CatalogController < ApplicationController
         @edit[:new][:manager_id]          = nil
       else
         @edit[:new][:manager_id] = params[:manager_id]
-        available_job_or_container_templates(params[:manager_id]) if %w(generic_ansible_tower generic_container_template).include?(@edit[:new][:st_prov_type])
+        available_job_templates(params[:manager_id]) if @edit[:new][:st_prov_type] == 'generic_ansible_tower' || @edit[:new][:st_prov_type] == 'generic_awx' || @edit[:new][:st_prov_type] == 'generic_terraform_enterprise'
+        available_container_templates(params[:manager_id]) if @edit[:new][:st_prov_type] == 'generic_container_template'
       end
     end
     @edit[:new][:template_id] = params[:template_id] if params[:template_id]
@@ -1503,45 +1607,64 @@ class CatalogController < ApplicationController
   end
 
   def available_orchestration_managers(template_id)
-    @edit[:new][:available_managers] = OrchestrationTemplate.find_by_id(template_id)
-                                       .eligible_managers
-                                       .collect { |m| [m.name, m.id] }
-                                       .sort
+    @edit[:new][:available_managers] = OrchestrationTemplate.find(template_id)
+                                                            .eligible_managers
+                                                            .collect { |m| [m.name, m.id] }
+                                                            .sort
   end
 
   def available_orchestration_templates
     @edit[:new][:available_templates] = OrchestrationTemplate.available
-                                        .collect { |t| [t.name.to_s, t.id] }
-                                        .sort
+                                                             .collect { |t| [t.name.to_s, t.id] }
+                                                             .sort
     @edit[:new][:template_id] = @record.orchestration_template.try(:id)
     @edit[:new][:manager_id] = @record.orchestration_manager.try(:id)
     available_orchestration_managers(@record.orchestration_template.id) if @record.orchestration_template
   end
 
-  def available_job_or_container_templates(manager_id)
-    method = @edit[:new][:st_prov_type] == 'generic_ansible_tower' ? 'configuration_scripts' : 'container_templates'
+  def available_container_templates(manager_id)
+    method = @edit[:new][:st_prov_type] == 'generic_ansible_tower' || @edit[:new][:st_prov_type] == 'generic_awx' || @edit[:new][:st_prov_type] == 'generic_terraform_enterprise' ? 'configuration_scripts' : 'container_templates'
     @edit[:new][:available_templates] =
       ExtManagementSystem.find_by(:id => manager_id).send(method).collect { |t| [t.name, t.id] }.sort
   end
 
-  def available_ansible_tower_managers
-    @edit[:new][:available_managers] =
-      ManageIQ::Providers::AnsibleTower::AutomationManager.all.collect { |t| [t.name, t.id] }.sort
-    @edit[:new][:template_id] = @record.job_template.try(:id)
-    @edit[:new][:manager_id] = @record.job_template.try(:manager).try(:id)
-    available_job_or_container_templates(@edit[:new][:manager_id]) if @edit[:new][:manager_id]
+  def available_job_templates(manager_id)
+    @edit[:new][:available_templates] = []
+    all_job_templates, all_workflow_templates = fetch_all_templates(manager_id)
+    @edit[:new][:available_templates].push(["",
+                                            [["<#{_('Choose a Template')}>",
+                                              :selected => "<#{_('Choose a Template')}>",
+                                              :disabled => "<#{_('Choose a Template')}>",
+                                              :style    => 'display:none']]])
+    @edit[:new][:available_templates].push(["Job Templates", all_job_templates]) if all_job_templates.present?
+    @edit[:new][:available_templates].push(["Workflow Templates", all_workflow_templates]) if all_workflow_templates.present?
+  end
+
+  def fetch_all_templates(manager_id)
+    all_templates = ExtManagementSystem.find_by(:id => manager_id).configuration_scripts.sort_by(&:name)
+    workflow_templates = all_templates.collect { |t| [t.name, t.id] if t.kind_of?(ManageIQ::Providers::AutomationManager::ConfigurationWorkflow) }.compact
+    job_templates = all_templates.collect { |t| [t.name, t.id] if t.kind_of?(ManageIQ::Providers::AutomationManager::ConfigurationScript) }.compact - workflow_templates
+    return job_templates, workflow_templates
+  end
+
+  def available_automation_managers
+    @edit[:new][:available_managers] = @record.available_managers.collect { |t| [t.name, t.id] }.sort
+    @edit[:new][:template_id] = @record.configuration_script.try(:id)
+    @edit[:new][:manager_id] = @record.configuration_script.try(:manager).try(:id)
+    available_job_templates(@edit[:new][:manager_id]) if @edit[:new][:manager_id]
   end
 
   def add_orchestration_template_vars(st)
-    st.orchestration_template = @edit[:new][:template_id].nil? ?
-      nil : OrchestrationTemplate.find_by_id(@edit[:new][:template_id])
-    st.orchestration_manager  = @edit[:new][:manager_id].nil? ?
-      nil : ExtManagementSystem.find_by_id(@edit[:new][:manager_id])
+    st.orchestration_template = @edit[:new][:template_id].nil? ? nil : OrchestrationTemplate.find(@edit[:new][:template_id])
+    st.orchestration_manager  = @edit[:new][:manager_id].nil? ? nil : ExtManagementSystem.find(@edit[:new][:manager_id])
   end
 
-  def add_ansible_tower_job_template_vars(st)
-    st.job_template = @edit[:new][:template_id].nil? ?
-      nil : ConfigurationScript.find_by(:id => @edit[:new][:template_id])
+  def add_configuration_script_vars(st)
+    st.configuration_script = @edit[:new][:template_id].nil? ? nil : ConfigurationScript.find(@edit[:new][:template_id])
+  end
+
+  def add_server_profile_template_vars(service_template)
+    service_template.options[:server_profile_template_id] = @edit[:new][:server_profile_template_id].nil? ? nil : @edit[:new][:server_profile_template_id]
   end
 
   def add_container_template_vars
@@ -1556,7 +1679,7 @@ class CatalogController < ApplicationController
     st_options[:config_info] = {
       :provision => {
         :container_template_id => @edit[:new][:template_id],
-        :dialog_id => @edit[:new][:dialog_id]
+        :dialog_id             => @edit[:new][:dialog_id]
       }
     }
     provision = st_options[:config_info][:provision]
@@ -1570,7 +1693,7 @@ class CatalogController < ApplicationController
     get_form_vars
     if params[:resource_id]
       # adding new service resource, so need to lookup actual vm or service template record and set defaults
-      sr = ServiceTemplate.find_by_id(params[:resource_id])
+      sr = ServiceTemplate.find(params[:resource_id])
       # storing keys that are needed in ui in hash instead of storing an object
       r = {}
       r[:name] = sr.name
@@ -1591,11 +1714,11 @@ class CatalogController < ApplicationController
 
       # push a new resource into highest existing/populated group
       @edit[:new][:rsc_groups].each_with_index do |g, i|
-        if g.empty?
-          id = i == 0 ? 0 : i - 1
-          @edit[:new][:rsc_groups][id].push(r) unless @edit[:new][:rsc_groups][id].include?(r)
-          break
-        end
+        next if g.present?
+
+        id = i.zero? ? 0 : i - 1
+        @edit[:new][:rsc_groups][id].push(r) unless @edit[:new][:rsc_groups][id].include?(r)
+        break
       end
       @edit[:new][:provision_order] = recalculate_provision_order
     else
@@ -1603,17 +1726,17 @@ class CatalogController < ApplicationController
       params.each do |var, val|
         vars = var.split("_")
         if vars[0] == "gidx"
-          rid = from_cid(vars[1])
+          rid = vars[1]
           # push a new resource into highest existing/populated group
           @group_changed = false
           @edit[:new][:rsc_groups].each_with_index do |groups, i|
             groups.each do |g|
-              if g[:id] == rid
-                @edit[:new][:rsc_groups][val.to_i - 1].push(g)
-                @edit[:new][:rsc_groups][i].delete(g)
-                @group_changed = true
-                break
-              end
+              next unless g[:id].to_i == rid.to_i
+
+              @edit[:new][:rsc_groups][val.to_i - 1].push(g)
+              @edit[:new][:rsc_groups][i].delete(g)
+              @group_changed = true
+              break
             end
             break if @group_changed
           end
@@ -1624,8 +1747,7 @@ class CatalogController < ApplicationController
           @group_idx = true
         else
           param_name = [vars[0], vars[1]].join('_')
-          keys = ["provision_index", "scaling_max", "scaling_min", "start_action",
-                  "start_delay", "stop_action", "stop_delay"]
+          keys = %w[provision_index scaling_max scaling_min start_action start_delay stop_action stop_delay]
           if keys.include?(param_name)
             @edit[:new][:rsc_groups].each_with_index do |groups, i|
               groups.sort_by { |gr| gr[:name].downcase }.each_with_index do |g, k|
@@ -1647,7 +1769,7 @@ class CatalogController < ApplicationController
                     g[key] = param_value.to_i if param_value
                   when :provision_index
                     if param_value
-                      p_index = @edit[:new][:rsc_groups].flatten.collect { |r| r[:provision_index].to_i }.sort
+                      p_index = @edit[:new][:rsc_groups].flatten.collect { |rg| rg[:provision_index].to_i }.sort
 
                       # if index that came in is being used more than once
                       if p_index.count(g[key]) > 1
@@ -1656,11 +1778,11 @@ class CatalogController < ApplicationController
                         # if index being changed occur once
                         # rearrange all provision order values
                         rearrange_provision_order(@edit[:new][:rsc_groups], g[key])
-                        if param_value.to_i > p_index.last
-                          g[key] = p_index.last
-                        else
-                          g[key] = param_value.to_i - 1
-                        end
+                        g[key] = if param_value.to_i > p_index.last
+                                   p_index.last
+                                 else
+                                   param_value.to_i - 1
+                                 end
                       end
                       # recalculate values for pull-down
                       @edit[:new][:provision_order] = recalculate_provision_order
@@ -1706,17 +1828,36 @@ class CatalogController < ApplicationController
     ROOT_NODE_MODELS[tree]
   end
 
-  def get_node_info_handle_root_node
-    typ = root_node_model(x_active_tree)
-    @no_checkboxes = true if x_active_tree == :svcs_tree
-    if x_active_tree == :svccat_tree
-      service_template_list([:displayed, :with_existent_service_template_catalog_id], :no_checkboxes => true)
-    else
-      options = {:model => typ.constantize}
-      options[:named_scope] = :orderable if x_active_tree == :ot_tree
-      process_show_list(options)
+  def root_node_right_cell_text(tree)
+    case tree
+    when :svccat_tree
+      _('All Services')
+    when :sandt_tree
+      _('All Catalog Items')
+    when :ot_tree
+      _('All Orchestration Templates')
+    when :stcat_tree
+      _('All Catalogs')
     end
-    @right_cell_text = _("All %{models}") % {:models => ui_lookup(:models => typ)}
+  end
+
+  def get_node_info_handle_root_node
+    if x_active_tree == :svccat_tree
+      service_template_list(%i[displayed with_existent_service_template_catalog_id public_service_templates], :no_checkboxes => true)
+    else
+      process_show_list(get_show_list_options(root_node_model(x_active_tree)))
+    end
+    @right_cell_text = root_node_right_cell_text(x_active_tree)
+  end
+
+  def get_show_list_options(typ)
+    options = {:model => typ&.constantize}
+    if x_active_tree == :sandt_tree
+      options[:named_scope] = :public_service_templates
+    elsif x_active_tree == :ot_tree
+      options[:named_scope] = :orderable
+    end
+    options
   end
 
   def get_node_info_handle_ot_folder_nodes
@@ -1729,73 +1870,88 @@ class CatalogController < ApplicationController
   end
 
   def get_node_info_handle_simple_leaf_node(id)
-    show_record(from_cid(id))
+    show_record(id)
     @right_cell_text = _("%{model} \"%{name}\"") % {:name => @record.name, :model => ui_lookup(:model => TreeBuilder.get_model_for_prefix(@nodetype))}
   end
 
   def get_node_info_handle_unassigned_node
-    scope = [[:without_service_template_catalog_id]]
+    scope = [:public_service_templates, [:without_service_template_catalog_id]]
     service_template_list(scope, :no_order_button => true)
     @right_cell_text = _("Services in Catalog \"Unassigned\"")
   end
 
   def get_node_info_handle_stc_node(id)
-    if x_active_tree == :sandt_tree
-      # catalog items accordion also shows the non-"Display in Catalog" items
-      scope = [[:with_service_template_catalog_id, from_cid(id)]]
-    else
-      scope = [:displayed, [:with_service_template_catalog_id, from_cid(id)]]
-    end
+    scope = if x_active_tree == :sandt_tree
+              # catalog items accordion also shows the non-"Display in Catalog" items
+              [:public_service_templates, [:with_service_template_catalog_id, id]]
+            else
+              [:displayed, [:with_service_template_catalog_id, id]]
+            end
     service_template_list(scope, :no_order_button => true)
-    stc = ServiceTemplateCatalog.find(from_cid(id))
+    stc = ServiceTemplateCatalog.find(id)
     @right_cell_text = _("Services in Catalog \"%{name}\"") % {:name => stc.name}
   end
 
   def get_node_info_handle_leaf_node_stcat(id)
-    @record = ServiceTemplateCatalog.find(from_cid(id))
-    @record_service_templates = Rbac.filtered(@record.service_templates)
+    @record = ServiceTemplateCatalog.find(id)
+    @record_service_templates = Rbac.filtered(@record.service_templates, :named_scope => :public_service_templates)
     typ = TreeBuilder.get_model_for_prefix(@nodetype)
     @right_cell_text = _("%{model} \"%{name}\"") % {:name => @record.name, :model => ui_lookup(:model => typ)}
   end
 
   def get_node_info_handle_leaf_node_ot(id)
-    @record = OrchestrationTemplate.find(from_cid(id))
+    @record = OrchestrationTemplate.find(id)
     @right_cell_text = _("%{model} \"%{name}\"") % {:name  => @record.name,
                                                     :model => ui_lookup(:model => @record.class.name)}
   end
 
   def get_node_info_handle_leaf_node(id)
-    show_record(from_cid(id))
+    show_record(id)
     if @record.atomic? && need_prov_dialogs?(@record.prov_type)
-      @miq_request = MiqRequest.find(@record.service_resources[0].resource_id)
-      prov_set_show_vars
+      @miq_request = MiqRequest.find_by(:id => @record.service_resources[0].resource_id) if @record.service_resources[0]&.resource_id
+      if @miq_request
+        prov_set_show_vars
+      else
+        @options   = nil
+        @no_wf_msg = _("Request is missing for selected item")
+      end
     end
-    unless @record.prov_type == "generic_ansible_playbook"
+    unless @record.prov_type == "generic_ansible_playbook" || @record.prov_type == "generic_terraform_template"
       @sb[:dialog_label]       = _("No Dialog")
       @sb[:fqname]             = nil
       @sb[:reconfigure_fqname] = nil
       @sb[:retire_fqname]      = nil
       @record.resource_actions.each do |ra|
         d = Dialog.where(:id => ra.dialog_id).first
+
+        # To display the automation_type and its entry point values in summary page.
+        entry_point = resource_action_entry_point(ra)
+
         @sb[:dialog_label] = d.label if d
         case ra.action.downcase
         when 'provision'
-          @sb[:fqname] = ra.fqname
+          @sb[:fqname] = entry_point[:name]
+          @sb[:provision_entry_point_type] = entry_point[:type]
+          @sb[:provision_configuration_script_id] = entry_point[:configuration_script_id]
         when 'reconfigure'
-          @sb[:reconfigure_fqname] = ra.fqname
+          @sb[:reconfigure_fqname] = entry_point[:name]
+          @sb[:reconfigure_entry_point_type] = entry_point[:type]
+          @sb[:reconfigure_configuration_script_id] = entry_point[:configuration_script_id]
         when 'retirement'
-          @sb[:retire_fqname] = ra.fqname
+          @sb[:retire_fqname] = entry_point[:name]
+          @sb[:retire_entry_point_type] = entry_point[:type]
+          @sb[:retire_configuration_script_id] = entry_point[:configuration_script_id]
         end
       end
       # saving values of ServiceTemplate catalog id and resource that are needed in view to build the link
       @sb[:stc_nodes] = {}
       @record.service_resources.each do |r|
         st = ServiceTemplate.find_by(:id => r.resource_id)
-        @sb[:stc_nodes][r.resource_id] = st.service_template_catalog_id ? st.service_template_catalog_id : "Unassigned" unless st.nil?
+        @sb[:stc_nodes][r.resource_id] = st.service_template_catalog_id || "Unassigned" unless st.nil?
       end
     end
     if params[:action] == "x_show"
-      prefix = @record.service_template_catalog_id ? "stc-#{to_cid(@record.service_template_catalog_id)}" : "-Unassigned"
+      prefix = @record.service_template_catalog_id ? "stc-#{@record.service_template_catalog_id}" : "-Unassigned"
       self.x_node = "#{prefix}_#{params[:id]}"
     end
     typ = x_active_tree == :svccat_tree ? "Service" : TreeBuilder.get_model_for_prefix(@nodetype)
@@ -1807,19 +1963,18 @@ class CatalogController < ApplicationController
     @explorer ||= true
     @nodetype, id = parse_nodetype_and_id(valid_active_node(treenodeid))
     # saving this so it can be used while adding buttons/groups in buttons editor
-    @sb[:applies_to_id] = from_cid(id)
-    tree_nodes = treenodeid.split('_')
-    if tree_nodes.length >= 3 && tree_nodes[2].split('-').first == "xx"
+    @sb[:applies_to_id] = id
+    if %w[cb cbg].include?(@nodetype)
       # buttons folder or nodes under that were clicked
       build_resolve_screen
       buttons_get_node_info(treenodeid)
     else
       @sb[:buttons_node] = false
-      if %w(Vm MiqTemplate ServiceResource).include?(TreeBuilder.get_model_for_prefix(@nodetype))
+      if %w[Vm MiqTemplate ServiceResource].include?(TreeBuilder.get_model_for_prefix(@nodetype))
         get_node_info_handle_simple_leaf_node(id)
       elsif x_node == "root"
         get_node_info_handle_root_node
-      elsif %w(xx-otcfn xx-othot xx-otazu xx-otvnf xx-otvap).include?(x_node)
+      elsif %w[xx-otcfn xx-othot xx-otazu xx-otazs xx-otvnf xx-otvap xx-otovf].include?(x_node)
         get_node_info_handle_ot_folder_nodes
       elsif x_active_tree == :stcat_tree
         get_node_info_handle_leaf_node_stcat(id)
@@ -1833,7 +1988,6 @@ class CatalogController < ApplicationController
         get_node_info_handle_leaf_node(id)
       end
     end
-    x_history_add_item(:id => treenodeid, :text => @right_cell_text)
     {:view => @view, :pages => @pages}
   end
 
@@ -1847,80 +2001,294 @@ class CatalogController < ApplicationController
     ct_details
   end
 
+  def content_library_type?
+    prov_type = if params[:st_prov_type]
+                  params[:st_prov_type]
+                elsif @record
+                  @record.prov_type
+                elsif @edit
+                  @edit[:new][:st_prov_type]
+                end
+    prov_type == 'generic_ovf_template'
+  end
+
+  def content_library?
+    content_library = content_library_type?
+    @current_region = MiqRegion.my_region.region if content_library
+    content_library
+  end
+  helper_method :content_library?
+
+  def fetch_ovf_template_details
+    ovf_template_details = {}
+    ovf_template_details[:provisioning] = {}
+    provision = @record.config_info[:provision]
+
+    rp = ResourcePool.find_by(:id => provision[:resource_pool_id])
+    ovf_template_details[:provisioning][:resource_pool_name] = rp.try(:name)
+
+    dc = Datacenter.find_by(:id => provision[:datacenter_id])
+    ovf_template_details[:provisioning][:datacenter_name] = dc.try(:name)
+
+    host = Host.find_by(:id => provision[:host_id])
+    ovf_template_details[:provisioning][:host_name] = host.try(:name)
+
+    storage = Storage.find_by(:id => provision[:storage_id])
+    ovf_template_details[:provisioning][:storage_name] = storage.try(:name)
+
+    network = Lan.find_by(:id => provision[:network_id])
+    ovf_template_details[:provisioning][:network_name] = network.try(:name)
+
+    ovf_template_details[:provisioning][:disk_format] = provision[:disk_format]
+
+    folder =
+      if dc
+        dc.folders.find { |f| f.name == 'vm' }.try(:ems_ref)
+      else
+        EmsFolder.find_by(:id => provision[:ems_folder_id]).try(:name)
+      end
+    ovf_template_details[:provisioning][:ems_folder_name] = folder if folder
+
+    ovf_template = ManageIQ::Providers::Vmware::InfraManager::OrchestrationTemplate.find_by(:id => provision[:ovf_template_id])
+    ovf_template_details[:provisioning][:ovf_template_name] = ovf_template.try(:name)
+
+    ovf_template_details
+  end
+
+  def fetch_form_vars_ovf_template
+    @edit[:new][:accept_all_eula] = params[:accept_all_eula] == "1" if params[:accept_all_eula]
+    copy_params_if_present(@edit[:new], params, %i[datacenter_id disk_format ems_folder_id host_id network_id ovf_template_id resource_pool_id storage_id vm_name])
+    form_available_vars_ovf_template if params[:st_prov_type] || params[:ovf_template_id]
+  end
+
+  def form_available_vars_ovf_template
+    @edit[:available_ovf_templates] = ManageIQ::Providers::Vmware::InfraManager::OrchestrationTemplate.all
+                                                                                                      .collect { |m| [m.name, m.id] }
+                                                                                                      .sort
+    @edit[:disk_formats] = {
+      "thick"            => _("thick - Lazy Zero"),
+      "eagerZeroedThick" => _("thick - Eager Zero"),
+      "thin"             => _("thin")
+    }
+
+    # set from existing record
+    if @record.try(:id) && params[:button] != "save"
+      options = @record.config_info[:provision]
+      @edit[:new][:ovf_template_id] ||= options[:ovf_template_id]
+      @edit[:new][:datacenter_id] ||= options[:datacenter_id]
+      @edit[:new][:vm_name] ||= options[:vm_name]
+      @edit[:new][:resource_pool_id] ||= options[:resource_pool_id]
+      @edit[:new][:ems_folder_id] ||= options[:ems_folder_id]
+      @edit[:new][:host_id] ||= options[:host_id]
+      @edit[:new][:storage_id] ||= options[:storage_id]
+      @edit[:new][:disk_format] ||= options[:disk_format]
+      @edit[:new][:network_id] ||= options[:network_id]
+      @edit[:new][:accept_all_eula] ||= options[:accept_all_eula] == true
+      @edit[:new][:fqname] ||= options[:fqname]
+    end
+
+    if @edit[:new][:ovf_template_id]
+      ovf_template = ManageIQ::Providers::Vmware::InfraManager::OrchestrationTemplate.find_by(:id => @edit[:new][:ovf_template_id])
+      @edit[:available_datacenters] = ovf_template.allowed_datacenters
+                                                  .collect { |m| [m.last, m.first] }
+                                                  .sort
+      @edit[:available_resource_pools] = ovf_template.allowed_resource_pools
+                                                     .collect { |m| [m.last, m.first] }
+                                                     .sort
+      @edit[:available_folders] = ovf_template.allowed_folders
+                                              .collect { |m| [m.last, m.first] }
+                                              .sort
+      @edit[:available_hosts] = ovf_template.allowed_hosts
+                                            .collect { |h| [h.name, h.id] }
+                                            .sort
+      @edit[:available_storages] = ovf_template.allowed_storages
+                                               .collect { |s| [s.name, s.id] }
+                                               .sort
+      @edit[:available_vlans] = ovf_template.allowed_vlans
+                                            .collect { |v| [v.last, v.first] }
+                                            .sort
+    else
+      @edit[:available_resource_pools] = []
+      @edit[:available_datacenters]    = []
+      @edit[:available_folders]        = []
+      @edit[:available_hosts]          = []
+      @edit[:available_storages]       = []
+      @edit[:available_vlans]          = []
+      @edit[:new][:resource_pool_id]   = nil
+      @edit[:new][:datacenter_id]      = nil
+      @edit[:new][:host_id]            = nil
+      @edit[:new][:storage_id]         = nil
+      @edit[:new][:disk_format]        = nil
+      @edit[:new][:network_id]         = nil
+      @edit[:new][:ems_folder_id]      = nil
+    end
+  end
+
+  def set_record_vars_ovf_template
+    options = {}
+    options[:name] = @edit[:new][:name]
+    options[:description] = @edit[:new][:description]
+    options[:long_description] = @edit[:new][:display] ? @edit[:new][:long_description] : nil
+    options[:provision_cost] = @edit[:new][:provision_cost]
+    options[:display] = @edit[:new][:display]
+    options[:zone_id] = @edit[:new][:zone_id] if @edit[:new][:zone_id]
+    options[:additional_tenants] = Tenant.where(:id => @edit[:new][:tenant_ids]) if @edit[:new][:tenant_ids]
+    options[:service_template_catalog_id] = @edit[:new][:catalog_id].nil? ? nil : @edit[:new][:catalog_id]
+    provision = {}
+    provision[:ovf_template_id] = @edit[:new][:ovf_template_id] if @edit[:new][:ovf_template_id]
+    provision[:datacenter_id] = @edit[:new][:datacenter_id] if @edit[:new][:datacenter_id]
+    provision[:vm_name] = @edit[:new][:vm_name] if @edit[:new][:vm_name]
+    provision[:resource_pool_id] = @edit[:new][:resource_pool_id] if @edit[:new][:resource_pool_id]
+    provision[:ems_folder_id] = @edit[:new][:ems_folder_id] if @edit[:new][:ems_folder_id]
+    provision[:host_id] = @edit[:new][:host_id] if @edit[:new][:host_id]
+    provision[:storage_id] = @edit[:new][:storage_id] if @edit[:new][:storage_id]
+    provision[:disk_format] = @edit[:new][:disk_format] if @edit[:new][:disk_format]
+    provision[:network_id] = @edit[:new][:network_id] if @edit[:new][:network_id]
+    provision[:accept_all_eula] = @edit[:new][:accept_all_eula] if @edit[:new][:accept_all_eula]
+    provision[:fqname] = @edit[:new][:fqname] if @edit[:new][:fqname]
+    options[:config_info] = {:provision => provision}
+    options
+  end
+
+  def need_ovf_template_locals?
+    x_active_tree == :sandt_tree &&
+      TreeBuilder.get_model_for_prefix(@nodetype) == "ServiceTemplate" &&
+      @record.prov_type == "generic_ovf_template"
+  end
+
+  def validate_vm_name
+    ems_id = ManageIQ::Providers::Vmware::InfraManager::OrchestrationTemplate.find_by(:id => @edit[:new][:ovf_template_id]).ems_id
+    add_flash(_("VM Name already exists, Please select a different VM Name"), :error) if VmOrTemplate.find_by(:name => @edit[:new][:vm_name], :ems_id => ems_id).present?
+  end
+
+  def fetch_form_vars_server_profile_templates
+    form_available_server_profile_templates if params[:st_prov_type]
+  end
+
+  def form_available_server_profile_templates
+    @edit[:available_server_profile_templates] = PhysicalServerProfileTemplate.all.collect { |m| [m.name, m.id] }.sort
+  end
+
+  def automate_tree_needed?
+    options = %i[display template_id manager_id ovf_template_id datacenter_id resource_pool_id ems_folder_id host_id storage_id]
+    options.any? { |x| params[x] }
+  end
+  helper_method :automate_tree_needed?
+
   def fetch_playbook_details
     playbook_details = {}
     provision = @record.config_info[:provision]
-    playbook_details[:provisioning] = {}
-    playbook_details[:provisioning][:repository] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::ConfigurationScriptSource, provision[:repository_id])
-    playbook_details[:provisioning][:playbook] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::Playbook, provision[:playbook_id])
-    playbook_details[:provisioning][:machine_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::MachineCredential, provision[:credential_id])
-    playbook_details[:provisioning][:network_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::NetworkCredential, provision[:network_credential_id]) if provision[:network_credential_id]
-    playbook_details[:provisioning][:cloud_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::CloudCredential, provision[:cloud_credential_id]) if provision[:cloud_credential_id]
+    provisioning_details = {}
+    provisioning_details[:repository] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::ConfigurationScriptSource, provision[:repository_id])
+    provisioning_details[:playbook] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::Playbook, provision[:playbook_id])
+    provisioning_details[:machine_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::MachineCredential, provision[:credential_id])
+    provisioning_details[:network_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::NetworkCredential, provision[:network_credential_id]) if provision[:network_credential_id]
+    provisioning_details[:cloud_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::CloudCredential, provision[:cloud_credential_id]) if provision[:cloud_credential_id]
+    provisioning_details[:vault_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::VaultCredential, provision[:vault_credential_id]) if provision[:vault_credential_id]
+    provisioning_details[:execution_ttl] = provision[:execution_ttl]
+    provisioning_details[:verbosity] = provision[:verbosity]
+    provisioning_details[:log_output] = provision[:log_output]
+    provisioning_details[:become_enabled] = provision[:become_enabled] == true ? _('Yes') : _('No')
+    playbook_details[:provisioning] = provisioning_details
     fetch_dialog(playbook_details, provision[:dialog_id], :provisioning)
-    playbook_details[:provisioning][:execution_ttl] = provision[:execution_ttl]
-    playbook_details[:provisioning][:verbosity] = provision[:verbosity]
-    playbook_details[:provisioning][:log_output] = provision[:log_output]
-    playbook_details[:provisioning][:become_enabled] = provision[:become_enabled] == true ? _('Yes') : _('No')
 
     if @record.config_info[:retirement]
       retirement = @record.config_info[:retirement]
-      playbook_details[:retirement] = {}
-      playbook_details[:retirement][:remove_resources] = retirement[:remove_resources]
+      retirement_details = {}
+      retirement_details[:remove_resources] = retirement[:remove_resources]
       if retirement[:repository_id]
-        playbook_details[:retirement][:repository] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::ConfigurationScriptSource, retirement[:repository_id])
-        playbook_details[:retirement][:playbook] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::Playbook, retirement[:playbook_id])
-        playbook_details[:retirement][:machine_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::MachineCredential, retirement[:credential_id])
-        playbook_details[:retirement][:network_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::NetworkCredential, retirement[:network_credential_id]) if retirement[:network_credential_id]
-        playbook_details[:retirement][:cloud_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::CloudCredential, retirement[:cloud_credential_id]) if retirement[:cloud_credential_id]
+        retirement_details[:repository] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::ConfigurationScriptSource, retirement[:repository_id])
+        retirement_details[:playbook] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::Playbook, retirement[:playbook_id])
+        retirement_details[:machine_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::MachineCredential, retirement[:credential_id])
+        retirement_details[:network_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::NetworkCredential, retirement[:network_credential_id]) if retirement[:network_credential_id]
+        retirement_details[:cloud_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::CloudCredential, retirement[:cloud_credential_id]) if retirement[:cloud_credential_id]
+        retirement_details[:vault_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedAnsible::AutomationManager::VaultCredential, retirement[:vault_credential_id]) if retirement[:vault_credential_id]
       end
-      playbook_details[:retirement][:execution_ttl] = retirement[:execution_ttl]
-      playbook_details[:retirement][:verbosity] = retirement[:verbosity]
-      playbook_details[:retirement][:log_output] = retirement[:log_output]
-      playbook_details[:retirement][:become_enabled] = retirement[:become_enabled] == true ? _('Yes') : _('No')
+      retirement_details[:execution_ttl] = retirement[:execution_ttl]
+      retirement_details[:verbosity] = retirement[:verbosity]
+      retirement_details[:log_output] = retirement[:log_output]
+      retirement_details[:become_enabled] = retirement[:become_enabled] == true ? _('Yes') : _('No')
+      playbook_details[:retirement] = retirement_details
     end
     playbook_details
   end
 
+  def fetch_terraform_template_details
+    terraform_template_details = {}
+    provision = @record.config_info[:provision]
+    provisioning_details = {}
+    provisioning_details[:repository] = fetch_name_from_object(ManageIQ::Providers::EmbeddedTerraform::AutomationManager::ConfigurationScriptSource, provision[:repository_id])
+    provisioning_details[:template] = fetch_name_from_object(ManageIQ::Providers::EmbeddedTerraform::AutomationManager::ConfigurationScriptPayload, provision[:configuration_script_payload_id])
+    provisioning_details[:credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedTerraform::AutomationManager::Credential, provision[:credential_id])
+    provisioning_details[:network_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedTerraform::AutomationManager::NetworkCredential, provision[:network_credential_id]) if provision[:network_credential_id]
+    provisioning_details[:execution_ttl] = provision[:execution_ttl]
+    provisioning_details[:verbosity] = provision[:verbosity]
+    provisioning_details[:log_output] = provision[:log_output]
+    provisioning_details[:become_enabled] = provision[:become_enabled] == true ? _('Yes') : _('No')
+    terraform_template_details[:provisioning] = provisioning_details
+    fetch_dialog(terraform_template_details, provision[:dialog_id], :provisioning)
+
+    # NOTE: This code is commented out since the retirement tab is not needed yet
+    # if @record.config_info[:retirement]
+    #   retirement = @record.config_info[:retirement]
+    #   terraform_template_details[:retirement] = {}
+    #   terraform_template_details[:retirement][:remove_resources] = retirement[:remove_resources]
+    #   if retirement[:repository_id]
+    #     terraform_template_details[:retirement][:repository] = fetch_name_from_object(ManageIQ::Providers::EmbeddedTerraform::AutomationManager::ConfigurationScriptSource, retirement[:repository_id])
+    #     terraform_template_details[:retirement][:template] = fetch_name_from_object(ManageIQ::Providers::EmbeddedTerraform::AutomationManager::ConfigurationScriptPayload, retirement[:configuration_script_payload_id])
+    #     terraform_template_details[:retirement][:credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedTerraform::AutomationManager::Credential, retirement[:credential_id])
+    #     terraform_template_details[:retirement][:network_credential] = fetch_name_from_object(ManageIQ::Providers::EmbeddedTerraform::AutomationManager::NetworkCredential, retirement[:network_credential_id]) if retirement[:network_credential_id]
+    #   end
+    #   terraform_template_details[:retirement][:execution_ttl] = retirement[:execution_ttl]
+    #   terraform_template_details[:retirement][:verbosity] = retirement[:verbosity]
+    #   terraform_template_details[:retirement][:log_output] = retirement[:log_output]
+    #   terraform_template_details[:retirement][:become_enabled] = retirement[:become_enabled] == true ? _('Yes') : _('No')
+    # end
+    terraform_template_details
+  end
+
   def fetch_dialog(playbook_details, dialog_id, key)
     return nil if dialog_id.nil?
+
     dialog = Dialog.find_by(:id => dialog_id)
     return nil if dialog.nil?
+
     playbook_details[key][:dialog] = dialog.name
     playbook_details[key][:dialog_id] = dialog.id
   end
 
   def open_parent_nodes(record)
-    existing_node = nil                      # Init var
+    existing_node = nil # Init var
 
     if record.kind_of?(OrchestrationTemplate)
       parents = [:id => template_to_node_name(record)]
     else
       # Check for parent nodes missing from vandt tree and return them if any
-      parent_rec = ServiceTemplateCatalog.find_by_id(record.service_template_catalog_id)
-      if parent_rec.nil?
-        parents = [parent_rec, :id => "-Unassigned"]
-      else
-        parents = [parent_rec, :id => "stc-#{to_cid(record.service_template_catalog_id)}"]
-      end
+      parent_rec = ServiceTemplateCatalog.find_by(:id => record.service_template_catalog_id) # nil is a valid value
+      parents = if parent_rec.nil?
+                  [parent_rec, :id => "-Unassigned"]
+                else
+                  [parent_rec, :id => "stc-#{record.service_template_catalog_id}"]
+                end
     end
     # Go up thru the parents and find the highest level unopened, mark all as opened along the way
     unless parents.empty? || # Skip if no parents or parent already open
            x_tree[:open_nodes].include?(parents.last[:id])
       parents.reverse_each do |p|
-        unless p.nil?
-          p_node = x_build_node_id(p, :full_ids => true)
-          unless x_tree[:open_nodes].include?(p_node)
-            x_tree[:open_nodes].push(p_node)
-            existing_node = p_node
-          end
+        next if p.nil?
+
+        p_node = x_build_node_id(p)
+        unless x_tree[:open_nodes].include?(p_node)
+          x_tree[:open_nodes].push(p_node)
+          existing_node = p_node
         end
       end
     end
     add_nodes = {:key => existing_node, :nodes => tree_add_child_nodes(existing_node)} if existing_node
     self.x_node = if params[:rec_id]
-                    "stc-#{to_cid(record.service_template_catalog_id)}_st-#{to_cid(record.id)}"
+                    "stc-#{record.service_template_catalog_id}_st-#{record.id}"
                   elsif record.kind_of?(OrchestrationTemplate)
-                    "xx-#{parents.last[:id]}_ot-#{to_cid(record.id)}"
+                    "xx-#{parents.last[:id]}_ot-#{record.id}"
                   else
                     "#{parents.last[:id]}_#{params[:id]}"
                   end
@@ -1933,22 +2301,21 @@ class CatalogController < ApplicationController
     @explorer = true
 
     # FIXME: make this functional
-    get_node_info(x_node) unless @tagging || @edit
+    get_node_info(x_node) unless @tagging || @edit || @in_a_form
     replace_trees   = @replace_trees   if @replace_trees    # get_node_info might set this
     right_cell_text = @right_cell_text if @right_cell_text  # get_node_info might set this too
 
-    trees = build_replaced_trees(replace_trees, %i(sandt svccat stcat ot))
+    trees = build_replaced_trees(replace_trees, %i[sandt svccat stcat ot])
 
     type, _id = parse_nodetype_and_id(x_node)
 
-    allowed_records = %w(MiqTemplate OrchestrationTemplate Service ServiceTemplate ServiceTemplateCatalog)
-    record_showing = (type && allowed_records.include?(TreeBuilder.get_model_for_prefix(type)) && !@view) ||
-                     params[:action] == "x_show"
+    allowed_records = %w[MiqTemplate OrchestrationTemplate Service ServiceTemplate ServiceTemplateCatalog]
+    record_showing = (type && allowed_records.include?(TreeBuilder.get_model_for_prefix(type)) && @record.present?) || params[:action] == "x_show"
     # Clicked on right cell record, open the tree enough to show the node, if not already showing
     if params[:action] == "x_show" && x_active_tree != :stcat_tree &&
        @record && # Showing a record
-       !@in_a_form                               # Not in a form
-      add_nodes = open_parent_nodes(@record)      # Open the parent nodes of selected record, if not open
+       !@in_a_form # Not in a form
+      add_nodes = open_parent_nodes(@record) # Open the parent nodes of selected record, if not open
     end
 
     v_tb =
@@ -1958,17 +2325,14 @@ class CatalogController < ApplicationController
           if TreeBuilder.get_model_for_prefix(@nodetype) == "MiqTemplate"
             build_toolbar("summary_view_tb")
           end
-        else
-          build_toolbar("x_gtl_view_tb") if !%w(xx csb cbg cb).include?(@nodetype) && !@in_a_form
+        elsif !%w[xx csb cbg cb].include?(@nodetype) && !@in_a_form
+          build_toolbar("download_view_tb")
         end
       when :svccat_tree, :stcat_tree, :ot_tree
-        build_toolbar("x_gtl_view_tb") unless record_showing || @in_a_form
+        build_toolbar("download_view_tb") unless record_showing || @in_a_form
       end
 
-    unless @in_a_form
-      c_tb = build_toolbar(center_toolbar_filename) unless x_active_tree == :svccat_tree
-      h_tb = build_toolbar("x_history_tb")
-    end
+    c_tb = build_toolbar(center_toolbar_filename) unless x_active_tree == :svccat_tree && @in_a_form
 
     presenter ||= ExplorerPresenter.right_cell(
       :active_tree => x_active_tree,
@@ -1984,61 +2348,58 @@ class CatalogController < ApplicationController
     presenter[:right_cell_text] = right_cell_text
 
     # Replace right cell divs
-    presenter.update(:main_div,
-      if @tagging
-        action_url = x_active_tree == :ot_tree ? "ot_tags_edit" : "st_tags_edit"
-        r[:partial => "layouts/x_tagging", :locals => {:action_url => action_url}]
-      elsif action && ["at_st_new", "st_new"].include?(action)
-        r[:partial => ansible_playbook? ? "st_angular_form" : "st_form"]
-      elsif action && ["st_catalog_new", "st_catalog_edit"].include?(action)
-        r[:partial => "stcat_form"]
-      elsif action == "dialog_provision"
-        r[:partial => "shared/dialogs/dialog_provision", :locals => options[:dialog_locals]]
-      elsif %w(ot_add ot_copy ot_edit service_dialog_from_ot).include?(action)
-        r[:partial => action]
-      elsif record_showing
-        if TreeBuilder.get_model_for_prefix(@nodetype) == "MiqTemplate"
-          r[:partial => "layouts/textual_groups_generic"]
-        elsif @sb[:buttons_node]
-          r[:partial => "shared/buttons/ab_list"]
-        else
-          template_locals = {:controller => "catalog"}
-          template_locals.merge!(fetch_playbook_details) if need_ansible_locals?
-          template_locals.merge!(fetch_ct_details) if need_container_template_locals?
-
-          r[:partial => "catalog/#{x_active_tree}_show", :locals => template_locals]
-        end
-      elsif @sb[:buttons_node]
-        r[:partial => "shared/buttons/ab_list"]
-      else
-        r[:partial => "layouts/x_gtl"]
-      end
-    )
-
-    presenter[:clear_gtl_list_grid] = @gtl_type && @gtl_type != 'list'
+    content = if @tagging
+                action_url = x_active_tree == :ot_tree ? "ot_tags_edit" : "st_tags_edit"
+                r[:partial => "layouts/x_tagging", :locals => {:action_url => action_url}]
+              elsif action && %w[at_st_new st_new].include?(action) && terraform_template_type?
+                r[:partial => "tt_react_form"]
+              elsif action && %w[at_st_new st_new].include?(action)
+                r[:partial => ansible_playbook_type? ? "st_angular_form" : "st_form"]
+              elsif action && %w[ownership].include?(action)
+                r[:partial => @refresh_partial]
+              elsif action && %w[st_catalog_new st_catalog_edit].include?(action)
+                r[:partial => "stcat_form"]
+              elsif action == "dialog_provision"
+                r[:partial => "shared/dialogs/dialog_provision", :locals => options[:dialog_locals]]
+              elsif %w[ot_add ot_copy ot_edit service_dialog_from_ot copy_catalog].include?(action)
+                r[:partial => action]
+              elsif record_showing
+                if TreeBuilder.get_model_for_prefix(@nodetype) == "MiqTemplate"
+                  r[:partial => "layouts/textual_groups_generic"]
+                elsif @sb[:buttons_node]
+                  r[:partial => "shared/buttons/ab_list"]
+                else
+                  template_locals = {:controller => "catalog"}
+                  template_locals.merge!(fetch_playbook_details) if need_ansible_locals?
+                  template_locals.merge!(fetch_terraform_template_details) if need_terraform_locals?
+                  template_locals.merge!(fetch_ct_details) if need_container_template_locals?
+                  template_locals.merge!(fetch_ovf_template_details) if need_ovf_template_locals?
+                  r[:partial => "catalog/#{x_active_tree}_show", :locals => template_locals]
+                end
+              elsif @sb[:buttons_node]
+                r[:partial => "shared/buttons/ab_list"]
+              else
+                r[:partial => "layouts/x_gtl"]
+              end
+    presenter.update(:main_div, content)
 
     # have to make Catalog Items accordion active incase link on Catalog show screen was pressed
 
     # Decide whether to show paging controls
     if @tagging
       presenter.hide(:toolbar).show(:paging_div)
-      action_url = x_active_tree == :ot_tree ? "ot_tags_edit" : "st_tags_edit"
-      locals = {
-        :record_id           => @edit[:object_ids][0],
-        :action_url          => action_url,
-        :force_cancel_button => true,
-        :ajax_buttons        => true
-      }
-      presenter.show(:form_buttons_div).hide(:pc_div_1)
-      presenter.update(:form_buttons_div, r[:partial => "layouts/x_edit_buttons", :locals => locals])
+      presenter.show(:form_buttons_div).remove_paging
     elsif record_showing || @in_a_form || @sb[:buttons_node] ||
           (@pages && (@items_per_page == ONE_MILLION || @pages[:items] == 0))
-      if ['button_edit', 'group_edit', 'group_reorder', 'at_st_new',
-          'st_new', 'st_catalog_new', 'st_catalog_edit'].include?(action)
+      if %w[button_edit group_edit group_reorder at_st_new st_new st_catalog_new st_catalog_edit copy_catalog].include?(action)
         presenter.hide(:toolbar).show(:paging_div)
         # incase it was hidden for summary screen, and incase there were no records on show_list
-        presenter.hide(:pc_div_1)
-        action == 'at_st_new' && ansible_playbook? ? presenter.hide(:form_buttons_div) : presenter.show(:form_buttons_div)
+        presenter.remove_paging
+        if (action == 'at_st_new' && (ansible_playbook_type? || terraform_template_type?)) || %w[st_catalog_new st_catalog_edit copy_catalog].include?(action)
+          presenter.hide(:form_buttons_div)
+        else
+          presenter.show(:form_buttons_div)
+        end
         locals = {:record_id => @edit[:rec_id]}
         case action
         when 'group_edit'
@@ -2054,53 +2415,41 @@ class CatalogController < ApplicationController
           locals[:action_url] = 'servicetemplate_edit'
           locals[:serialize] = true
         end
-        presenter.update(:form_buttons_div, r[:partial => "layouts/x_edit_buttons", :locals => locals])
+        presenter.update(:form_buttons_div, r[:partial => "layouts/x_edit_buttons", :locals => locals]) if allow_presenter_update(action)
       elsif action == "dialog_provision"
         presenter.hide(:toolbar)
         # incase it was hidden for summary screen, and incase there were no records on show_list
-        presenter.hide(:form_buttons_div, :paging_div, :pc_div_1)
-        if Settings.product.old_dialog_user_ui
-          presenter.show(:form_buttons_div, :buttons_on)
-          presenter.update(
-            :form_buttons_div,
-            r[
-              :partial => "layouts/x_dialog_buttons",
-              :locals  => {
-                :action_url => "dialog_form_button_pressed",
-                :record_id  => @edit[:rec_id]
-              }
-            ]
-          )
-        end
-      elsif %w(ot_edit ot_copy ot_add service_dialog_from_ot).include?(action)
-        presenter.hide(:toolbar).show(:paging_div, :form_buttons_div).hide(:pc_div_1)
-        locals = {:record_id  => @edit[:rec_id],
-                  :action_url => "#{action}_submit",
-                  :serialize  => true}
-        if action == "ot_copy"
-          presenter.show(:buttons_on).hide(:buttons_off)
-          locals[:record_id] = nil
-        end
-        locals[:no_reset] = true if %w(ot_copy service_dialog_from_ot).include?(action)
-        presenter.update(:form_buttons_div, r[:partial => "layouts/x_edit_buttons", :locals => locals])
+        presenter.hide(:form_buttons_div, :paging_div).remove_paging
       else
         # Added so buttons can be turned off even tho div is not being displayed it still pops up Abandon changes box when trying to change a node on tree after saving a record
         presenter.hide(:buttons_on, :form_buttons_div).show(:toolbar).hide(:paging_div)
       end
     else
-      presenter.hide(:form_buttons_div).show(:pc_div_1, :toolbar, :paging_div)
+      presenter.hide(:form_buttons_div).show(:toolbar, :paging_div)
     end
 
-    presenter.reload_toolbars(:history => h_tb, :center => c_tb, :view => v_tb)
-    presenter.set_visibility(h_tb.present? || c_tb.present? || v_tb.present?, :toolbar)
+    # hide form buttons and toolbar for react forms actions
+    if %w[ot_add ot_edit ot_copy service_dialog_from_ot].include?(action)
+      presenter.hide(:toolbar, :paging_div, :form_buttons_div)
+    else
+      presenter.set_visibility(c_tb.present? || v_tb.present?, :toolbar)
+    end
+    presenter.reload_toolbars(:center => c_tb, :view => v_tb)
 
     presenter[:record_id] = determine_record_id_for_presenter
-    presenter[:lock_sidebar] = @edit && @edit[:current]
+    presenter[:lock_sidebar] = @edit && @edit[:current] || action == 'copy_catalog'
     presenter[:osf_node] = x_node
-    presenter.reset_changes
     presenter.reset_one_trans
 
+    presenter.update(:breadcrumbs, r[:partial => 'layouts/breadcrumbs'])
+
     render :json => presenter.for_render
+  end
+
+  # This method disables the action buttons of the old button-group form page.
+  def allow_presenter_update(action)
+    restricted_actions = ['group_edit']
+    action ? restricted_actions.exclude?(action.to_s) : false
   end
 
   def need_ansible_locals?
@@ -2109,33 +2458,20 @@ class CatalogController < ApplicationController
       @record.prov_type == "generic_ansible_playbook"
   end
 
+  def need_terraform_locals?
+    x_active_tree == :sandt_tree &&
+      TreeBuilder.get_model_for_prefix(@nodetype) == "ServiceTemplate" &&
+      @record.prov_type == "generic_terraform_template"
+  end
+
   def need_container_template_locals?
     x_active_tree == :sandt_tree &&
       TreeBuilder.get_model_for_prefix(@nodetype) == "ServiceTemplate" &&
       @record.prov_type == "generic_container_template"
   end
 
-  # Build a Catalog Items explorer tree
-  def build_sandt_tree
-    TreeBuilderCatalogItems.new('sandt_tree', 'sandt', @sb)
-  end
-
-  # Build a Services explorer tree
-  def build_svccat_tree
-    TreeBuilderServiceCatalog.new('svccat_tree', 'svccat', @sb)
-  end
-
-  # Build a Catalogs explorer tree
-  def build_stcat_tree
-    TreeBuilderCatalogs.new('stcat_tree', 'stcat', @sb)
-  end
-
-  # Build a Orchestration Templates explorer tree
-  def build_ot_tree
-    TreeBuilderOrchestrationTemplates.new('ot_tree', 'ot', @sb)
-  end
-
   def show_record(id = nil)
+    @sb[:action] = nil
     @display = params[:display] || "main" unless pagination_or_gtl_request?
 
     @lastaction = "show"
@@ -2160,16 +2496,30 @@ class CatalogController < ApplicationController
   end
 
   def dialog_catalog_check
-    return unless @edit[:new][:display] && (@edit[:new][:dialog_id].nil? || @edit[:new][:dialog_id].to_i == 0)
+    return unless @edit[:new][:display] && (@edit[:new][:dialog_id].nil? || @edit[:new][:dialog_id].to_i.zero?)
+
     add_flash(_("Dialog has to be set if Display in Catalog is chosen"), :error)
+  end
+
+  def validate_price
+    if @edit[:new][:currency] && @edit[:new][:price].blank?
+      add_flash(_("Price / Month is required"), :error)
+    end
+    add_flash(_("Price must be a numeric value"), :error) if @edit[:new][:price].present? && !float_value?(@edit[:new][:price])
+  end
+
+  def float_value?(value)
+    value.to_s =~ /(^(\d+)(\.)?(\d+)?)|(^(\d+)?(\.)(\d+))/
   end
 
   def x_edit_tags_reset(db)
     @tagging = session[:tag_db] = db
-    @object_ids = find_checked_ids_with_rbac(db)
+    checked_ids = find_checked_items.empty? ? [params[:id]] : find_checked_items
+    @object_ids = find_records_with_rbac(db.safe_constantize, checked_ids).ids
     if params[:button] == 'reset'
       id = params[:id] if params[:id]
       return unless load_edit("#{session[:tag_db]}_edit_tags__#{id}", 'replace_cell__explorer')
+
       @object_ids = @edit[:object_ids]
       session[:tag_db] = @tagging = @edit[:tagging]
     else
@@ -2177,7 +2527,6 @@ class CatalogController < ApplicationController
       session[:tag_db] = @tagging = params[:tagging] if params[:tagging]
     end
 
-    @gtl_type = 'list' # No quad icons for user/group list views
     session[:assigned_filters] = assigned_filters
     x_tags_set_form_vars
     @in_a_form = true
@@ -2185,8 +2534,19 @@ class CatalogController < ApplicationController
     add_flash(_('All changes have been reset'), :warning) if params[:button] == "reset"
     @right_cell_text = _("Editing %{model} Tags for \"%{name}\"") % {:name  => ui_lookup(:models => @tagging),
                                                                      :model => current_tenant.name}
+
     replace_right_cell(:action => @sb[:action])
   end
 
+  def breadcrumbs_options
+    {
+      :breadcrumbs => [
+        {:title => _("Services")},
+        {:title => _("Catalogs")},
+      ],
+    }
+  end
+
   menu_section :svc
+  feature_for_actions %w[ab_button_new ab_button_edit ab_group_new ab_group_edit], *EXP_EDITOR_ACTIONS
 end

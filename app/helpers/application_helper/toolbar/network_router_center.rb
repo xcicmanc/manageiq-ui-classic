@@ -4,7 +4,7 @@ class ApplicationHelper::Toolbar::NetworkRouterCenter < ApplicationHelper::Toolb
     [
       select(
         :network_router_vmdb_choice,
-        'fa fa-cog fa-lg',
+        nil,
         t = N_('Configuration'),
         t,
         :items => [
@@ -15,6 +15,8 @@ class ApplicationHelper::Toolbar::NetworkRouterCenter < ApplicationHelper::Toolb
             t,
             :url_parms    => 'main_div',
             :send_checked => true,
+            :klass        => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
+            :options      => {:feature => :update}
           ),
           button(
             :network_router_add_interface,
@@ -44,6 +46,22 @@ class ApplicationHelper::Toolbar::NetworkRouterCenter < ApplicationHelper::Toolb
             :url_parms    => 'main_div',
             :send_checked => true,
             :confirm      => N_('Warning: This Router and ALL of its components will be removed!'),
+            :klass        => ApplicationHelper::Button::GenericFeatureButtonWithDisable,
+            :options      => {:feature => :delete},
+            :data         => {
+              'function'      => 'sendDataWithRx',
+              'function-data' => {
+                :type       => 'delete',
+                :controller => 'toolbarActions',
+                :payload    => {
+                  :entity => 'network_routers',
+                  :labels => {
+                    :single   => _('Network Router'),
+                    :multiple => _('Network Routers')
+                  }
+                }
+              }
+            },
           )
         ]
       )
@@ -54,7 +72,7 @@ class ApplicationHelper::Toolbar::NetworkRouterCenter < ApplicationHelper::Toolb
     [
       select(
         :network_router_policy_choice,
-        'fa fa-shield fa-lg',
+        nil,
         t = N_('Policy'),
         t,
         :items => [

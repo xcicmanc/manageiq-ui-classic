@@ -1,7 +1,8 @@
 describe MiqRequestController do
   describe "#dialog_partial_for_workflow" do
     before do
-      @wf = FactoryGirl.create(:miq_provision_virt_workflow)
+      @wf = FactoryBot.create(:miq_provision_virt_workflow)
+      stub_user(:features => %w[miq_request_edit])
     end
 
     it "calculates partial using wf from @edit hash" do
@@ -24,24 +25,24 @@ describe MiqRequestController do
     end
 
     it "calculates partial using wf from @edit hash when both @edit & @options are present" do
-      controller.instance_variable_set(:@edit, :wf => FactoryGirl.create(:miq_provision_configured_system_foreman_workflow))
+      controller.instance_variable_set(:@edit, :wf => FactoryBot.create(:miq_provision_configured_system_foreman_workflow))
       controller.instance_variable_set(:@options, :wf => @wf)
       partial = controller.send(:dialog_partial_for_workflow)
       expect(partial).to eq('prov_configured_system_foreman_dialog')
     end
 
     it "clears the request datacenter name field when the source VM is changed" do
-      datacenter = FactoryGirl.create(:datacenter, :name => 'dcname')
-      ems_folder = FactoryGirl.create(:ems_folder)
-      ems = FactoryGirl.create(:ems_vmware)
-      vm1 = FactoryGirl.create(:vm_vmware)
-      vm2 = FactoryGirl.create(:vm_vmware)
+      datacenter = FactoryBot.create(:datacenter, :name => 'dcname')
+      ems_folder = FactoryBot.create(:ems_folder)
+      ems = FactoryBot.create(:ems_vmware)
+      template = FactoryBot.create(:template_vmware)
+      vm2 = FactoryBot.create(:vm_vmware)
       datacenter.ext_management_system = ems
       ems_folder.ext_management_system = ems
       @wf.instance_variable_set(:@dialogs, :dialogs => {:environment => {:fields => {:placement_dc_name => {:values => {datacenter.id.to_s => datacenter.name}}}}})
-      controller.instance_variable_set(:@edit, :wf => @wf, :new => {:src_vm_id => vm1.id.to_s})
+      controller.instance_variable_set(:@edit, :wf => @wf, :new => {:src_vm_id => template.id.to_s})
       controller.instance_variable_set(:@last_vm_id, vm2.id)
-      controller.instance_variable_set(:@_params, 'service__src_vm_id' => vm1.id, :id => "new", :controller => "miq_request")
+      controller.params = {'service__src_vm_id' => template.id, :id => "new", :controller => "miq_request"}
       @wf.instance_variable_set(:@values, :placement_dc_name=>[datacenter.id.to_s, datacenter.name])
       edit = {:wf => @wf, :new => {:placement_dc_name => [datacenter.id, datacenter.name]}}
       @wf.instance_variable_set(:@edit, edit)
@@ -54,6 +55,47 @@ describe MiqRequestController do
     end
   end
 
+  describe '#prov_get_form_vars' do
+    before { stub_user(:features => %w[miq_request_edit]) }
+
+    context "with an AutomationManager Provision Workflow" do
+      let(:dialog)        { FactoryBot.create(:miq_provision_configuration_script_dialog) }
+      let(:wf)            { MiqProvisionConfigurationScriptWorkflow.new({:provision_dialog_name => dialog.name}, User.current_user.userid) }
+      let(:ems)           { FactoryBot.create(:automation_manager, :url => "http://automation.localdomain") }
+      let(:config_script) { FactoryBot.create(:configuration_script, :manager => ems) }
+
+      it "sets the src_configuration_script_id" do
+        wf.instance_variable_set(
+          :@dialogs,
+          {
+            :dialogs => {
+              :service => {
+                :fields => {
+                  :src_configuration_script_id => {
+                    :description => "Configuration Script",
+                    :required    => true,
+                    :display     => :edit,
+                    :data_type   => :integer,
+                    :values      => [
+                      OpenStruct.new(:id => config_script.id, :evm_object_class => :ConfigurationScriptBase, :name => config_script.name, :manager_name => ems.name)
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        )
+
+        controller.params = {"service__src_configuration_script_id" => config_script.id.to_s, "id" => "new", "controller" => "miq_request", "action" => "prov_field_changed"}
+        controller.instance_variable_set(:@edit, :wf => wf, :new => {})
+        controller.send(:prov_get_form_vars)
+
+        edit = controller.instance_variable_get(:@edit)
+        expect(edit.dig(:new, :src_configuration_script_id)).to eq([config_script.id, config_script.name])
+      end
+    end
+  end
+
   describe '#prov_edit' do
     it 'redirects to the last link in breadcrumbs' do
       allow_any_instance_of(described_class).to receive(:set_user_time_zone)
@@ -61,13 +103,106 @@ describe MiqRequestController do
       controller.instance_variable_set(:@breadcrumbs, [{:url => "/ems_infra/show_list?page=1&refresh=y"},
                                                        {:url => "/ems_infra/1000000000001?display=vms"},
                                                        {}])
-      controller.instance_variable_set(:@_params, :id => "new", :button => "cancel")
+      controller.params = {:id => "new", :button => "cancel"}
       allow(controller).to receive(:role_allows?).and_return(true)
       page = double('page')
       allow(page).to receive(:<<).with(any_args)
       expect(page).to receive(:redirect_to).with("/ems_infra/1000000000001?display=vms")
       expect(controller).to receive(:render).with(:update).and_yield(page)
       controller.send(:prov_edit)
+    end
+  end
+
+  describe '#get_template_kls' do
+    before do
+      controller.params = {:controller => ctrl, :template_klass => kls}
+      allow(request).to receive(:parameters).and_return(:template_klass => kls, :controller => ctrl)
+    end
+
+    subject { controller.send(:get_template_kls) }
+
+    context 'provisioning VMs displayed through details page of infra provider, Cluster, Host, Resource Poll or Storage' do
+      let(:ctrl) { 'miq_request' }
+      let(:kls) { 'infra' }
+
+      it 'returns proper template klass' do
+        expect(subject).to eq(ManageIQ::Providers::InfraManager::Template)
+      end
+    end
+
+    context 'provisioning VMs displayed on VMs explorer screen' do
+      let(:ctrl) { 'vm_infra' }
+      let(:kls) { nil }
+
+      it 'returns proper template klass' do
+        expect(subject).to eq(ManageIQ::Providers::InfraManager::Template)
+      end
+    end
+
+    context 'provisioning instances displayed through details page of cloud provider' do
+      let(:ctrl) { 'miq_request' }
+      let(:kls) { 'cloud' }
+
+      it 'returns proper template klass' do
+        expect(subject).to eq(ManageIQ::Providers::CloudManager::Template)
+      end
+    end
+
+    context 'provisioning instances displayed through details page of infra provider' do
+      let(:ctrl) { 'vm_infra' }
+      let(:kls) { 'infra' }
+
+      it 'returns proper template klass' do
+        expect(subject).to eq(ManageIQ::Providers::InfraManager::Template)
+      end
+    end
+
+    context 'provisioning instances displayed on instances explorer screen' do
+      let(:ctrl) { 'vm_cloud' }
+      let(:kls) { nil }
+
+      it 'returns proper template klass' do
+        expect(subject).to eq(ManageIQ::Providers::CloudManager::Template)
+      end
+    end
+  end
+
+  describe '#build_tags_for_provisioning' do
+    let(:wf) { FactoryBot.create(:miq_provision_virt_workflow) }
+    let!(:parent_classification) do
+      FactoryBot.create(:classification,
+                        :name         => 'environment',
+                        :description  => 'Environment',
+                        :single_value => false)
+    end
+    let!(:child_classification) do
+      FactoryBot.create(:classification,
+                        :name        => 'prod',
+                        :description => 'Production',
+                        :parent      => parent_classification)
+    end
+
+    before do
+      stub_user(:features => %w[miq_request_edit])
+      allow(wf).to receive(:allowed_tags).and_return([{:name         => 'environment',
+                                                       :description  => 'Environment',
+                                                       :single_value => false,
+                                                       :children     => [['prod', {:description => 'Production'}]]}])
+    end
+
+    it 'returns tags with :label key for categories and values' do
+      controller.send(:build_tags_for_provisioning, wf, [child_classification.id], false)
+      tags = controller.instance_variable_get(:@tags)
+
+      # Check allowed tags have :label
+      tag_category = tags[:tags].first
+      expect(tag_category[:label]).to eq('Environment')
+      expect(tag_category[:values].first[:label]).to eq('Production')
+
+      # Check assigned tags have :label
+      assigned_tag = tags[:assignedTags].first
+      expect(assigned_tag[:label]).to eq('Environment')
+      expect(assigned_tag[:values].first[:label]).to eq('Production')
     end
   end
 end

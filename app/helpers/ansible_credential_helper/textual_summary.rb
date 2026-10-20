@@ -2,31 +2,40 @@ module AnsibleCredentialHelper::TextualSummary
   include TextualMixins::TextualName
 
   def textual_group_properties
-    TextualGroup.new(_("Properties"), %i(name type created updated))
+    TextualGroup.new(_("Properties"), %i[name type created updated])
   end
 
   def textual_group_relationships
-    TextualGroup.new(_("Relationships"), %i(repositories))
+    TextualGroup.new(_("Relationships"), %i[repositories])
   end
 
   def textual_group_options
     options = []
 
-    @record.type.constantize::API_ATTRIBUTES.each do |key, value|
-      options << key
+    DDF.traverse(:fields => @record.class::API_ATTRIBUTES) do |field|
+      next if field[:type].to_s == 'password' || field[:name].nil?
 
-      define_singleton_method "textual_#{key}" do
-        h = {:label => _(value[:label]), :title => _(value[:help_text])}
-        h[:value] = if value[:type] == :password && (@record.try(key).present? || @record.options[key].present?)
-                      '●●●●●●●●'
-                    else
-                      @record.try(key) || @record.options[key]
-                    end
-        h
+      options << field[:name].to_sym
+
+      define_singleton_method "textual_#{field[:name]}" do
+        {
+          :label => _(field[:label]),
+          :title => _(field[:helperText]),
+          :value => attribute_value(field[:name], @record)
+        }
       end
     end
 
     TextualGroup.new(_("Credential Options"), options)
+  end
+
+  def attribute_value(key, rec)
+    key.split('.').reduce(rec) { |obj, chunk| obj.send(:try, :[], chunk) }
+  end
+  private :attribute_value
+
+  def textual_group_smart_management
+    TextualTags.new(_("Smart Management"), %i[tags])
   end
 
   def textual_type

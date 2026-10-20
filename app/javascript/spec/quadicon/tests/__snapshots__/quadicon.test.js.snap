@@ -1,0 +1,2094 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Quadicon renders just fine... 1`] = `
+<div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        title="Hello, I am a very useful tooltip in the first quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-cog"
+            style="color: rgb(0, 153, 204);"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(63, 156, 53);"
+        title="Hello, I am a very useful tooltip in the second quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-play"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        title="Hello, I am a very useful tooltip in the third quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          42
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        title="Hello, I am a very useful tooltip in the fourth quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/manageiq.svg"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        style="background: rgb(63, 156, 53);"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-play"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-cog"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/manageiq.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="text font-normal"
+        >
+          42
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/manageiq.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="text font-normal"
+        >
+          42
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        style="background: rgb(63, 156, 53);"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-play"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-cog"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="text font-normal"
+        >
+          42
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/manageiq.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-cog"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        style="background: rgb(63, 156, 53);"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-play"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+        title="Hello, I am a very useful tooltip!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="pficon pficon-server"
+            style="color: rgb(0, 153, 204);"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/manageiq.svg"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="text font-normal"
+        >
+          42
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-cog"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(63, 156, 53);"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-play"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="text font-normal"
+        >
+          42
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/manageiq.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem middle"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/protected.svg"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-cog"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(63, 156, 53);"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-play"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="text font-normal"
+        >
+          42
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-shield"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem middle"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-shield"
+            style="color: rgb(255, 204, 51);"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="text font-normal"
+        >
+          42
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="text font-small"
+        >
+          420
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="text font-tiny"
+        >
+          4.2K
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="text font-small"
+        >
+          42K
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="text font-tiny"
+        >
+          112K
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="text font-tiny"
+        >
+          420K
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="text font-tiny"
+        >
+          4.2M
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="text font-small"
+        >
+          42M
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="text font-tiny"
+        >
+          420M
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="text font-tiny"
+        >
+          small
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="text font-tiny"
+        >
+          tiny
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="text font-normal"
+        >
+          42
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="text font-normal"
+        >
+          42
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="text font-normal"
+        >
+          42
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="text font-normal"
+        >
+          42
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="text font-small"
+        >
+          420
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="text font-small"
+        >
+          420
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="text font-small"
+        >
+          420
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="text font-small"
+        >
+          420
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="text font-tiny"
+        >
+          4.2K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="text font-tiny"
+        >
+          4.2K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="text font-tiny"
+        >
+          4.2K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="text font-tiny"
+        >
+          4.2K
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="text font-small"
+        >
+          42K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="text font-small"
+        >
+          42K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="text font-small"
+        >
+          42K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="text font-small"
+        >
+          42K
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="text font-tiny"
+        >
+          112K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="text font-tiny"
+        >
+          112K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="text font-tiny"
+        >
+          112K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="text font-tiny"
+        >
+          112K
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="text font-tiny"
+        >
+          420K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="text font-tiny"
+        >
+          420K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="text font-tiny"
+        >
+          420K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="text font-tiny"
+        >
+          420K
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="text font-tiny"
+        >
+          4.2M
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="text font-tiny"
+        >
+          4.2M
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="text font-tiny"
+        >
+          4.2M
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="text font-tiny"
+        >
+          4.2M
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="text font-small"
+        >
+          42M
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="text font-small"
+        >
+          42M
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="text font-small"
+        >
+          42M
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="text font-small"
+        >
+          42M
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="text font-tiny"
+        >
+          420M
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="text font-tiny"
+        >
+          420M
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="text font-tiny"
+        >
+          420M
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="text font-tiny"
+        >
+          420M
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="text font-tiny"
+        >
+          small
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="text font-tiny"
+        >
+          small
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="text font-tiny"
+        >
+          small
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="text font-tiny"
+        >
+          small
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="text font-tiny"
+        >
+          tiny
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="text font-tiny"
+        >
+          tiny
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="text font-tiny"
+        >
+          tiny
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="text font-tiny"
+        >
+          tiny
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="piechart fill-0"
+        />
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="piechart fill-10"
+        />
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="single-wrapper"
+    >
+      <div
+        class="miq-quaditem"
+      >
+        <div
+          class="piechart fill-20"
+        />
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="piechart fill-0"
+        />
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="piechart fill-1"
+        />
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="piechart fill-2"
+        />
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="piechart fill-3"
+        />
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="piechart fill-4"
+        />
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="piechart fill-5"
+        />
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="piechart fill-6"
+        />
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="piechart fill-7"
+        />
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="piechart fill-8"
+        />
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="piechart fill-9"
+        />
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="piechart fill-10"
+        />
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="piechart fill-11"
+        />
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="piechart fill-12"
+        />
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="piechart fill-13"
+        />
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="piechart fill-14"
+        />
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="piechart fill-15"
+        />
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+      >
+        <div
+          class="piechart fill-16"
+        />
+      </div>
+      <div
+        class="miq-quaditem top-right"
+      >
+        <div
+          class="piechart fill-17"
+        />
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+      >
+        <div
+          class="piechart fill-18"
+        />
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+      >
+        <div
+          class="piechart fill-19"
+        />
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        title="Hello, I am a very useful tooltip in the first quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          17
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(63, 156, 53);"
+        title="Hello, I am a very useful tooltip in the second quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-play"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        title="Hello, I am a very useful tooltip in the third quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-redhat.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        title="Hello, I am a very useful tooltip in the fourth quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="pficon pficon-ok"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        title="Hello, I am a very useful tooltip in the first quadrant!"
+      >
+        <div
+          class="text font-tiny"
+        >
+          120K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(63, 156, 53);"
+        title="Hello, I am a very useful tooltip in the second quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-play"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        title="Hello, I am a very useful tooltip in the third quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-vmware.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        title="Hello, I am a very useful tooltip in the fourth quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="pficon pficon-ok"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem middle"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/protected.svg"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        title="Hello, I am a very useful tooltip in the first quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          2K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(204, 0, 0);"
+        title="Hello, I am a very useful tooltip in the second quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-stop"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        title="Hello, I am a very useful tooltip in the third quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-vmware.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        title="Hello, I am a very useful tooltip in the fourth quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-exclamation"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        title="Hello, I am a very useful tooltip in the first quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-redhat.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(63, 156, 53);"
+        title="Hello, I am a very useful tooltip in the second quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-play"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        title="Hello, I am a very useful tooltip in the third quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-redhat.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        title="Hello, I am a very useful tooltip in the fourth quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          12
+        </div>
+      </div>
+      <div
+        class="miq-quaditem middle"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/protected.svg"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        title="Hello, I am a very useful tooltip in the first quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-chrome.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(51, 102, 153);"
+        title="Hello, I am a very useful tooltip in the second quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          R
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        title="Hello, I am a very useful tooltip in the third quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-vmware.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        title="Hello, I am a very useful tooltip in the fourth quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          0
+        </div>
+      </div>
+      <div
+        class="miq-quaditem middle"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/protected.svg"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        title="Hello, I am a very useful tooltip in the first quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          ?
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(204, 0, 0);"
+        title="Hello, I am a very useful tooltip in the second quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-stop"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        title="Hello, I am a very useful tooltip in the third quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-vmware.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        title="Hello, I am a very useful tooltip in the fourth quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          3
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        title="Hello, I am a very useful tooltip in the first quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-centos.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(51, 102, 153);"
+        title="Hello, I am a very useful tooltip in the second quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          T
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        title="Hello, I am a very useful tooltip in the third quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-vmware.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        title="Hello, I am a very useful tooltip in the fourth quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          0
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        title="Hello, I am a very useful tooltip in the first quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-ubuntu.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(51, 102, 153);"
+        title="Hello, I am a very useful tooltip in the second quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          A
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        title="Hello, I am a very useful tooltip in the third quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-redhat.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        title="Hello, I am a very useful tooltip in the fourth quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          0
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        title="Hello, I am a very useful tooltip in the first quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          9
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(63, 156, 53);"
+        title="Hello, I am a very useful tooltip in the second quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-play"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        title="Hello, I am a very useful tooltip in the third quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-openshift.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        title="Hello, I am a very useful tooltip in the fourth quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          12
+        </div>
+      </div>
+      <div
+        class="miq-quaditem middle"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/protected.svg"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        title="Hello, I am a very useful tooltip in the first quadrant!"
+      >
+        <div
+          class="text font-normal"
+        >
+          99
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(63, 156, 53);"
+        title="Hello, I am a very useful tooltip in the second quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-play"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        title="Hello, I am a very useful tooltip in the third quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-openshift.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        title="Hello, I am a very useful tooltip in the fourth quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="pficon pficon-ok"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem middle"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/protected.svg"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        title="Hello, I am a very useful tooltip in the first quadrant!"
+      >
+        <div
+          class="text font-small"
+        >
+          999
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(63, 156, 53);"
+        title="Hello, I am a very useful tooltip in the second quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-play"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        title="Hello, I am a very useful tooltip in the third quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-openshift.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        title="Hello, I am a very useful tooltip in the fourth quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="pficon pficon-ok"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem middle"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/protected.svg"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        title="Hello, I am a very useful tooltip in the first quadrant!"
+      >
+        <div
+          class="text font-small"
+        >
+          10K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(255, 153, 0);"
+        title="Hello, I am a very useful tooltip in the second quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-pause-circle-o"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        title="Hello, I am a very useful tooltip in the third quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-openshift.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        title="Hello, I am a very useful tooltip in the fourth quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-exclamation"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="miq-quadicon"
+  >
+    <div
+      class="quad-wrapper"
+    >
+      <div
+        class="miq-quaditem top-left"
+        title="Hello, I am a very useful tooltip in the first quadrant!"
+      >
+        <div
+          class="text font-tiny"
+        >
+          100K
+        </div>
+      </div>
+      <div
+        class="miq-quaditem top-right"
+        style="background: rgb(255, 153, 0);"
+        title="Hello, I am a very useful tooltip in the second quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-pause-circle-o"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-left"
+        title="Hello, I am a very useful tooltip in the third quadrant!"
+      >
+        <div
+          class="fileicon"
+        >
+          <img
+            alt="fileicon"
+            src="/assets/vendor-openshift.svg"
+          />
+        </div>
+      </div>
+      <div
+        class="miq-quaditem bottom-right"
+        title="Hello, I am a very useful tooltip in the fourth quadrant!"
+      >
+        <div
+          class="fonticon"
+        >
+          <i
+            class="fa fa-exclamation"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

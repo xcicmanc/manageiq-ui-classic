@@ -1,6 +1,6 @@
 describe OpsController do
   context "OpsSettings::Schedules" do
-    let(:user) { FactoryGirl.create(:user, :features => %w(schedule_enable schedule_disable)) }
+    let(:user) { FactoryBot.create(:user, :features => %w(schedule_enable schedule_disable)) }
     before do
       login_as user
       allow(User).to receive(:server_timezone).and_return("UTC")
@@ -11,22 +11,14 @@ describe OpsController do
         silence_warnings { OpsController::Settings::Schedules::STGROOT = 'ST'.freeze }
 
         allow(controller).to receive(:find_checked_items).and_return([])
-        expect(controller).to receive(:render)
-        expect(controller).to receive(:schedule_build_list)
-        expect(controller).to receive(:settings_get_info)
-        expect(controller).to receive(:replace_right_cell)
       end
 
       it "#schedule_enable" do
-        controller.schedule_enable
-        flash_messages = controller.instance_variable_get(:@flash_array)
-        expect(flash_messages.first).to eq(:message => "The selected Schedules were enabled", :level => :error)
+        expect { controller.schedule_enable }.to raise_error("Can't access records without an id")
       end
 
       it "#schedule_disable" do
-        controller.schedule_disable
-        flash_messages = controller.instance_variable_get(:@flash_array)
-        expect(flash_messages.first).to eq(:message => "The selected Schedules were disabled", :level => :error)
+        expect { controller.schedule_disable }.to raise_error("Can't access records without an id")
       end
     end
 
@@ -36,10 +28,10 @@ describe OpsController do
         allow(server).to receive_messages(:zone_id => 1)
         allow(MiqServer).to receive(:my_server).and_return(server)
 
-        @sch = FactoryGirl.create(:miq_schedule)
+        @sch = FactoryBot.create(:miq_schedule)
         silence_warnings { OpsController::Settings::Schedules::STGROOT = 'ST'.freeze }
 
-        controller.params["check_#{controller.to_cid(@sch.id)}"] = '1'
+        controller.params["check_#{@sch.id}"] = '1'
         expect(controller).to receive(:render).never
         expect(controller).to receive(:schedule_build_list)
         expect(controller).to receive(:settings_get_info)
@@ -90,10 +82,10 @@ describe OpsController do
     end
 
     context "schedule addition" do
-      before(:each) do
+      before do
         EvmSpecHelper.create_guid_miq_server_zone
         expect(controller).to receive(:render)
-        @schedule = FactoryGirl.create(:miq_schedule, :userid => user.userid, :towhat => "Vm")
+        @schedule = FactoryBot.create(:miq_schedule, :userid => user.userid, :resource_type => "Vm")
         @params = {
           :action      => "schedule_edit",
           :button      => "add",
@@ -117,7 +109,7 @@ describe OpsController do
       it "#does not allow duplicate names when adding" do
         @params[:id] = "new"
         @params[:name] = @schedule.name
-        controller.instance_variable_set(:@_params, @params)
+        controller.params = @params
         controller.send(:schedule_edit)
         expect(controller.send(:flash_errors?)).to be_truthy
         expect(assigns(:flash_array).first[:message]).to include("Name has already been taken")
@@ -126,8 +118,8 @@ describe OpsController do
       it "#does not allow duplicate names when editing" do
         @params[:id] = @schedule.id
         @params[:name] = "schedule01"
-        controller.instance_variable_set(:@_params, @params)
-        FactoryGirl.create(:miq_schedule, :name => @params[:name], :userid => user.userid, :towhat => "Vm")
+        controller.params = @params
+        FactoryBot.create(:miq_schedule, :name => @params[:name], :userid => user.userid, :resource_type => "Vm")
         controller.send(:schedule_edit)
         expect(controller.send(:flash_errors?)).to be_truthy
         expect(assigns(:flash_array).first[:message]).to include("Name has already been taken")
@@ -138,88 +130,10 @@ describe OpsController do
   render_views
   context "OpsController::Settings" do
     context "zone addition" do
-      let(:user) { FactoryGirl.create(:user, :features => %w(zone_edit zone_new)) }
+      let(:user) { FactoryBot.create(:user, :features => %w(zone_edit zone_new)) }
       before do
         login_as user
-      end
-
-      it "#does not allow duplicate names when adding" do
-        miq_server = EvmSpecHelper.local_miq_server
-        MiqRegion.seed
-        EvmSpecHelper.create_guid_miq_server_zone
-        expect(controller).to receive(:render)
-        @zone = FactoryGirl.create(:zone, :name => 'zoneName', :description => "description1")
-        allow(controller).to receive(:assert_privileges)
-
-        @params = {:id     => 'new',
-                   :action => "zone_edit",
-                   :button => "add"
-        }
-        edit = {:new => {:name        => @zone.name,
-                         :description => "description02",
-                         :ntp         => {}}}
-        controller.instance_variable_set(:@edit, edit)
-        controller.instance_variable_set(:@_params, @params)
-        seed_session_trees('ops', :settings_tree)
-        allow(controller).to receive(:load_edit).and_return(true)
-        controller.send(:zone_edit)
-
-        expect(controller.send(:flash_errors?)).to be_truthy
-        expect(assigns(:flash_array).first[:message]).to include("Name has already been taken")
-      end
-    end
-
-    context '#forest_accept' do
-      context 'adding an LDAP Trusted Forest' do
-        before(:each) do
-          EvmSpecHelper.create_guid_miq_server_zone
-          @user_proxies = {:ldaphost => 'ldap.manageiq1.org',
-                           :ldapport => '389',
-                           :mode     => 'ldap',
-                           :basedn   => 'cn=groups,cn=accounts,dc=miq',
-                           :bind_dn  => 'uid=admin,cn=users,cn=accounts,dc=miq,dc=e',
-                           :bind_pwd => '******'}
-          @vmdb = VMDB::Config.new('vmdb')
-          expect(controller).to receive(:render)
-        end
-
-        after(:each) { expect(response.status).to eq(200) }
-
-        it 'is a new record' do
-          session[:edit] = {:current => @vmdb, :new => {:authentication => {:user_proxies => []}}}
-          session[:entry] = 'new'
-          controller.send(:forest_accept)
-        end
-
-        it 'is an existing record' do
-          controller.instance_variable_set(:@_params, :user_proxies_mode => '', :user_proxies => @user_proxies)
-          session[:edit] = {:current => @vmdb, :new => {:authentication => {:user_proxies => [@user_proxies]}}}
-          session[:entry] = @user_proxies
-          controller.send(:forest_accept)
-        end
-
-        it 'LDAP Host exists' do
-          @user_proxies[:ldaphost] = ''
-          controller.instance_variable_set(:@_params, :user_proxies_mode => '', :user_proxies => @user_proxies)
-          session[:edit] = {:current => @vmdb, :new => {:authentication => {:user_proxies => [@user_proxies]}}}
-          session[:entry] = @user_proxies
-
-          controller.send(:forest_accept)
-
-          flash_messages = controller.instance_variable_get(:@flash_array)
-          expect(flash_messages.first).to eq(:message => 'LDAP Host is required', :level => :error)
-        end
-
-        it 'LDAP Host is unique' do
-          controller.instance_variable_set(:@_params, :user_proxies_mode => '', :user_proxies => @user_proxies)
-          session[:edit] = {:current => @vmdb, :new => {:authentication => {:user_proxies => [@user_proxies, @user_proxies]}}}
-          session[:entry] = 'new'
-
-          controller.send(:forest_accept)
-
-          flash_messages = controller.instance_variable_get(:@flash_array)
-          expect(flash_messages.first).to eq(:message => 'LDAP Host should be unique', :level => :error)
-        end
+        allow(controller).to receive(:data_for_breadcrumbs).and_return({})
       end
     end
   end
@@ -237,6 +151,8 @@ describe OpsController do
                                        :active_accord => 'active_accord',
                                        :active_tab    => 'settings_server',
                                        :active_tree   => :settings_tree)
+      allow(controller).to receive(:x_node).and_return('xx-svr')
+      allow(controller).to receive(:data_for_breadcrumbs).and_return({})
       expect(controller).to receive(:x_active_tree_replace_cell)
       expect(controller).to receive(:replace_explorer_trees)
       expect(controller).to receive(:rebuild_toolbars)

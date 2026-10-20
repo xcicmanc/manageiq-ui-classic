@@ -1,9 +1,5 @@
-TextualTable = Struct.new(:title, :rows, :labels) do
-  def template
-    'shared/summary/textual_table'
-  end
-
+TextualTable = Struct.new(:title, :rows, :labels, :className) do
   def locals
-    {:title => title, :rows => rows, :labels => labels}
+    {:title => title, :rows => rows, :labels => labels, :component => 'SimpleTable', :className => className}
   end
 end

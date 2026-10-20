@@ -21,13 +21,6 @@ describe JsHelper do
     end
   end
 
-  context '#javascript_highlight' do
-    it 'returns js to to add or remove the active class on the element' do
-      expect(javascript_highlight('foo', true)).to eq("miqHighlight('\#foo', true);")
-      expect(javascript_highlight('foo', false)).to eq("miqHighlight('\#foo', false);")
-    end
-  end
-
   context '#javascript_disable_field' do
     it 'returns js to disable the provided element' do
       expect(javascript_disable_field('foo')).to eq("$('#foo').prop('disabled', true);")
@@ -82,11 +75,11 @@ describe JsHelper do
 
   context '#js_build_calendar' do
     it 'returns JS to build calendar with no options' do
-      expected = <<EOD
-ManageIQ.calendar.calDateFrom = undefined;
-ManageIQ.calendar.calDateTo = undefined;
-ManageIQ.calendar.calSkipDays = undefined;
-miqBuildCalendar();
+      expected = <<~EOD
+        ManageIQ.calendar.calDateFrom = undefined;
+        ManageIQ.calendar.calDateTo = undefined;
+        ManageIQ.calendar.calSkipDays = undefined;
+        miqBuildCalendar();
 EOD
 
       expect(js_build_calendar).to eq(expected)
@@ -97,11 +90,11 @@ EOD
              :date_to   => Time.at(946684800).utc,
              :skip_days => [1, 2, 3]}
 
-      expected = <<EOD
-ManageIQ.calendar.calDateFrom = new Date('1970-01-01T00:00:00Z');
-ManageIQ.calendar.calDateTo = new Date('2000-01-01T00:00:00Z');
-ManageIQ.calendar.calSkipDays = [1,2,3];
-miqBuildCalendar();
+      expected = <<~EOD
+        ManageIQ.calendar.calDateFrom = new Date('1970-01-01T00:00:00Z');
+        ManageIQ.calendar.calDateTo = new Date('2000-01-01T00:00:00Z');
+        ManageIQ.calendar.calSkipDays = [1,2,3];
+        miqBuildCalendar();
 EOD
 
       expect(js_build_calendar(opt)).to eq(expected)

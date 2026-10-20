@@ -9,27 +9,43 @@ class ApplicationHelper::Toolbar::DiagnosticsZoneCenter < ApplicationHelper::Too
       nil,
       :klass => ApplicationHelper::Button::ReloadServerTree),
   ])
-  button_group('ldap_domain_vmdb', [
+  button_group('server_role_management', [
     select(
       :zone_configuration_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
         button(
-          :zone_delete,
+          :zone_delete_server,
           'pficon pficon-delete fa-lg',
           t = proc do
-            _('Delete Zone %{server_name} [%{server_id}]') % {:server_name => @selected_zone.name, :server_id => @selected_zone.id}
+            _('Delete Server %{server_name} [%{server_id}]') % {:server_name => @record.name, :server_id => @record.id}
           end,
           t,
           :confirm => proc do
-                        _("Do you want to delete Zone %{server_name} [%{server_id}]?") % {
-                          :server_name => @selected_zone.name,
-                          :server_id   => @selected_zone.id
+                        _("Do you want to delete Server %{server_name} [%{server_id}]?") % {
+                          :server_name => @record.name,
+                          :server_id   => @record.id
                         }
                       end,
-          :klass => ApplicationHelper::Button::ZoneDelete
+          :klass   => ApplicationHelper::Button::ZoneDeleteServer
+        ),
+        button(
+          :delete_server,
+          'pficon pficon-delete fa-lg',
+          N_('Delete selected Servers'),
+          :enabled => false,
+          :onwhen  => "1+",
+          :data    => {'function'      => 'sendDataWithRx',
+                       'function-data' => {:api_url        => 'servers',
+                                           :component_name => 'RemoveGenericItemModal',
+                                           :controller     => 'provider_dialogs',
+                                           :display_field  => 'name',
+                                           :modal_text     => N_("Are you sure you want to delete the selected Servers?"),
+                                           :modal_title    => N_("Delete Servers"),
+                                           :redirect_url   => '/ops/explorer/'}},
+          :klass   => ApplicationHelper::Button::ServersDeleteServer
         ),
         button(
           :zone_role_start,
@@ -64,34 +80,6 @@ class ApplicationHelper::Toolbar::DiagnosticsZoneCenter < ApplicationHelper::Too
           :klass => ApplicationHelper::Button::ServerLevelOptions
         ),
       ]
-    ),
-    select(
-      :zone_collect_logs_choice,
-      'fa fa-filter fa-lg',
-      N_('Collect Logs'),
-      N_('Collect'),
-      :items => [
-        button(
-          :zone_collect_current_logs,
-          'fa fa-filter fa-lg',
-          N_('Collect the current logs from the selected Zone'),
-          N_('Collect current logs'),
-          :klass => ApplicationHelper::Button::ZoneCollectLogs
-        ),
-        button(
-          :zone_collect_logs,
-          'fa fa-filter fa-lg',
-          N_('Collect all logs from the selected Zone'),
-          N_('Collect all logs'),
-          :klass => ApplicationHelper::Button::ZoneCollectLogs
-        ),
-      ]
-    ),
-    button(
-      :zone_log_depot_edit,
-      'pficon pficon-edit fa-lg',
-      N_('Edit the Log Depot settings for the selected Zone'),
-      N_('Edit'),
-      :klass => ApplicationHelper::Button::LogDepotEdit),
+    )
   ])
 end

@@ -10,7 +10,6 @@ describe VmOrTemplateController do
     policy_sim
     reconfigure
     retire
-    retirement_info
     right_size
     show
     show_list
@@ -23,21 +22,16 @@ describe VmOrTemplateController do
   end
 
   %w(
-    edit_vm
-    form_field_changed
     ownership
-    ownership_field_changed
     ownership_update
     policy_sim
     policy_sim_add
     policy_sim_remove
     pre_prov
     pre_prov_continue
-    provision
     reconfigure
     reconfigure_form_fields
     reconfigure_update
-    retire
     right_size
     set_checked_items
     show_list

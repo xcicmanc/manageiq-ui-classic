@@ -1,0 +1,14 @@
+#condition-details-div
+  = render :partial => "layouts/flash_msg"
+  .form-horizontal
+    -# Don't show basic info box with description only unless in edit mode
+    = miq_summary_condition_info(@condition, @edit)
+
+    = miq_summary_condition_scope(@applies_to_exp_table) 
+
+    = miq_summary_condition_expression(@expression_table)
+   
+    -# Notes field
+    = miq_summary_condition_notes(@condition, @condition_policies)
+    
+    = miq_summary_conditions_policies(@condition_policies)

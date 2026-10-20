@@ -2,13 +2,13 @@ class ApplicationHelper::Toolbar::GenericObjectDefinitionCenter < ApplicationHel
   button_group('generic_object_definition', [
     select(
       :generic_object_definition_configuration,
-      'fa fa-cog fa-lg',
+      nil,
       N_('Configuration'),
       :items => [
         button(
           :generic_object_definition_edit,
           'pficon pficon-edit fa-lg',
-          t = N_('Edit this Generic Object Class'),
+          t = N_('Edit this Generic Object Definition'),
           t,
         ),
         button(
@@ -26,11 +26,15 @@ class ApplicationHelper::Toolbar::GenericObjectDefinitionCenter < ApplicationHel
         button(
           :generic_object_definition_delete,
           'pficon pficon-delete fa-lg',
-          N_('Remove this Generic Object Classes from Inventory'),
-          :data    => {'function'      => 'sendDataWithRx',
-                       'function-data' => '{"type": "delete", "controller": "genericObjectDefinitionToolbarController", "entity": "Generic Object Class"}'},
-          :klass   => ApplicationHelper::Button::GenericObjectDefinitionButtonDelete,
-          :confirm => N_("Warning: This Generic Object Class will be permanently removed!"),
+          N_('Remove this Generic Object Definitions from Inventory'),
+          :data => {'function'      => 'sendDataWithRx',
+                    'function-data' => {:controller     => 'provider_dialogs',
+                                        :modal_title    => N_('Delete Generic Object Definition'),
+                                        :modal_text     => N_('Warning: This Generic Object Definition will be permanently removed!'),
+                                        :api_url        => 'generic_object_definitions',
+                                        :async_delete   => false,
+                                        :redirect_url   => '/generic_object_definition/',
+                                        :component_name => 'RemoveGenericItemModal'}}
         ),
       ]
     )

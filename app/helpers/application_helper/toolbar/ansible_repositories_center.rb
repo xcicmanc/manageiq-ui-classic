@@ -4,7 +4,7 @@ class ApplicationHelper::Toolbar::AnsibleRepositoriesCenter < ApplicationHelper:
       :ansible_repositories_reload,
       'fa fa-refresh fa-lg',
       N_('Refresh this page'),
-      N_('Refresh'),
+      N_(''),
       :url_parms    => "main_div",
       :send_checked => true,
       :klass        => ApplicationHelper::Button::ButtonWithoutRbacCheck),
@@ -12,7 +12,7 @@ class ApplicationHelper::Toolbar::AnsibleRepositoriesCenter < ApplicationHelper:
   button_group('ansible_repositories', [
     select(
       :ansible_repositories_configuration,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -22,7 +22,6 @@ class ApplicationHelper::Toolbar::AnsibleRepositoriesCenter < ApplicationHelper:
           N_('Refresh Selected Ansible Repositories'),
           N_('Refresh Selected Ansible Repositories'),
           :klass        => ApplicationHelper::Button::EmbeddedAnsible,
-          :url          => "repository_refresh",
           :confirm      => N_("Refresh selected Ansible Repositories?"),
           :enabled      => false,
           :url_parms    => 'unused_div',
@@ -53,12 +52,40 @@ class ApplicationHelper::Toolbar::AnsibleRepositoriesCenter < ApplicationHelper:
           t = N_('Remove selected Repositories from Inventory'),
           t,
           :klass        => ApplicationHelper::Button::EmbeddedAnsible,
-          :url_parms    => "unused_div",
           :send_checked => true,
           :enabled      => false,
           :onwhen       => "1+",
-          :confirm      => N_("Warning: The selected Repository will be permanently removed!")),
+          :data  => {'function'      => 'sendDataWithRx',
+                     'function-data' => {:controller     => 'provider_dialogs',
+                                         :modal_title    => N_('Delete Repositories'),
+                                         :modal_text     => N_('Are you sure you want to delete the following repositories?'),
+                                         :api_url        => 'configuration_script_sources',
+                                         :async_delete   => true,
+                                         :redirect_url   => '/ansible_repository/show_list',
+                                         :component_name => 'RemoveGenericItemModal'}}),
       ]
     )
   ])
+  button_group('ansible_repositories_policy', [
+                 select(
+                   :ansible_repositories_policy_choice,
+                   nil,
+                   t = N_('Policy'),
+                   t,
+                   :enabled => false,
+                   :onwhen  => "1+",
+                   :items   => [
+                     button(
+                       :embedded_configuration_script_source_tag,
+                       'pficon pficon-edit fa-lg',
+                       N_('Edit Tags for the selected Ansible Repositories'),
+                       N_('Edit Tags'),
+                       :url_parms    => "main_div",
+                       :send_checked => true,
+                       :enabled      => false,
+                       :onwhen       => "1+"
+                     ),
+                   ]
+                 )
+               ])
 end

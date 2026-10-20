@@ -1,0 +1,282 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`evacuate form component should render evacuate form when hosts empty 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 evacuate_form"
+    novalidate=""
+  >
+    <div
+      class=""
+      name="EvacuateInstance"
+    >
+      <div>
+        <h3>
+          Evacuate Host
+        </h3>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            checked=""
+            class="cds--checkbox"
+            disabled=""
+            id="auto_select_host"
+            name="auto_select_host"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="auto_select_host"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              Auto-select Host?
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            checked=""
+            class="cds--checkbox"
+            id="on_shared_storage"
+            name="on_shared_storage"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="on_shared_storage"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              On Shared Storage
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary"
+        type="submit"
+        variant="primary"
+      >
+        Submit
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`evacuate form component should render evacuate form with host options 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 evacuate_form"
+    novalidate=""
+  >
+    <div
+      class=""
+      name="EvacuateInstance"
+    >
+      <div>
+        <h3>
+          Evacuate Host
+        </h3>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            checked=""
+            class="cds--checkbox"
+            id="auto_select_host"
+            name="auto_select_host"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="auto_select_host"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              Auto-select Host?
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            checked=""
+            class="cds--checkbox"
+            id="on_shared_storage"
+            name="on_shared_storage"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="on_shared_storage"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              On Shared Storage
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary"
+        type="submit"
+        variant="primary"
+      >
+        Submit
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`evacuate form component should render evacuate form with multiple instances 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 evacuate_form"
+    novalidate=""
+  >
+    <div
+      class=""
+      name="EvacuateInstance"
+    >
+      <div>
+        <h3>
+          Evacuate Host
+        </h3>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            checked=""
+            class="cds--checkbox"
+            disabled=""
+            id="auto_select_host"
+            name="auto_select_host"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="auto_select_host"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              Auto-select Host?
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+      <div>
+        <div
+          class="cds--form-item cds--checkbox-wrapper"
+        >
+          <input
+            checked=""
+            class="cds--checkbox"
+            id="on_shared_storage"
+            name="on_shared_storage"
+            type="checkbox"
+          />
+          <label
+            class="cds--checkbox-label"
+            for="on_shared_storage"
+            title=""
+          >
+            <div
+              class="cds--checkbox-label-text"
+              dir="auto"
+            >
+              On Shared Storage
+            </div>
+          </label>
+          <div
+            class="cds--checkbox__validation-msg"
+          />
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary"
+        type="submit"
+        variant="primary"
+      >
+        Submit
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;

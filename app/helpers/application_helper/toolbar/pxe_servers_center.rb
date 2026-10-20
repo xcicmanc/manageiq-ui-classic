@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::PxeServersCenter < ApplicationHelper::Toolbar:
   button_group('pxe_server_vmdb', [
     select(
       :pxe_server_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -40,6 +40,24 @@ class ApplicationHelper::Toolbar::PxeServersCenter < ApplicationHelper::Toolbar:
           :url_parms    => "main_div",
           :send_checked => true,
           :confirm      => N_("Refresh Relationships for selected PXE Servers?"),
+          :enabled      => false,
+          :onwhen       => "1+"),
+      ]
+    ),
+  ])
+  button_group('pxe_server_policy', [
+    select(
+      :pxe_server_policy_choice,
+      nil,
+      t = N_('Policy'),
+      t,
+      :items => [
+        button(
+          :pxe_server_tag,
+          'pficon pficon-edit fa-lg',
+          N_('Edit Tags selected Pxe Servers'),
+          N_('Edit Tags'),
+          :send_checked => true,
           :enabled      => false,
           :onwhen       => "1+"),
       ]

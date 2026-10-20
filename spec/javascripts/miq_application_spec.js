@@ -10,122 +10,6 @@ describe('miq_application.js', function() {
     });
   });
 
-  describe('miqInitToolbars', function () {
-    beforeEach(function () {
-      var html  = '<div id="toolbar"><div class="btn-group"><button class="btn btn-default" id="first">Click me!</button></div><div class="btn-group"><button class="btn btn-default dropdown-toggle" id="second">Click me!</button><ul class="dropdown-menu"><li><a href="#" id="third">Click me!</a></li></ul></div></div>';
-      setFixtures(html);
-    });
-
-    it('initializes the onclick event on a regular toolbar button', function () {
-      spyOn(window, "miqToolbarOnClick");
-      miqInitToolbars();
-      $('#first').click();
-      expect(miqToolbarOnClick).toHaveBeenCalled();
-    });
-
-    it('not initializes an onclick event on a dropdown toolbar button', function () {
-      spyOn(window, "miqToolbarOnClick");
-      miqInitToolbars();
-      $('#second').click();
-      expect(miqToolbarOnClick).not.toHaveBeenCalled();
-    });
-
-    it('initializes the onclick event on a dropdown toolbar link', function () {
-      spyOn(window, "miqToolbarOnClick");
-      miqInitToolbars();
-      $('#third').click();
-      expect(miqToolbarOnClick).toHaveBeenCalled();
-    });
-  });
-
-  describe('miqToolbarOnClick', function () {
-    beforeEach(function () {
-      var html  = '<div id="toolbar"><div class="btn-group"><button class="btn btn-default dropdown-toggle" id="second">Click me!</button><ul class="dropdown-menu"><li><a id="reportButton" data-explorer="true" data-url_parms="?render_type=pdf" title="Download this report in PDF format" data-click="download_choice__render_report_pdf" name="download_choice__render_report_pdf" href="#"><i class="fa fa-file-text-o fa-lg" style="margin-right: 5px;"></i>Download as PDF</a></li><li><a id="notAReportButton" data-url="x_history?item=1" title="Go to this item" data-click="history_choice__history_1" name="history_choice__history_1" href="#"><i class="fa fa-arrow-left fa-lg" style="margin-right: 5px;"></i>All Saved Reports</a></li>';
-      setFixtures(html);
-    });
-
-    it('leaves miqSparkle on for Report download buttons', function () {
-      spyOn(window, "miqJqueryRequest");
-      miqInitToolbars();
-      $('#reportButton').click();
-      expect(miqJqueryRequest).toHaveBeenCalledWith('/null/x_button?pressed=render_report_pdf', { beforeSend:true,
-        complete: false,
-        data: 'render_type=pdf' });
-    });
-
-    it('turns miqSparkle off for non-Report buttons', function () {
-      spyOn(window, "miqJqueryRequest");
-      miqInitToolbars();
-      $('#notAReportButton').click();
-      expect(miqJqueryRequest).toHaveBeenCalledWith('/null/x_history?item=1', { beforeSend:true, complete: true, data: undefined });
-    });
-  });
-
-  describe('miqButtonOnWhen', function () {
-    beforeEach(function () {
-      var html = '<button id="button">Click me!</button>';
-      setFixtures(html);
-    });
-
-    describe('nothing selected', function () {
-      $.each(['1', '1+', '2+'], function (k, v) {
-        it('disables the button when onwhen is ' + v, function () {
-          var button = $('#button');
-          miqButtonOnWhen(button, v, 0);
-          expect(button.hasClass('disabled')).toBe(true);
-        });
-      });
-    });
-
-    describe('one selected', function () {
-      $.each(['1', '1+'], function (k, v) {
-        it('enables the button when onwhen is ' + v, function () {
-          var button = $('#button');
-          miqButtonOnWhen(button, v, 1);
-          expect(button.hasClass('disabled')).toBe(false);
-        });
-      });
-
-      it('disables the button when onwhen is 2+', function () {
-          var button = $('#button');
-          miqButtonOnWhen(button, '2+', 1);
-          expect(button.hasClass('disabled')).toBe(true);
-      });
-    });
-
-    describe('two selected', function () {
-      $.each(['1+', '2+'], function (k, v) {
-        it('enables the button when onwhen is ' + v, function () {
-          var button = $('#button');
-          miqButtonOnWhen(button, v, 2);
-          expect(button.hasClass('disabled')).toBe(false);
-        });
-      });
-
-      it('disables the button when onwhen is 1', function () {
-          var button = $('#button');
-          miqButtonOnWhen(button, '1', 2);
-          expect(button.hasClass('disabled')).toBe(true);
-      });
-    });
-
-    describe('three selected', function () {
-      $.each(['1+', '2+'], function (k, v) {
-        it('enables the button when onwhen is ' + v, function () {
-          var button = $('#button');
-          miqButtonOnWhen(button, v, 3);
-          expect(button.hasClass('disabled')).toBe(false);
-        });
-      });
-
-      it('disables the button when onwhen is 1', function () {
-          var button = $('#button');
-          miqButtonOnWhen(button, '1', 3);
-          expect(button.hasClass('disabled')).toBe(true);
-      });
-    })
-  });
-
   describe('miqShowAE_Tree', function () {
     it('uses url with the current controller', function() {
       ManageIQ.controller = 'catalog';
@@ -174,26 +58,9 @@ describe('miq_application.js', function() {
     });
   });
 
-  describe('miqUpdateElementsId', function () {
-    beforeEach(function () {
-      var html = '<div class="col-md-4 ui-sortable" id="col1"><div id="t_0|10000000000764" title="Drag this Tab to a new location"></div><div id="t_3|" title="Drag this Tab to a new location" class=""></div><div id="t_1|10000000000765" title="Drag this Tab to a new location"></div><div id="t_2|10000000000766" title="Drag this Tab to a new location"></div></div>'
-      setFixtures(html);
-    });
-
-    it('updates element Id with new order', function () {
-      ManageIQ.widget.dashboardUrl = 'dialog_res_reorder';
-      miqUpdateElementsId($('.col-md-4'));
-      var str = $('.col-md-4 > *').map(function(i, e) {
-        return e.id;
-      }).toArray().join(" ");
-      expect(str).toEqual("t_0|10000000000764 t_1| t_2|10000000000765 t_3|10000000000766")
-    });
-  });
-
   describe('miqSendOneTrans', function () {
     beforeEach(function() {
       ManageIQ.oneTransition.oneTrans = undefined;
-      ManageIQ.oneTransition.IEButtonPressed = false;
 
       spyOn(window, 'miqObserveRequest');
       spyOn(window, 'miqJqueryRequest');
@@ -466,18 +333,6 @@ describe('miq_application.js', function() {
     });
   });
 
-  describe('miqUncompressedId', function () {
-    it('returns uncompressed id unchanged', function() {
-      expect(miqUncompressedId('123')).toEqual('123');
-      expect(miqUncompressedId('12345678901234567890')).toEqual('12345678901234567890');
-    });
-
-    it('uncompresses compressed id', function() {
-      expect(miqUncompressedId('1r23')).toEqual('1000000000023');
-      expect(miqUncompressedId('999r123456789012')).toEqual('999123456789012');
-    });
-  });
-
   describe('miqFormatNotification', function () {
     context('single placeholder', function () {
       it('replaces placeholders with bindings', function () {
@@ -521,41 +376,92 @@ describe('miq_application.js', function() {
           </div>\
         </div>\
         <div class="col-xs-4 col-md-3 submit">\
-          <a id="login" class="btn btn-primary" alt="Log In" title="Log In" onclick="miqAjaxAuth("/dashboard/authenticate?button=login"); return false;" href="">Log In</a>\
-          <a id="sso_login" class="btn btn-primary" alt="SSO Log In" title="SSO Log In" style="display: none;" onclick="miqAjaxAuthSso("/dashboard/kerberos_authenticate?button=sso_login"); return false;" href="">SSO Log In</a>\
+          <a id="login" class="btn btn-primary" alt="Log In" title="Log In" onclick="miqAjaxAuth(\'/dashboard/authenticate?button=login\'); return false;" href="">Log In</a>\
+          <a id="sso_login" class="btn btn-primary" alt="SSO Log In" title="SSO Log In" style="display: none;" onclick="miqAjaxAuthSso(\'/dashboard/kerberos_authenticate?button=sso_login\'); return false;" href="">SSO Log In</a>\
         </div>\
       </div>';
 
       setFixtures(html);
     });
+
     context('failed login', function() {
-      var deferred;
+      beforeEach(function() {
+        // simulate failed authentication api call
+        spyOn(window, 'miqJqueryRequest').and.callFake(function() {
+          return Promise.reject();
+        });
 
-      beforeEach(module('ManageIQ'));
-      beforeEach(
-        inject(function(_API_, $q) {
-          var API = _API_;
-          deferred = $q.defer();
+        spyOn(window, 'miqClearLoginFields').and.callThrough();
+      });
 
-          // simulate failed authentication api call
-          spyOn(API, 'get').and.callFake(function() {return deferred.reject();});
-        })
-      );
-
-      it('removes user and password field from log in form', function() {
+      it('removes user and password field from log in form', function(done) {
         var user = $('#user_name');
         var password = $('#user_password');
 
         user.val('Bob');
         password.val('shh');
-        $('#login').trigger('click');
 
-        deferred.promise.then(function() {
-          expect(miqClearLoginFields).toHaveBeenCalled();
-          expect(user.val()).toBe('');
-          expect(password.val()).toBe('');
-        });
+        miqAjaxAuth('/dashboard/authenticate?button=login')
+          .then(function() {
+            expect(miqClearLoginFields).toHaveBeenCalled();
+            expect(document.activeElement.id).toEqual(user.attr('id'));
+            expect(user.val()).toBe('');
+            expect(password.val()).toBe('');
+
+            done();
+          });
       });
+    });
+  });
+
+  describe('miqCheckForChanges', () => {
+    let tmpManageIQ;
+
+    beforeEach(() => {
+      tmpManageIQ = ManageIQ.redux.store.getState;
+    });
+
+    afterEach(() => {
+      ManageIQ.redux.store.getState = tmpManageIQ;
+    });
+
+    it('returns true by default', () => {
+      expect(miqCheckForChanges()).toEqual(true);
+    });
+
+    it('returns true if no changes in tagging', () => {
+      ManageIQ.redux.store.getState = () => ({
+        tagging: {
+          appState: {
+            assignedTags: [],
+          },
+          initialState: {
+            assignedTags: [],
+          },
+        },
+      });
+
+      expect(miqCheckForChanges()).toEqual(true);
+    });
+
+    it('returns value from confirm if there are changes in tagging', () => {
+      spyOn(window, 'confirm').and.returnValues(true, false);
+
+      ManageIQ.redux.store.getState = () => ({
+        tagging: {
+          appState: {
+            assignedTags: [{id: '1011531', description: 'description', values: [{id: '108', description: '2GB'}]}],
+          },
+          initialState: {
+            assignedTags: [],
+          },
+        },
+      });
+
+      expect(window.confirm).not.toHaveBeenCalled();
+      expect(miqCheckForChanges()).toEqual(true);
+      expect(window.confirm).toHaveBeenCalled();
+      expect(miqCheckForChanges()).toEqual(false);
     });
   });
 });

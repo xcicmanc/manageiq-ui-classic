@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::CloudTenantCenter < ApplicationHelper::Toolbar
   button_group('cloud_tenant_vmdb', [
     select(
       :cloud_tenant_vmdb_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -22,7 +22,7 @@ class ApplicationHelper::Toolbar::CloudTenantCenter < ApplicationHelper::Toolbar
   button_group('cloud_tenant_policy', [
     select(
       :cloud_tenant_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :items => [
@@ -32,6 +32,25 @@ class ApplicationHelper::Toolbar::CloudTenantCenter < ApplicationHelper::Toolbar
           N_('Edit tags for this Cloud Tenant'),
           N_('Edit Tags')),
       ]
+    ),
+  ])
+  button_group('ems_cloud', [
+    twostate(
+      :view_dashboard,
+      'fa fa-tachometer fa-1xplus',
+      N_('Dashboard View'),
+      nil,
+      :url       => "/show/",
+      :url_parms => "?display=dashboard",
+      :klass     => ApplicationHelper::Button::ViewDashboard
+    ),
+    twostate(
+      :view_summary,
+      'fa fa-th-list',
+      N_('Summary View'),
+      nil,
+      :url       => "/show/",
+      :url_parms => "?display=main"
     ),
   ])
 end

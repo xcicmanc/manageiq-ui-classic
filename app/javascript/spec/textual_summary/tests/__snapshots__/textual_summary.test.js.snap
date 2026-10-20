@@ -1,0 +1,938 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`TextualSummary renders just fine 1`] = `
+<div>
+  <div
+    class="row"
+  >
+    <div
+      class="col-md-12 col-lg-6"
+    >
+      <ul
+        class="cds--accordion miq-structured-list-accordion generic_group cds--accordion--start"
+      >
+        <li
+          class="cds--accordion__item cds--accordion__item--active"
+        >
+          <button
+            aria-controls="accordion-item-_r_0_"
+            aria-expanded="true"
+            class="cds--accordion__heading"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="cds--accordion__arrow"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M11 8 6 13 5.3 12.3 9.6 8 5.3 3.7 6 3z"
+              />
+            </svg>
+            <div
+              class="cds--accordion__title"
+              dir="auto"
+            >
+              Properties
+            </div>
+          </button>
+          <div
+            class="cds--accordion__wrapper"
+          >
+            <div
+              class="cds--accordion__content"
+              id="accordion-item-_r_0_"
+            >
+              <div
+                aria-label="Structured list"
+                class="cds--structured-list miq-structured-list generic_group"
+                role="table"
+              >
+                <div
+                  class="cds--structured-list-tbody"
+                  role="rowgroup"
+                >
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="0"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Region
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title=""
+                    >
+                      <div
+                        class="content"
+                      >
+                        <div
+                          class="expand wrap_text"
+                        >
+                          US East (N. Virginia)
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="1"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Type
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title=""
+                    >
+                      <div
+                        class="content"
+                      >
+                        <div
+                          class="expand wrap_text"
+                        >
+                          Amazon EC2 Network
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="2"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Management Engine GUID
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title=""
+                    >
+                      <div
+                        class="content"
+                      >
+                        <div
+                          class="wrap_text"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+      <ul
+        class="cds--accordion miq-structured-list-accordion generic_group cds--accordion--start"
+      >
+        <li
+          class="cds--accordion__item cds--accordion__item--active"
+        >
+          <button
+            aria-controls="accordion-item-_r_4_"
+            aria-expanded="true"
+            class="cds--accordion__heading"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="cds--accordion__arrow"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M11 8 6 13 5.3 12.3 9.6 8 5.3 3.7 6 3z"
+              />
+            </svg>
+            <div
+              class="cds--accordion__title"
+              dir="auto"
+            >
+              Status
+            </div>
+          </button>
+          <div
+            class="cds--accordion__wrapper"
+          >
+            <div
+              class="cds--accordion__content"
+              id="accordion-item-_r_4_"
+            >
+              <div
+                aria-label="Structured list"
+                class="cds--structured-list miq-structured-list generic_group"
+                role="table"
+              >
+                <div
+                  class="cds--structured-list-tbody"
+                  role="rowgroup"
+                >
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="0"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Default Credentials
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title="Ok"
+                    >
+                      <div
+                        class="content"
+                      >
+                        <div
+                          class="expand wrap_text"
+                        >
+                          Valid
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="1"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      SmartState Docker Credentials
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title="Ok"
+                    >
+                      <div
+                        class="content"
+                      >
+                        <div
+                          class="expand wrap_text"
+                        >
+                          Valid
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="2"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Last Refresh
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                    >
+                      <div
+                        class="content"
+                      >
+                        <div
+                          class="multi_row_cell"
+                        >
+                          <div
+                            class="sub_row_item"
+                            title=""
+                          >
+                            <div
+                              class="sub_value"
+                            >
+                              <div
+                                class="expand wrap_text"
+                              >
+                                Success - 4 Months Ago
+                              </div>
+                            </div>
+                          </div>
+                          <div
+                            class="sub_row_item"
+                            title=""
+                          >
+                            <div
+                              class="sub_value"
+                            >
+                              <div
+                                class="wrap_text"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="3"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Last Refresh Date
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title=""
+                    >
+                      <div
+                        class="content"
+                      >
+                        <div
+                          class="expand wrap_text"
+                        >
+                          2018-01-20T23:35:50.908Z
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+    <div
+      class="col-md-12 col-lg-6"
+    >
+      <ul
+        class="cds--accordion miq-structured-list-accordion generic_group cds--accordion--start"
+      >
+        <li
+          class="cds--accordion__item cds--accordion__item--active"
+        >
+          <button
+            aria-controls="accordion-item-_r_9_"
+            aria-expanded="true"
+            class="cds--accordion__heading"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="cds--accordion__arrow"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M11 8 6 13 5.3 12.3 9.6 8 5.3 3.7 6 3z"
+              />
+            </svg>
+            <div
+              class="cds--accordion__title"
+              dir="auto"
+            >
+              Relationships
+            </div>
+          </button>
+          <div
+            class="cds--accordion__wrapper"
+          >
+            <div
+              class="cds--accordion__content"
+              id="accordion-item-_r_9_"
+            >
+              <div
+                aria-label="Structured list"
+                class="cds--structured-list miq-structured-list generic_group"
+                role="table"
+              >
+                <div
+                  class="cds--structured-list-tbody"
+                  role="rowgroup"
+                >
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="0"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Cloud Tenants
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title=""
+                    >
+                      <div
+                        class="content"
+                      >
+                        <div
+                          class="cell icon"
+                        >
+                          <i
+                            class="pficon pficon-cloud-tenant"
+                          />
+                        </div>
+                        <div
+                          class="expand wrap_text"
+                        >
+                          0
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="1"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Cloud Networks
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title="Show all Cloud Networks"
+                    >
+                      <a
+                        class="cds--link cell_link"
+                        href="/ems_network/39?display=cloud_networks"
+                        to="/ems_network/39?display=cloud_networks"
+                      >
+                        <div
+                          class="content"
+                        >
+                          <div
+                            class="cell icon"
+                            title="Show all Cloud Networks"
+                          >
+                            <i
+                              class="ff ff-cloud-network"
+                              title="Show all Cloud Networks"
+                            />
+                          </div>
+                          <div
+                            class="expand wrap_text"
+                          >
+                            1
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="2"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Cloud Subnets
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title="Show all Cloud Subnets"
+                    >
+                      <a
+                        class="cds--link cell_link"
+                        href="/ems_network/39?display=cloud_subnets"
+                        to="/ems_network/39?display=cloud_subnets"
+                      >
+                        <div
+                          class="content"
+                        >
+                          <div
+                            class="cell icon"
+                            title="Show all Cloud Subnets"
+                          >
+                            <i
+                              class="pficon pficon-network"
+                              title="Show all Cloud Subnets"
+                            />
+                          </div>
+                          <div
+                            class="expand wrap_text"
+                          >
+                            6
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="3"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Network Routers
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title="Show all Network Routers"
+                    >
+                      <a
+                        class="cds--link cell_link"
+                        href="/ems_network/39?display=network_routers"
+                        to="/ems_network/39?display=network_routers"
+                      >
+                        <div
+                          class="content"
+                        >
+                          <div
+                            class="cell icon"
+                            title="Show all Network Routers"
+                          >
+                            <i
+                              class="pficon pficon-route"
+                              title="Show all Network Routers"
+                            />
+                          </div>
+                          <div
+                            class="expand wrap_text"
+                          >
+                            1
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="4"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Security Groups
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title="Show all Security Groups"
+                    >
+                      <a
+                        class="cds--link cell_link"
+                        href="/ems_network/39?display=security_groups"
+                        to="/ems_network/39?display=security_groups"
+                      >
+                        <div
+                          class="content"
+                        >
+                          <div
+                            class="cell icon"
+                            title="Show all Security Groups"
+                          >
+                            <i
+                              class="pficon pficon-cloud-security"
+                              title="Show all Security Groups"
+                            />
+                          </div>
+                          <div
+                            class="expand wrap_text"
+                          >
+                            18
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="5"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Floating IPs
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title="Show all Floating IPs"
+                    >
+                      <a
+                        class="cds--link cell_link"
+                        href="/ems_network/39?display=floating_ips"
+                        to="/ems_network/39?display=floating_ips"
+                      >
+                        <div
+                          class="content"
+                        >
+                          <div
+                            class="cell icon"
+                            title="Show all Floating IPs"
+                          >
+                            <i
+                              class="ff ff-floating-ip"
+                              title="Show all Floating IPs"
+                            />
+                          </div>
+                          <div
+                            class="expand wrap_text"
+                          >
+                            14
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="6"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Network Ports
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title="Show all Network Ports"
+                    >
+                      <a
+                        class="cds--link cell_link"
+                        href="/ems_network/39?display=network_ports"
+                        to="/ems_network/39?display=network_ports"
+                      >
+                        <div
+                          class="content"
+                        >
+                          <div
+                            class="cell icon"
+                            title="Show all Network Ports"
+                          >
+                            <i
+                              class="ff ff-network-port"
+                              title="Show all Network Ports"
+                            />
+                          </div>
+                          <div
+                            class="expand wrap_text"
+                          >
+                            26
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="7"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Load Balancers
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title="Show all Load Balancers"
+                    >
+                      <a
+                        class="cds--link cell_link"
+                        href="/ems_network/39?display=load_balancers"
+                        to="/ems_network/39?display=load_balancers"
+                      >
+                        <div
+                          class="content"
+                        >
+                          <div
+                            class="cell icon"
+                            title="Show all Load Balancers"
+                          >
+                            <i
+                              class="ff ff-load-balancer"
+                              title="Show all Load Balancers"
+                            />
+                          </div>
+                          <div
+                            class="expand wrap_text"
+                          >
+                            2
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="8"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Power State
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title=""
+                    >
+                      <div
+                        class="content"
+                      >
+                        <div
+                          class="cell icon backgrounded-icon"
+                        >
+                          <i
+                            class="fa fa-play"
+                            style="background: green;"
+                          />
+                        </div>
+                        <div
+                          class="expand wrap_text"
+                        >
+                          On
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+      <ul
+        class="cds--accordion miq-structured-list-accordion tag_group cds--accordion--start"
+      >
+        <li
+          class="cds--accordion__item cds--accordion__item--active"
+        >
+          <button
+            aria-controls="accordion-item-_r_j_"
+            aria-expanded="true"
+            class="cds--accordion__heading"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="cds--accordion__arrow"
+              fill="currentColor"
+              focusable="false"
+              height="16"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M11 8 6 13 5.3 12.3 9.6 8 5.3 3.7 6 3z"
+              />
+            </svg>
+            <div
+              class="cds--accordion__title"
+              dir="auto"
+            >
+              Smart Management
+            </div>
+          </button>
+          <div
+            class="cds--accordion__wrapper"
+          >
+            <div
+              class="cds--accordion__content"
+              id="accordion-item-_r_j_"
+            >
+              <div
+                aria-label="Structured list"
+                class="cds--structured-list miq-structured-list tag_group"
+                role="table"
+              >
+                <div
+                  class="cds--structured-list-tbody"
+                  role="rowgroup"
+                >
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="0"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      Managed by Zone
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title=""
+                    >
+                      <div
+                        class="content"
+                      >
+                        <div
+                          class="cell icon"
+                        >
+                          <i
+                            class="pficon pficon-zone"
+                          />
+                        </div>
+                        <div
+                          class="expand wrap_text"
+                        >
+                          Amazon Zone
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="cds--structured-list-row not-clickable"
+                    role="row"
+                    tabindex="1"
+                    title=""
+                  >
+                    <div
+                      class="cds--structured-list-td label_header"
+                      dir="auto"
+                      role="cell"
+                    >
+                      My Company Tags
+                    </div>
+                    <div
+                      class="cds--structured-list-td content_value object_item"
+                      dir="auto"
+                      role="cell"
+                      title=""
+                    >
+                      <div
+                        class="content"
+                      >
+                        <div
+                          class="cell icon"
+                        >
+                          <i
+                            class="fa fa-tag"
+                          />
+                        </div>
+                        <div
+                          class="expand wrap_text"
+                        >
+                          No My Company Tags have been assigned
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+`;

@@ -2,7 +2,7 @@ class ApplicationHelper::Toolbar::MiqGroupsCenter < ApplicationHelper::Toolbar::
   button_group('rbac_group_vmdb', [
     select(
       :rbac_group_vmdb_choice,
-      'fa fa-cog fa-lg',
+      nil,
       t = N_('Configuration'),
       t,
       :items => [
@@ -19,8 +19,8 @@ class ApplicationHelper::Toolbar::MiqGroupsCenter < ApplicationHelper::Toolbar::
           :url_parms    => "main_div",
           :send_checked => true,
           :enabled      => false,
-          :onwhen       => "1",
-          :klass        => ApplicationHelper::Button::RbacGroupEdit),
+          :onwhen       => "1"
+        ),
         button(
           :rbac_group_delete,
           'pficon pficon-delete fa-lg',
@@ -36,7 +36,7 @@ class ApplicationHelper::Toolbar::MiqGroupsCenter < ApplicationHelper::Toolbar::
         button(
           :rbac_group_seq_edit,
           'pficon pficon-edit fa-lg',
-          t = N_('Edit Sequence of User Groups for LDAP Look Up'),
+          t = N_('Edit Sequence of User Groups for External Authentication'),
           t),
       ]
     ),
@@ -44,7 +44,7 @@ class ApplicationHelper::Toolbar::MiqGroupsCenter < ApplicationHelper::Toolbar::
   button_group('rbac_group_policy', [
     select(
       :rbac_group_policy_choice,
-      'fa fa-shield fa-lg',
+      nil,
       t = N_('Policy'),
       t,
       :enabled => false,

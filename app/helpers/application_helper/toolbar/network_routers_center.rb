@@ -4,7 +4,7 @@ class ApplicationHelper::Toolbar::NetworkRoutersCenter < ApplicationHelper::Tool
     [
       select(
         :network_router_vmdb_choice,
-        'fa fa-cog fa-lg',
+        nil,
         t = N_('Configuration'),
         t,
         :items => [
@@ -15,35 +15,6 @@ class ApplicationHelper::Toolbar::NetworkRoutersCenter < ApplicationHelper::Tool
             t,
             :klass => ApplicationHelper::Button::NetworkRouterNew
           ),
-          separator,
-          button(
-            :network_router_edit,
-            'pficon pficon-edit fa-lg',
-            t = N_('Edit selected Router'),
-            t,
-            :url_parms    => 'main_div',
-            :send_checked => true,
-            :enabled      => false,
-            :onwhen       => '1'
-          ),
-          button(
-            :network_router_add_interface,
-            'pficon pficon-edit fa-lg',
-            t = N_('Add Interface to selected Router'),
-            t,
-            :url_parms    => "main_div",
-            :send_checked => true,
-            :enabled      => false,
-            :onwhen       => "1"),
-          button(
-            :network_router_remove_interface,
-            'pficon pficon-edit fa-lg',
-            t = N_('Remove Interface from selected Router'),
-            t,
-            :url_parms    => "main_div",
-            :send_checked => true,
-            :enabled      => false,
-            :onwhen       => "1"),
           button(
             :network_router_delete,
             'pficon pficon-delete fa-lg',
@@ -51,9 +22,24 @@ class ApplicationHelper::Toolbar::NetworkRoutersCenter < ApplicationHelper::Tool
             t,
             :url_parms    => 'main_div',
             :send_checked => true,
-            :confirm      => N_('Warning: The selected Routers and ALL of their components will be removed!'),
+            :confirm      => N_('Warning: This Router and ALL of its components will be removed!'),
             :enabled      => false,
-            :onwhen       => '1+'),
+            :onwhen       => "1+",
+            :data         => {
+              'function'      => 'sendDataWithRx',
+              'function-data' => {
+                :type       => 'delete',
+                :controller => 'toolbarActions',
+                :payload    => {
+                  :entity => 'network_routers',
+                  :labels => {
+                    :single   => _('Network Router'),
+                    :multiple => _('Network Routers')
+                  }
+                }
+              }
+            }
+          )
         ]
       )
     ]
@@ -63,7 +49,7 @@ class ApplicationHelper::Toolbar::NetworkRoutersCenter < ApplicationHelper::Tool
     [
       select(
         :network_router_policy_choice,
-        'fa fa-shield fa-lg',
+        nil,
         t = N_('Policy'),
         t,
         :enabled => false,

@@ -37,6 +37,9 @@ include:
   zone:
     columns:
     - name
+  tenant:
+    columns:
+    - name
 
 # Included tables and columns for query performance
 include_for_find:
@@ -55,6 +58,7 @@ col_order:
 - total_storages
 - total_vms
 - total_miq_templates
+- tenant.name
 - region_description
 
 # Format of columns
@@ -81,7 +85,12 @@ headers:
 - Datastores
 - VMs
 - Templates
+- Tenant
 - Region
+
+col_options:
+  tenant.name:
+    :display_method: user_super_admin?
 
 # Condition(s) string for the SQL query
 conditions:

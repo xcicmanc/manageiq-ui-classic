@@ -10,12 +10,13 @@ module ContainerServiceMixin
     daily_pod_delete_trend = Hash.new(0)
 
     daily_metrics.each do |m|
-      date = m.timestamp.strftime("%Y-%m-%d")
+      date = m.timestamp.beginning_of_day.utc
       fill_pod_metrics(m, date, daily_pod_create_trend, daily_pod_delete_trend)
     end
 
     if daily_pod_create_trend.size > 1
       {
+        :dataAvailable => true,
         :interval_name => "daily",
         :xy_data       => create_delete_data(daily_pod_create_trend, daily_pod_delete_trend)
       }
@@ -23,7 +24,7 @@ module ContainerServiceMixin
   end
 
   def pod_metrics
-    daily_pod_metrics || hourly_pod_metrics
+    daily_pod_metrics || hourly_pod_metrics || empty_metrics_data
   end
 
   def fill_pod_metrics(m, time, pod_create_trend, pod_delete_trend)
@@ -40,6 +41,7 @@ module ContainerServiceMixin
     end
 
     {
+      :dataAvailable => true,
       :interval_name => "hourly",
       :xy_data       => create_delete_data(hourly_pod_create_trend, hourly_pod_delete_trend)
     }
@@ -48,6 +50,7 @@ module ContainerServiceMixin
   def create_delete_data(create_trend, delete_trend)
     if create_trend.any?
       {
+        :dataAvailable => true,
         :xData    => create_trend.keys,
         :yCreated => create_trend.values.map(&:round),
         :yDeleted => delete_trend.values.map(&:round)
@@ -69,6 +72,7 @@ module ContainerServiceMixin
   def trend_data(trend)
     if trend.any?
       {
+        :dataAvailable => true,
         :xData => trend.keys,
         :yData => trend.values.map { |value| (value || 0).round }
       }
@@ -84,6 +88,7 @@ module ContainerServiceMixin
 
     if realtime_metrics.size > 1
       {
+        :dataAvailable => true,
         :interval_name => "realtime",
         :xy_data       => trend_data(realtime_network_metrics)
       }
@@ -99,6 +104,7 @@ module ContainerServiceMixin
 
     if hourly_network_metrics.size > 1
       {
+        :dataAvailable => true,
         :interval_name => "hourly",
         :xy_data       => trend_data(hourly_network_metrics)
       }
@@ -107,6 +113,7 @@ module ContainerServiceMixin
 
   def empty_utilization_trend_data
     {
+      :dataAvailable => false,
       :interval_name => "",
       :xy_data       => {:cpu => nil, :memory => nil}
     }
@@ -114,6 +121,7 @@ module ContainerServiceMixin
 
   def empty_network_trend_data
     {
+      :dataAvailable => false,
       :interval_name => "",
       :xy_data       => nil
     }
@@ -122,12 +130,13 @@ module ContainerServiceMixin
   def daily_network_metrics
     daily_network_metrics = Hash.new(0)
     daily_metrics.each do |m|
-      day = m.timestamp.strftime("%Y-%m-%d")
+      day = m.timestamp.beginning_of_day.utc
       daily_network_metrics[day] += m.net_usage_rate_average if m.net_usage_rate_average.present?
     end
 
     if daily_network_metrics.size > 1
       {
+        :dataAvailable => true,
         :interval_name => "daily",
         :xy_data       => trend_data(daily_network_metrics)
       }
@@ -147,6 +156,7 @@ module ContainerServiceMixin
 
     if used_cpu.any?
       {
+        :dataAvailable => true,
         :interval_name => "realtime",
         :xy_data       => utilization_data(used_cpu, total_cpu, used_mem, total_mem)
       }
@@ -166,6 +176,7 @@ module ContainerServiceMixin
 
     if used_cpu.any?
       {
+        :dataAvailable => true,
         :interval_name => "hourly",
         :xy_data       => utilization_data(used_cpu, total_cpu, used_mem, total_mem)
       }
@@ -179,12 +190,13 @@ module ContainerServiceMixin
     total_mem = Hash.new(0)
 
     daily_metrics.each do |metric|
-      date = metric.timestamp.strftime("%Y-%m-%d")
+      date = metric.timestamp.beginning_of_day.utc
       fill_utilization(metric, date, used_cpu, used_mem, total_cpu, total_mem)
     end
 
     if used_cpu.any?
       {
+        :dataAvailable => true,
         :interval_name => "daily",
         :xy_data       => utilization_data(used_cpu, total_cpu, used_mem, total_mem)
       }
@@ -194,6 +206,7 @@ module ContainerServiceMixin
   def hourly_metrics
     MetricRollup.with_interval_and_time_range("hourly", (1.day.ago.beginning_of_hour.utc)..(Time.now.utc))
                 .where(:resource => @resource)
+                .order('timestamp')
   end
 
   def daily_metrics
@@ -202,6 +215,7 @@ module ContainerServiceMixin
 
     @daily_metrics ||= Metric::Helper.find_for_interval_name('daily', tp)
                                      .where(:resource => @resource)
-                                     .where('timestamp > ?', 30.days.ago.utc).order('timestamp')
+                                     .where('timestamp > ?', 30.days.ago.utc)
+                                     .order('timestamp')
   end
 end

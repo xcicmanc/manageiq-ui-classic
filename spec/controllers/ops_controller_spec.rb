@@ -1,8 +1,9 @@
 describe OpsController do
-  before(:each) do
+  let(:user) { FactoryBot.create(:user, :role => "super_administrator") }
+  before do
     EvmSpecHelper.create_guid_miq_server_zone
     MiqRegion.seed
-    stub_user(:features => :all)
+    login_as user
   end
 
   describe 'x_button' do
@@ -26,132 +27,36 @@ describe OpsController do
 
     describe 'x_button actions' do
       it 'rbac group add' do
+        allow(controller).to receive(:x_node).and_return('xx-g')
         post :x_button, :params => {:pressed => 'rbac_group_add'}
         expect(response.status).to eq(200)
       end
 
-      it 'rbac group edit' do
-        post :x_button, :params => {:pressed => 'rbac_group_edit', :id => MiqGroup.first.id}
-        expect(response.status).to eq(200)
+      context 'with using real user' do
+        let(:feature) { %w(rbac_group_edit) }
+        let(:user)    { FactoryBot.create(:user, :features => feature) }
+
+        before do
+          EvmSpecHelper.seed_specific_product_features(%w(rbac_group_edit))
+        end
+
+        it 'rbac group edit' do
+          allow(controller).to receive(:x_node).and_return('xx-g')
+          post :x_button, :params => {:pressed => 'rbac_group_edit', :id => user.current_group.id}
+          expect(response.status).to eq(200)
+        end
       end
 
       it 'rbac role add' do
-        MiqProductFeature.seed
         session[:sandboxes] = {"ops" => {:trees => {}}}
+        allow(controller).to receive(:x_node).and_return('xx-ur')
         post :x_button, :params => {:pressed => 'rbac_role_add'}
         expect(response.status).to eq(200)
       end
     end
   end
 
-  it 'can view the db_settings tab' do
-    ApplicationController.handle_exceptions = true
-
-    session[:sandboxes] = {"ops" => {:active_tree => :vmdb_tree,
-                                     :active_tab  => 'db_settings',
-                                     :trees       => {:vmdb_tree => {:active_node => 'root'}}}}
-    post :change_tab, :params => {:tab_id => 'db_settings', :format => :json}
-  end
-
-  it 'can view the db_connections tab' do
-    ApplicationController.handle_exceptions = true
-
-    session[:sandboxes] = {"ops" => {:active_tree => :vmdb_tree,
-                                     :active_tab  => 'db_connections',
-                                     :trees       => {:vmdb_tree => {:active_node => 'root'}}}}
-    expect(controller).to receive(:head)
-    post :change_tab, :params => {:tab_id => 'db_connections', :format => :json}
-    expect(response.status).to eq(200)
-  end
-
-  describe 'rbac_user_edit' do
-    let(:group) { FactoryGirl.create(:miq_group) }
-    before do
-      ApplicationController.handle_exceptions = true
-    end
-
-    it 'can add a user w/ group' do
-      session[:edit] = {
-        :key     => 'rbac_user_edit__new',
-        :current => {},
-        :new     => {
-          :name     => 'test7',
-          :userid   => 'test7',
-          :email    => 'test7@foo.bar',
-          :group    => group.id.to_s,
-          :password => 'test7',
-          :verify   => 'test7',
-        }
-      }
-      expect(controller).to receive(:replace_right_cell)
-      get :rbac_user_edit, :params => {:button => 'add'}
-    end
-
-    it 'cannot add a user w/o matching passwords' do
-      session[:edit] = {
-        :key => 'rbac_user_edit__new',
-        :new => {
-          :name     => 'test7',
-          :userid   => 'test7',
-          :email    => 'test7@foo.bar',
-          :group    => group.id.to_s,
-          :password => 'test7',
-          :verify   => 'test8',
-        }
-      }
-
-      expect(controller).to receive(:render_flash)
-      get :rbac_user_edit, :params => {:button => 'add'}
-      flash_messages = assigns(:flash_array)
-      expect(flash_messages.first[:message]).to eq("Password/Verify Password do not match")
-      expect(flash_messages.first[:level]).to eq(:error)
-    end
-
-    it 'cannot add a user w/o group' do
-      session[:edit] = {
-        :key => 'rbac_user_edit__new',
-        :new => {
-          :name     => 'test7',
-          :userid   => 'test7',
-          :email    => 'test7@foo.bar',
-          :group    => nil,
-          :password => 'test7',
-          :verify   => 'test7',
-        }
-      }
-
-      expect(controller).to receive(:render_flash)
-      get :rbac_user_edit, :params => {:button => 'add'}
-      flash_messages = assigns(:flash_array)
-      expect(flash_messages.first[:message]).to eq("A User must be assigned to a Group")
-      expect(flash_messages.first[:level]).to eq(:error)
-    end
-  end
-
-  context "#db_backup" do
-    it "posts db_backup action" do
-      session[:settings] = {:default_search => ''}
-
-      miq_schedule = FactoryGirl.create(:miq_schedule,
-                                        :name        => "test_db_schedule",
-                                        :description => "test_db_schedule_desc",
-                                        :towhat      => "DatabaseBackup",
-                                        :run_at      => {:start_time => "2015-04-19 00:00:00 UTC",
-                                                         :tz         => "UTC",
-                                                         :interval   => {:unit => "once", :value => ""}})
-      post :db_backup, :params => {
-        :backup_schedule => miq_schedule.id,
-        :uri             => "nfs://test_location",
-        :uri_prefix      => "nfs",
-        :action_typ      => "db_backup",
-        :format          => :js
-      }
-      expect(response.status).to eq(200)
-      expect(response.body).to_not be_empty
-    end
-  end
-
-  context "#edit_changed?" do
+  describe "#edit_changed?" do
     it "should set session[:changed] as false" do
       edit = {
         :new     => {:foo => 'bar'},
@@ -173,21 +78,19 @@ describe OpsController do
     end
 
     it "should set session[:changed] as false when config is same" do
-      vmdb = VMDB::Config.new("vmdb")
-      # edit_changed? expects current to be VMDB::Config
       edit = {
-        :new     => vmdb.config,
-        :current => vmdb
+        :new     => ::Settings.to_hash,
+        :current => ::Settings.to_hash
       }
       controller.instance_variable_set(:@edit, edit)
       controller.send(:edit_changed?)
       expect(session[:changed]).to eq(false)
     end
 
-    it "should set session[:changed] as true when config is sadifferentme" do
+    it "should set session[:changed] as true when config is different" do
       edit = {
         :new     => {:workers => 2},
-        :current => VMDB::Config.new("vmdb")
+        :current => ::Settings.to_hash
       }
       controller.instance_variable_set(:@edit, edit)
       controller.send(:edit_changed?)
@@ -196,7 +99,7 @@ describe OpsController do
   end
 
   it "executes action schedule_edit" do
-    schedule = FactoryGirl.create(:miq_schedule, :name => "test_schedule", :description => "old_schedule_desc")
+    schedule = FactoryBot.create(:miq_schedule, :name => "test_schedule", :description => "old_schedule_desc")
     allow(controller).to receive(:get_node_info)
     allow(controller).to receive(:replace_right_cell)
     allow(controller).to receive(:render)
@@ -212,11 +115,10 @@ describe OpsController do
       :timer_value => ""
     }
 
-    skip "https://github.com/rails/rails/issues/23881" if Gem::Requirement.new('< 5.0.0.beta4') === Rails.gem_version
-    expect(response).to be_success
+    expect(response).to have_http_status(204)
 
     audit_event = AuditEvent.where(:target_id => schedule.id).first
-    expect(audit_event.attributes['message']).to include("description changed to new_description")
+    expect(audit_event.attributes['message']).to include("description:[old_schedule_desc] to [new_description]")
   end
 
   describe "#settings_update" do
@@ -224,11 +126,11 @@ describe OpsController do
       it "updates the server's zone" do
         server = MiqServer.first
 
-        zone = FactoryGirl.create(:zone,
+        zone = FactoryBot.create(:zone,
                                   :name        => "not the default",
                                   :description => "Not the Default Zone")
 
-        current = double("current", :[] => {:server => {:zone => "default"}}).as_null_object
+        current = Settings.to_hash.deep_merge(:server => {:zone => "default"})
         new = Settings.to_hash.deep_merge(:server => {:zone => zone.name})
 
         edit = {:new => new, :current => current}
@@ -254,10 +156,11 @@ describe OpsController do
   before do
     MiqRegion.seed
     EvmSpecHelper.local_miq_server
-    login_as FactoryGirl.create(:user, :features => "ops_rbac")
+    login_as FactoryBot.create(:user, :features => "ops_rbac")
+    allow(controller).to receive(:data_for_breadcrumbs).and_return({})
   end
 
-  context "#explorer" do
+  describe "#explorer" do
     it "sets correct active accordion value" do
       controller.instance_variable_set(:@sb, {})
       allow(controller).to receive(:get_node_info)
@@ -275,11 +178,11 @@ describe OpsController do
     end
   end
 
-  context "#replace_explorer_trees" do
+  describe "#replace_explorer_trees" do
+    before { EvmSpecHelper.local_miq_server }
     it "build trees that are passed in and met other conditions" do
       controller.instance_variable_set(:@sb, {})
       allow(controller).to receive(:x_build_dyna_tree)
-      allow(VmdbDatabase).to receive_message_chain(:my_database, :evm_tables) { [] }
       replace_trees = %i(settings diagnostics rbac vmdb)
       presenter = ExplorerPresenter.new
       expect(controller).to receive(:reload_trees_by_presenter).with(
@@ -287,42 +190,11 @@ describe OpsController do
         array_including(
           instance_of(TreeBuilderOpsSettings),
           instance_of(TreeBuilderOpsDiagnostics),
-          instance_of(TreeBuilderOpsRbac),
-          instance_of(TreeBuilderOpsVmdb),
+          instance_of(TreeBuilderOpsRbac)
         )
       )
       controller.send(:replace_explorer_trees, replace_trees, presenter)
       expect(response.status).to eq(200)
-    end
-  end
-
-  context "Toolbar buttons render" do
-    before do
-      _guid, @miq_server, @zone = EvmSpecHelper.remote_guid_miq_server_zone
-      allow(controller).to receive(:check_privileges).and_return(true)
-      allow(controller).to receive(:assert_privileges).and_return(true)
-      seed_session_trees('ops', :diagnostics_tree, "z-#{ApplicationRecord.compress_id(@zone.id)}")
-      post :change_tab, :params => {:tab_id => "diagnostics_collect_logs"}
-    end
-
-    it "does not render toolbar buttons when edit is clicked" do
-      post :x_button, :params => {:id => @miq_server.id, :pressed => 'log_depot_edit', :format => :js}
-      expect(response.status).to eq(200)
-      expect(JSON.parse(response.body)['reloadToolbars']).to match([nil, nil])
-    end
-
-    it "renders toolbar buttons when cancel is clicked" do
-      allow(controller).to receive(:diagnostics_set_form_vars)
-      post :x_button, :params => {:id => @miq_server.id, :pressed => 'log_depot_edit', :button => "cancel", :format => :js}
-      expect(response.status).to eq(200)
-      expect(JSON.parse(response.body)['reloadToolbars'].length).to eq(2)
-    end
-
-    it "renders toolbar buttons when save is clicked" do
-      allow(controller).to receive(:diagnostics_set_form_vars)
-      post :x_button, :params => {:id => @miq_server.id, :pressed => 'log_depot_edit', :button => "save", :format => :js}
-      expect(response.status).to eq(200)
-      expect(JSON.parse(response.body)['reloadToolbars'].length).to eq(2)
     end
   end
 
@@ -335,8 +207,11 @@ describe OpsController do
         allow(controller).to receive(:check_privileges).and_return(true)
         allow(controller).to receive(:assert_privileges).and_return(true)
         seed_session_trees('ops', :settings_tree, 'root')
-        expect(controller).to receive(:render_to_string).with(any_args).exactly(3).times
         post :change_tab, :params => {:tab_id => tab, :parent_tab_id => 'settings_tags'}
+      end
+
+      it "change_tab does not update breadcrumbs" do
+        expect(JSON.parse(response.body)["updatePartials"]).not_to include(:breadcrumbs)
       end
 
       it "Apply button remains disabled with flash errors" do
@@ -360,10 +235,10 @@ describe OpsController do
     end
   end
 
-  context '#dialog_replace_right_cell' do
-    describe 'for an User' do
+  describe '#dialog_replace_right_cell' do
+    context 'for an User' do
       before do
-        user = FactoryGirl.create(:user)
+        user = FactoryBot.create(:user)
         allow(controller).to receive(:x_node).and_return("u-#{user.id}")
       end
 
@@ -373,8 +248,8 @@ describe OpsController do
       end
     end
 
-    describe 'for a Group' do
-      let(:group) { FactoryGirl.create(:miq_group) }
+    context 'for a Group' do
+      let(:group) { FactoryBot.create(:miq_group) }
 
       before do
         allow(controller).to receive(:x_node).and_return("g-#{group.id}")
@@ -388,7 +263,7 @@ describe OpsController do
     end
   end
 
-  context "#tree_selected_model" do
+  describe "#tree_selected_model" do
     it 'sets @tree_model_selected to User for user node' do
       allow(controller).to receive(:x_node).and_return('u-42')
       controller.tree_selected_model
@@ -444,15 +319,151 @@ describe OpsController do
     end
   end
 
-  context '#tree_select' do
+  describe '#tree_select' do
     it 'calls #tree_select_model' do
-      controller.instance_variable_set(:@sb, {})
+      login_as user_with_feature(%w(ops_settings))
+      controller.instance_variable_set(:@sb, :active_tree => :settings_tree)
       controller.params[:id] = 'root'
       allow(controller).to receive(:set_active_tab)
       allow(controller).to receive(:get_node_info)
       allow(controller).to receive(:replace_right_cell)
       expect(controller).to receive(:tree_selected_model)
       controller.send(:tree_select)
+    end
+  end
+
+  describe "#rbac_tenant_manage_quotas" do
+    let(:tenant_alpha) { FactoryBot.create(:tenant, :parent => Tenant.root_tenant) }
+    let(:tenant_omega) { FactoryBot.create(:tenant, :parent => tenant_alpha) }
+
+    let(:feature) { MiqProductFeature.find_all_by_identifier(["rbac_tenant_manage_quotas_tenant_#{tenant_omega.id}"]) }
+    let(:role_with_access_to_omega_rbac_tenant_manage_quota_permission) { FactoryBot.create(:miq_user_role, :miq_product_features => feature) }
+
+    let(:group_alpha) { FactoryBot.create(:miq_group, :tenant => tenant_alpha, :miq_user_role => role_with_access_to_omega_rbac_tenant_manage_quota_permission) }
+    let(:user_alpha)  { FactoryBot.create(:user, :miq_groups => [group_alpha]) }
+
+    before do
+      EvmSpecHelper.seed_specific_product_features(%w(rbac_tenant_manage_quotas))
+      Tenant.seed
+      User.current_user = user_alpha
+    end
+
+    it "doesn't perform any manage quota action on tenant_omega" do
+      allow(controller).to receive(:rbac_tenant_manage_quotas_save_add)
+      controller.params = {:id => tenant_omega.id, :button => 'add'}
+      expect { controller.rbac_tenant_manage_quotas }.not_to raise_error
+    end
+
+    it "does perform any manage quota action on tenant_alpha" do
+      allow(controller).to receive(:rbac_tenant_manage_quotas_save_add)
+      controller.params = {:id => tenant_alpha.id, :button => 'add'}
+      expect { controller.rbac_tenant_manage_quotas }.to raise_error(MiqException::RbacPrivilegeException)
+    end
+  end
+
+  describe '#textual_group_list' do
+    subject { controller.send(:textual_group_list) }
+
+    it 'displays Properties in textual summary of a Tenant' do
+      expect(subject).to include(array_including(:properties))
+    end
+
+    it 'displays Relationships in textual summary of a Tenant' do
+      expect(subject).to include(array_including(:relationships))
+    end
+
+    it 'displays Smart Management in textual summary of a Tenant' do
+      expect(subject).to include(array_including(:smart_management))
+    end
+  end
+
+  context 'display methods for Tenant textual summary' do
+    let(:record) { FactoryBot.create(:tenant) }
+
+    before { controller.instance_variable_set(:@record, record) }
+
+    describe '#display_service_templates' do
+      let(:opts) do
+        {
+          :breadcrumb_title => _('Catalog Items and Bundles'),
+          :association      => :nested_service_templates,
+          :parent           => record,
+          :no_checkboxes    => true
+        }
+      end
+
+      it 'calls nested_list to display Catalog Items and Bundles' do
+        expect(controller).to receive(:nested_list).with(ServiceTemplate, opts)
+        controller.send(:display_service_templates)
+      end
+    end
+
+    describe '#display_providers' do
+      let(:opts) do
+        {
+          :breadcrumb_title => _('Providers'),
+          :association      => :nested_providers,
+          :parent           => record,
+          :no_checkboxes    => true
+        }
+      end
+
+      it 'calls nested_list to display Providers' do
+        expect(controller).to receive(:nested_list).with(ExtManagementSystem, opts)
+        controller.send(:display_providers)
+      end
+    end
+
+    describe '#display_ae_namespaces' do
+      let(:opts) do
+        {
+          :breadcrumb_title => _('Automate Domains'),
+          :association      => :nested_ae_namespaces,
+          :parent           => record,
+          :no_checkboxes    => true
+        }
+      end
+
+      it 'calls nested_list to display Providers' do
+        expect(controller).to receive(:nested_list).with(MiqAeDomain, opts)
+        controller.send(:display_ae_namespaces)
+      end
+    end
+  end
+
+  describe '#nested_list' do
+    let(:record) { FactoryBot.create(:tenant) }
+    let(:opts) do
+      {
+        :association      => :nested_service_templates,
+        :parent           => record,
+        :no_checkboxes    => true,
+        :breadcrumb_title => 'Catalog Items and Bundles'
+      }
+    end
+
+    before do
+      controller.instance_variable_set(:@record, record)
+      controller.instance_variable_set(:@breadcrumbs, [])
+      allow(controller).to receive(:render_to_string).and_return('')
+    end
+
+    context 'updating breadcrumbs' do
+      before { allow(controller).to receive(:render) }
+
+      it 'calls add_to_breadcrumbs and render_to_string' do
+        expect(controller).to receive(:render_to_string).with(:partial => 'layouts/gtl')
+        expect(controller).to receive(:add_to_breadcrumbs).with(:title => opts[:breadcrumb_title])
+        controller.send(:nested_list, ServiceTemplate, opts)
+      end
+    end
+
+    it 'updates right cell text' do
+      expect(controller).to receive(:render).with(:json => {:explorer       => 'replace_main_div',
+                                                            :rightCellText  => "#{record.name} (All #{opts[:breadcrumb_title]})",
+                                                            :setVisibility  => {:toolbar => false},
+                                                            :updatePartials => {'ops_tabs' => '', :breadcrumbs => ''}})
+      controller.send(:nested_list, ServiceTemplate, opts)
     end
   end
 end

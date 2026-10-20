@@ -1,12 +1,10 @@
+require 'helpers/report_helper_spec'
+
 describe DashboardController do
   context "POST authenticate" do
-    before do
-      EvmSpecHelper.create_guid_miq_server_zone
-    end
+    before { EvmSpecHelper.create_guid_miq_server_zone }
 
-    let(:user_with_role) do
-      FactoryGirl.create(:user, :role => "random")
-    end
+    let(:user_with_role) { FactoryBot.create(:user, :role => "random") }
 
     it "has secure headers" do
       get :index
@@ -39,14 +37,14 @@ describe DashboardController do
 
     it "remembers group" do
       group1 = user_with_role.current_group
-      group2 = FactoryGirl.create(:miq_group)
-      user_with_role.update_attributes(:miq_groups => [group1, group2])
+      group2 = FactoryBot.create(:miq_group)
+      user_with_role.update(:miq_groups => [group1, group2])
 
       skip_data_checks
       post :authenticate, :params => { :user_name => user_with_role.userid, :user_password => 'dummy' }
       expect_successful_login(user_with_role)
 
-      user_with_role.update_attributes(:current_group => group2)
+      user_with_role.update(:current_group => group2)
 
       controller.instance_variable_set(:@current_user, nil) # force the controller to lookup the user record again
       get :index
@@ -59,8 +57,8 @@ describe DashboardController do
       expect_successful_login(user_with_role)
 
       # no longer has access to this group
-      group2 = FactoryGirl.create(:miq_group)
-      user_with_role.update_attributes(:current_group => group2, :miq_groups => [group2])
+      group2 = FactoryBot.create(:miq_group)
+      user_with_role.update(:current_group => group2, :miq_groups => [group2])
 
       controller.instance_variable_set(:@current_user, nil) # force the controller to lookup the user record again
       get :index
@@ -68,13 +66,13 @@ describe DashboardController do
     end
 
     it "requires group" do
-      user = FactoryGirl.create(:user, :current_group => nil)
+      user = FactoryBot.create(:user, :current_group => nil)
       post :authenticate, :params => { :user_name => user.userid, :user_password => "dummy" }
       expect_failed_login('Group')
     end
 
     it "requires role" do
-      user = FactoryGirl.create(:user_with_group)
+      user = FactoryBot.create(:user_with_group)
       post :authenticate, :params => { :user_name => user.userid, :user_password => "dummy" }
       expect_failed_login('Role')
     end
@@ -92,70 +90,130 @@ describe DashboardController do
     end
   end
 
-  context "SAML support" do
+  context "external auth support" do
+    let(:user) { FactoryBot.create(:user, :role => "random") }
+    let(:user_name) { user.userid }
+    let(:user_domain) { "ipa.example.org" }
+    let(:user_email) { "#{user_name}@#{user_domain}" }
+    let(:user_group) { user.miq_groups.first.description }
+
     before do
       EvmSpecHelper.create_guid_miq_server_zone
+
+      stub_settings_merge(:authentication => {:mode => 'httpd', :httpd_role => true})
+      request.headers.merge!(
+        "HTTP_X_REMOTE_USER"        => user_name,
+        "HTTP_X_REMOTE_USER_EMAIL"  => user_email,
+        "HTTP_X_REMOTE_USER_DOMAIN" => user_domain,
+        "HTTP_X_REMOTE_USER_GROUPS" => user_group
+      )
     end
 
-    it "SAML Login should redirect to the protected page" do
-      page = double("page")
-      allow(page).to receive(:<<).with(any_args)
-      expect(page).to receive(:redirect_to).with(controller.saml_protected_page)
-      expect(controller).to receive(:render).with(:update).and_yield(page)
-      controller.send(:initiate_saml_login)
+    it "initiates a task when logging in" do
+      skip_data_checks
+      post :external_authenticate, :params => {:user_name => user_name, :user_password => 'dummy'}
+      expect_failed_login # Not really failed, but waiting to complete
+
+      task = MiqTask.first
+      expect(task).to have_attributes(
+        :name    => "External httpd User Authorization of '#{user_name}'",
+        :message => "User authorized successfully",
+        :state   => "Finished",
+        :status  => "Ok",
+        :userid  => user_email
+      )
+
+      post :wait_for_task, :params => {:task_id => task.id}
+      expect_successful_login(user)
     end
 
-    it "SAML protected page should redirect to logout without a valid user" do
-      get :saml_login
-      expect(response).to redirect_to(:action => "logout")
+    it "serializes the session properly between the task initiation and waiting for the task" do
+      skip_data_checks
+      post :external_authenticate, :params => {:user_name => user_name, :user_password => 'dummy'}
+
+      # In Rails test environment, we use memory session storage, but in production
+      # we use memcached. memcached Marshal.dump's the session, so we do that here
+      # manually to ensure it doesn't blow up.
+      Marshal.load(Marshal.dump(session))
     end
+  end
 
-    it "SAML protected page should render the saml_login page with the proper validation_url and api token" do
-      user           = FactoryGirl.create(:user, :userid => "johndoe", :role => "test")
-      auth_token     = "aabbccddeeff"
-      validation_url = "/user_validation_url"
+  context "SAML and OIDC support" do
+    before { EvmSpecHelper.create_guid_miq_server_zone }
 
-      request.env["HTTP_X_REMOTE_USER"] = user.userid
-      skip_data_checks(validation_url)
+    %i(saml oidc).each do |protocol|
+      it "#{protocol.upcase} login should redirect to the protected page" do
+        page = double("page")
+        allow(page).to receive(:<<).with(any_args)
+        expect(page).to receive(:redirect_to).with(controller.send("#{protocol}_protected_page"))
+        expect(controller).to receive(:render).with(:update).and_yield(page)
+        controller.send("initiate_#{protocol}_login")
+      end
 
-      allow(User).to receive(:authenticate).and_return(user)
-      allow_any_instance_of(Api::UserTokenService).to receive(:generate_token)
-        .with(user.userid, "ui")
-        .and_return(auth_token)
+      it "#{protocol.upcase} protected page should redirect to #{protocol}_logout without a valid user" do
+        get "#{protocol}_login".to_sym
+        expect(response).to redirect_to(:action => "logout")
+      end
 
-      expect(controller).to receive(:render)
-        .with(:template => "dashboard/saml_login",
-              :layout   => false,
-              :locals   => {:api_auth_token => auth_token, :validation_url => validation_url})
-        .exactly(1).times
+      it "#{protocol.upcase} protected page should render the #{protocol}_login page with the proper validation_url and api token" do
+        user           = FactoryBot.create(:user, :userid => "johndoe", :role => "test")
+        validation_url = "/user_validation_url"
 
-      controller.send(:saml_login)
+        request.env["HTTP_X_REMOTE_USER"] = user.userid.dup.force_encoding("ASCII-8BIT")
+        skip_data_checks(validation_url)
+
+        expect(User).to receive(:authenticate).and_return(user)
+
+        expect(controller).to receive(:render)
+          .with(:template => "dashboard/#{protocol}_login",
+                :layout   => false,
+                :locals   => {:validation_url => validation_url})
+          .exactly(1).times
+
+        controller.send("#{protocol}_login")
+      end
+
+      it "#{protocol.upcase} protected page should render the #{protocol}_login page with the proper validation_url and api token when the user has Unicode characters" do
+        user           = FactoryBot.create(:user, :userid => "häåğēn.däzş", :role => "test")
+        validation_url = "/user_validation_url"
+
+        request.env["HTTP_X_REMOTE_USER"] = user.userid.dup.force_encoding("ASCII-8BIT")
+        skip_data_checks(validation_url)
+
+        expect(User).to receive(:authenticate).and_return(user)
+
+        expect(controller).to receive(:render)
+          .with(:template => "dashboard/#{protocol}_login",
+                :layout   => false,
+                :locals   => {:validation_url => validation_url})
+          .exactly(1).times
+
+        controller.send("#{protocol}_login")
+      end
     end
   end
 
   # would like to test these controller by calling authenticate
   # need to ensure all cases are handled before deleting these
-  context "#validate_user" do
-    before do
-      EvmSpecHelper.create_guid_miq_server_zone
-    end
+  describe "#validate_user" do
+    before { EvmSpecHelper.create_guid_miq_server_zone }
 
     it "returns flash message when user's group is missing" do
-      user = FactoryGirl.create(:user)
+      user = FactoryBot.create(:user)
       allow(User).to receive(:authenticate).and_return(user)
       validation = controller.send(:validate_user, user)
       expect(validation.flash_msg).to include('User\'s Group is missing')
     end
 
     it "returns flash message when user's role is missing" do
-      user = FactoryGirl.create(:user_with_group)
+      user = FactoryBot.create(:user_with_group)
       allow(User).to receive(:authenticate).and_return(user)
       validation = controller.send(:validate_user, user)
       expect(validation.flash_msg).to include('User\'s Role is missing')
     end
 
     it "returns flash message when user does not have access to any features" do
-      user = FactoryGirl.create(:user, :role => "test")
+      user = FactoryBot.create(:user, :role => "test")
       allow(User).to receive(:authenticate).and_return(user)
       validation = controller.send(:validate_user, user)
       expect(validation.flash_msg).to include("The user's role is not authorized for any access")
@@ -167,14 +225,14 @@ describe DashboardController do
       allow(controller).to receive(:check_privileges).and_return(true)
       EvmSpecHelper.seed_specific_product_features("container")
       feature_id = MiqProductFeature.find_all_by_identifier(["container"])
-      user = FactoryGirl.create(:user, :features => feature_id)
+      user = FactoryBot.create(:user, :features => feature_id)
       allow(User).to receive(:authenticate).and_return(user)
       validation = controller.send(:validate_user, user)
       expect(validation.flash_msg).to be_nil
     end
 
     it "returns url for the user and sets user's group/role id in session" do
-      user = FactoryGirl.create(:user, :role => "test")
+      user = FactoryBot.create(:user, :role => "test")
       allow(User).to receive(:authenticate).and_return(user)
       skip_data_checks('some_url')
       validation = controller.send(:validate_user, user)
@@ -182,100 +240,118 @@ describe DashboardController do
       expect(validation.flash_msg).to be_nil
       expect(validation.url).to eq('some_url')
     end
+
+    context 'handling no records and super admin user' do
+      let(:user) { FactoryBot.create(:user_admin, :userid => 'admin') }
+      let(:emb_ansible) { FactoryBot.create(:provider_embedded_ansible) }
+      let(:providers) { [emb_ansible] }
+
+      before do
+        allow(User).to receive(:authenticate).and_return(user)
+        allow(controller).to receive(:session).and_return(:start_url => '/dashboard/show')
+        allow(::Settings.product.maindb).to receive(:constantize).and_return(providers)
+      end
+
+      subject { controller.send(:validate_user, user) }
+
+      it 'redirects to Infrastructure Providers page if no records found' do
+        expect(subject.url).to eq('/ems_infra/show_list')
+      end
+
+      context 'some provider present' do
+        let(:vmware) { FactoryBot.create(:ems_vmware) }
+        let(:providers) { [emb_ansible, vmware] }
+
+        it 'displays the dashboard' do
+          expect(subject.url).to eq('/dashboard/show')
+        end
+      end
+    end
   end
 
   context "Create Dashboard" do
-    it "dashboard show" do
+    let(:widget) { FactoryBot.create(:miq_widget) }
+
+    before do
+      EvmSpecHelper.local_miq_server
+      @group = FactoryBot.create(:miq_group, :miq_user_role => FactoryBot.create(:miq_user_role, :features => %w[everything]))
+      @user = FactoryBot.create(:user, :miq_groups => [@group])
       # create dashboard for a group
-      ws = FactoryGirl.create(:miq_widget_set, :name     => "default",
-                                               :set_data => {:last_group_db_updated => Time.now.utc,
-                              :col1 => [1], :col2 => [], :col3 => []})
+      @ws = FactoryBot.create(:miq_widget_set, :name                  => "group_default",
+                                               :last_group_db_updated => Time.now.utc,
+                                               :owner                 => @group)
+      @group.update(:settings => {:dashboard_order => [@ws.id]})
+    end
 
-      ur = FactoryGirl.create(:miq_user_role)
-      group = FactoryGirl.create(:miq_group, :miq_user_role => ur, :settings => {:dashboard_order => [ws.id]})
-      user = FactoryGirl.create(:user, :miq_groups => [group])
-
-      controller.instance_variable_set(:@sb, :active_db => ws.name)
+    it "dashboard show" do
+      EvmSpecHelper.local_miq_server
+      controller.instance_variable_set(:@sb, :active_db => @ws.name)
       controller.instance_variable_set(:@tabs, [])
-      login_as user
+      login_as @user
       # create a user's dashboard using group dashboard name.
-      FactoryGirl.create(:miq_widget_set,
-                         :name     => "#{user.userid}|#{group.id}|#{ws.name}",
-                         :set_data => {:last_group_db_updated => Time.now.utc, :col1 => [1], :col2 => [], :col3 => []})
+      FactoryBot.create(:miq_widget_set, :name                  => @user.userid.to_s,
+                                         :owner                 => @user.current_group,
+                                         :last_group_db_updated => Time.now.utc)
+
       controller.show
       expect(controller.send(:flash_errors?)).not_to be_truthy
     end
 
     it "widget_add" do
-      ur = FactoryGirl.create(:miq_user_role)
-      group = FactoryGirl.create(:miq_group, :miq_user_role => ur)
-      user = FactoryGirl.create(:user, :miq_groups => [group])
-      wi = FactoryGirl.create(:miq_widget)
-      ws = FactoryGirl.create(:miq_widget_set, :name     => "default",
-                                               :set_data => {:last_group_db_updated => Time.now.utc,
-                                                             :col1 => [], :col2 => [], :col3 => []},
-                                               :userid   => user.userid,
-                                               :group_id => group.id)
-      session[:sandboxes] = {"dashboard" => {:active_db  => ws.name,
-                                             :dashboards => {ws.name => {:col1 => [], :col2 => [], :col3 => []}}}}
-      login_as user
+      wi = FactoryBot.create(:miq_widget)
+      @ws.update(:userid => @user.userid)
+      session[:sandboxes] = {"dashboard" => {:active_db  => @ws.name,
+                                             :dashboards => {@ws.name => {:col1 => [], :col2 => []}}}}
+      login_as @user
       allow(User).to receive(:server_timezone).and_return("UTC")
       allow(MiqServer).to receive(:my_zone).and_return('default')
       allow(controller).to receive(:check_privileges).and_return(true)
       allow(controller).to receive(:assert_privileges).and_return(true)
-      post :widget_add, :widget => wi.id
+      post :widget_add, :params => { :widget => wi.id }
       expect(controller.send(:flash_errors?)).not_to be_truthy
-      post :widget_add, :widget => wi.id
+      post :widget_add, :params => { :widget => wi.id }
       expect(controller.send(:flash_errors?)).to be_truthy
       expect(assigns(:flash_array).first[:message]).to include("is already part of the edited dashboard")
     end
-  end
 
-  context "#main_tab redirects to correct url when maintab is pressed by limited access user" do
-    before do
-      allow_any_instance_of(described_class).to receive(:set_user_time_zone)
-      allow(controller).to receive(:check_privileges).and_return(true)
-    end
+    it "reset user's dashboard upon login" do
+      controller.instance_variable_set(:@tabs, [])
+      controller.instance_variable_set(:@sb, {})
+      # login as a user, that should create a copy of dashboard for a the user
+      login_as @user
+      controller.instance_variable_set(:@sb, :active_db => @ws.name, :active_db_id => @ws.id)
+      controller.show
 
-    main_tabs = {
-      :clo => ["vm_cloud_explorer", 'vm_cloud/explorer'],
-      :inf => ["vm_infra_explorer", 'vm_infra/explorer'],
-      :svc => ["vm_explorer",       'vm_or_template/explorer'],
-    }
-    main_tabs.each do |tab, (feature, url)|
-      it "for tab ':#{tab}'" do
-        login_as FactoryGirl.create(:user, :features => feature)
-        session[:tab_url] = {}
-        post :maintab, :params => { :tab => tab }
-        expect(response.body).to include(url)
-      end
-    end
-  end
+      # change original dashboard and set reset_upon_login flag to true
+      @ws.set_data.merge(:last_group_db_updated => Time.now.utc, :reset_upon_login => true)
+      @ws.save!
 
-  context "#main_tab redirects to correct url when maintab is pressed by user with only Tenant features" do
-    before do
-      allow_any_instance_of(described_class).to receive(:set_user_time_zone)
-      allow(controller).to receive(:check_privileges).and_return(true)
-      EvmSpecHelper.seed_specific_product_features("rbac_tenant")
-      feature_id = MiqProductFeature.find_all_by_identifier(["rbac_tenant"])
-      login_as FactoryGirl.create(:user, :features => feature_id)
-    end
+      # get user's copy of dashboard and add widgets
+      user_dashboard = MiqWidgetSet.find_by(:name => @ws.name, :userid => @user.userid)
+      user_dashboard.update(:set_data => {:last_group_db_updated => Time.now.utc - 1, :col1 => [1, 2, 3], :col2 => [4]})
 
-    it "for Configure maintab" do
-      session[:tab_url] = {}
-      post :maintab, :params => { :tab => "set" }
-      expect(response.body).to include("ops/explorer")
+      # verify groupd dashboard and user's dashboard has different widgets
+      expect(user_dashboard.set_data[:col1]).not_to eq(@ws.set_data[:col1])
+      expect(user_dashboard.set_data[:col2]).not_to eq(@ws.set_data[:col2])
+
+      # login again to verify that the user's copy of dashboard gets reset to group dashboard settings
+      login_as @user
+      controller.instance_variable_set(:@sb, :dashboards => nil)
+      controller.show
+      user_dashboard.reload
+      expect(user_dashboard.set_data[:col1]).to eq(@ws.set_data[:col1])
+      expect(user_dashboard.set_data[:col2]).to eq(@ws.set_data[:col2])
     end
   end
 
-  context "#start_url_for_user" do
+  describe "#start_url_for_user" do
     before do
       MiqShortcut.seed
       allow(controller).to receive(:check_privileges).and_return(true)
     end
 
     it "retuns start page url that user has set as startpage in settings" do
-      login_as FactoryGirl.create(:user, :features => "everything")
+      login_as FactoryBot.create(:user, :features => "everything")
       controller.instance_variable_set(:@settings, :display => {:startpage => "/dashboard/show"})
 
       allow(controller).to receive(:role_allows?).and_return(true)
@@ -284,76 +360,14 @@ describe DashboardController do
     end
 
     it "returns first url that user has access to as start page when user doesn't have access to startpage set in settings" do
-      login_as FactoryGirl.create(:user, :features => "vm_cloud_explorer")
+      login_as FactoryBot.create(:user, :features => "vm_cloud_explorer")
       controller.instance_variable_set(:@settings, :display => {:startpage => "/dashboard/show"})
       url = controller.send(:start_url_for_user, nil)
       expect(url).to eq("/vm_cloud/explorer?accordion=instances")
     end
   end
 
-  describe '#resize_layout' do
-    before(:each) do
-      controller.params[:sidebar] = sidebar
-      controller.params[:context] = context
-      expect(controller).to receive(:head).with(:ok)
-      controller.send(:resize_layout)
-    end
-
-    context 'controller is not nil' do
-      let(:context) { 'sample_controller' }
-
-      context 'invalid sidebar value' do
-        let(:sidebar) { 'not a number' }
-
-        it 'sets width to 0 units' do
-          expect(session[:sidebar][context]).to eq(0)
-        end
-      end
-
-      context 'valid sidebar value' do
-        let(:sidebar) { '3' }
-
-        it 'sets width to 3 units' do
-          expect(session[:sidebar][context]).to eq(3)
-        end
-      end
-
-      context 'no sidebar value' do
-        let(:sidebar) { nil }
-
-        it 'does not change the configuration' do
-          expect(session[:sidebar]).to be nil
-        end
-      end
-    end
-
-    context 'controller is nil' do
-      let(:sidebar) { nil }
-      let(:context) { nil }
-
-      it 'does not change the configuration' do
-        expect(session[:sidebar]).to be nil
-      end
-    end
-  end
-
-  context "#maintab" do
-    before do
-      allow_any_instance_of(described_class).to receive(:set_user_time_zone)
-      allow(controller).to receive(:check_privileges).and_return(true)
-    end
-    it "redirects a restful link correctly" do
-      ems_cloud_amz = FactoryGirl.create(:ems_amazon)
-      breadcrumbs = [{:name => "Name", :url => "/controller/action"}]
-      session[:breadcrumbs] = breadcrumbs
-      session[:tab_url] = {:clo => "/ems_cloud/#{ems_cloud_amz.id}"}
-      post :maintab, :params => { :tab => "clo" }
-      expect(response.header['Location']).to include(ems_cloud_path(ems_cloud_amz))
-      expect(controller.instance_variable_get(:@breadcrumbs)).to eq([])
-    end
-  end
-
-  context "#session_reset" do
+  describe "#session_reset" do
     it "verify certain keys are restored after session is cleared" do
       user_TZO           = '5'
       browser_info       = {:name => 'firefox', :version => '32'}
@@ -370,37 +384,36 @@ describe DashboardController do
     end
   end
 
-  describe "building tabs" do
+  context "building tabs" do
     let(:group) do
-      role = FactoryGirl.create(:miq_user_role)
-      FactoryGirl.create(:miq_group, :miq_user_role => role)
+      role = FactoryBot.create(:miq_user_role, :features => %w[everything])
+      FactoryBot.create(:miq_group, :miq_user_role => role)
     end
 
-    let(:user) do
-      FactoryGirl.create(:user, :miq_groups => [group])
-    end
+    let(:user) { FactoryBot.create(:user, :miq_groups => [group]) }
+
 
     let(:wset) do
-      FactoryGirl.create(
+      FactoryBot.create(
         :miq_widget_set,
         :name     => "Widgets",
         :userid   => user.userid,
-        :group_id => group.id,
-        :set_data => {
-          :last_group_db_updated => Time.now.utc,
-          :col1 => [1], :col2 => [], :col3 => []
-        }
+        :owner    => group,
+        :last_group_db_updated => Time.now.utc
       )
     end
 
-    before(:each) do
+    let(:widget) { MiqWidget.find(wset.set_data[:col1].first) }
+
+    before do
+      EvmSpecHelper.local_miq_server
       login_as user
 
-      controller.instance_variable_set(:@_params, :tab => wset.id)
+      controller.params = {:tab => wset.id}
       controller.instance_variable_set(
         :@sb,
         :active_db  => wset.name, :active_db_id => wset.id,
-        :dashboards => { wset.name => {:col1 => [1], :col2 => [], :col3 => []} }
+        :dashboards => {wset.name => {:col1 => [widget.id], :col2 => []}}
       )
 
       controller.show
@@ -412,6 +425,90 @@ describe DashboardController do
 
     it 'sets available tabs' do
       expect(assigns(:tabs)).not_to be_empty
+    end
+  end
+
+  context 'skip_after_action :set_global_session_data' do
+    before do
+      _, _server, = EvmSpecHelper.create_guid_miq_server_zone
+      session[:edit] = "xyz"
+    end
+
+    it 'retains the existing value of session[:edit] after the POST request' do
+      post :csp_report, :body => '{"csp-report":{"document-uri":"https://example.com/foo/bar"}}', :format => 'json'
+      expect(session[:edit]).to eq("xyz")
+      expect(response.status).to eq(200)
+    end
+  end
+
+  describe '#authenticate_external_user' do
+    it 'sets the user name based on the header' do
+      allow(controller).to receive(:authenticate)
+      request.headers['X-Remote-User'] = 'foo@bar'.force_encoding("ASCII-8BIT")
+      controller.send(:authenticate_external_user)
+      expect(assigns(:user_name)).to eq('foo')
+    end
+
+    it 'sets the user name based on the header when the user has Unicode characters' do
+      allow(controller).to receive(:authenticate)
+      request.headers['X-Remote-User'] = 'häåğēn.däzş'.force_encoding("ASCII-8BIT")
+      controller.send(:authenticate_external_user)
+      expect(assigns(:user_name)).to eq('häåğēn.däzş')
+    end
+  end
+
+  describe '#show' do
+    context 'changing tabs' do
+      let(:group) { FactoryBot.create(:miq_group, :features => %w[everything]) }
+      let(:user) { FactoryBot.create(:user_admin, :current_group => group, :miq_groups => [group]) }
+
+      let(:ws1) do
+        FactoryBot.create(:miq_widget_set,
+                          :name     => 'A',
+                          :owner    => group)
+      end
+      let(:ws2) do
+        FactoryBot.create(:miq_widget_set,
+                          :name     => 'B',
+                          :owner    => group)
+      end
+
+      before do
+        EvmSpecHelper.local_miq_server
+        login_as user
+        controller.params = {'uib-tab' => ws2.id.to_s}
+        controller.instance_variable_set(:@sb, {})
+        controller.instance_variable_set(:@current_user, user)
+        group.update(:settings => { :dashboard_order => [ws1.id.to_s, ws2.id.to_s] })
+      end
+
+      it 'sets id of selected tab properly' do
+        controller.send(:show)
+        expect(controller.instance_variable_get(:@sb)[:active_db]).to eq(ws2.name)
+        expect(controller.instance_variable_get(:@sb)[:active_db_id]).to eq(ws2.id)
+        expect(controller.instance_variable_get(:@active_tab)).to eq(ws2.id.to_s)
+      end
+    end
+  end
+
+  describe "widget_to_pdf" do
+    before do
+      EvmSpecHelper.local_miq_server
+      stub_user(:features => :all)
+    end
+
+    it "renders the print layout" do
+      user = create_user_with_group('User-2', "Group-1", MiqUserRole.find_by(:name => "EvmRole-operator"))
+      report = create_and_generate_report_for_user("Vendor and Guest OS", user)
+      report_result_id = report.miq_report_results.first.id
+
+      expect(controller).to receive(:report_print_options)
+        .with(report, report.miq_report_results.first)
+        .and_call_original
+
+      get :widget_to_pdf, :params => {:rr_id => report_result_id}
+
+      expect(response).to render_template('layouts/print/report')
     end
   end
 

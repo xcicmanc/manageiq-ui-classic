@@ -3,8 +3,14 @@ class TreeBuilderServersByRole < TreeBuilderDiagnostics
 
   private
 
-  def x_get_tree_roots(_count_only, _options)
+  def x_get_tree_roots
     x_get_tree_server_roles
+  end
+
+  def override(node, _object)
+    if @sb[:diag_selected_id] && node.key == "role-#{@sb[:diag_selected_id]}"
+      node.selected = true
+    end
   end
 
   def x_get_tree_server_roles
@@ -23,7 +29,7 @@ class TreeBuilderServersByRole < TreeBuilderDiagnostics
 
   def x_get_tree_server_role_kids(parent, _count_only)
     parent.assigned_server_roles.sort_by { |asr| asr.miq_server.name }.select do |asr|
-      !parent.kind_of?(Zone) || asr.miq_server.my_zone == parent.name
+      !@root.kind_of?(Zone) || asr.miq_server.my_zone == @root.name
     end
   end
 end

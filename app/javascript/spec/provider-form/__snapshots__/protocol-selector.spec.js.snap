@@ -1,0 +1,80 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`ProtocolSelector component should match the snapshot 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3"
+    novalidate=""
+  >
+    <div />
+    <div
+      class="cds--form-item"
+    >
+      <div
+        class="cds--select"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="type"
+        >
+          Type
+        </label>
+        <div
+          class="cds--select-input__wrapper"
+        >
+          <select
+            class="cds--select-input"
+            id="type"
+            name="type"
+            title="STF"
+          >
+            <option
+              class="cds--select-option"
+              label="STF"
+              pivot="endpoints.stf.host"
+              value="stf"
+            >
+              STF
+            </option>
+            <option
+              class="cds--select-option"
+              label="AMQP"
+              pivot="endponts.amqp.host"
+              value="amqp"
+            >
+              AMQP
+            </option>
+          </select>
+          <svg
+            aria-hidden="true"
+            class="cds--select__arrow"
+            fill="currentColor"
+            focusable="false"
+            height="16"
+            preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 16 16"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary"
+        type="submit"
+        variant="primary"
+      >
+        Submit
+      </button>
+    </div>
+  </form>
+</div>
+`;

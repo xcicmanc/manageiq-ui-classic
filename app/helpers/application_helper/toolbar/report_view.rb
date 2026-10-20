@@ -23,7 +23,15 @@ class ApplicationHelper::Toolbar::ReportView < ApplicationHelper::Toolbar::Basic
       nil,
       :url       => "explorer",
       :url_parms => "?type=tabular",
-      :klass     => ApplicationHelper::Button::ViewGHT),
+      :klass     => ApplicationHelper::Button::ViewGHTAlways),
+    twostate(
+      :view_data,
+      'pficon pficon-filter',
+      N_('Data View'),
+      nil,
+      :url       => "explorer",
+      :url_parms => "?type=data",
+      :klass     => ApplicationHelper::Button::ViewGHTAlways),
   ])
   button_group('download_main', [
     select(
@@ -38,22 +46,25 @@ class ApplicationHelper::Toolbar::ReportView < ApplicationHelper::Toolbar::Basic
           'fa fa-file-text-o fa-lg',
           N_('Download this report in text format'),
           N_('Download as Text'),
-          :url_parms => "?render_type=txt",
-          :klass     => ApplicationHelper::Button::RenderReport),
+          :keepSpinner => true,
+          :url_parms   => "?render_type=txt",
+          :klass       => ApplicationHelper::Button::RenderReport),
         button(
           :render_report_csv,
           'fa fa-file-text-o fa-lg',
           N_('Download this report in CSV format'),
           N_('Download as CSV'),
-          :url_parms => "?render_type=csv",
-          :klass     => ApplicationHelper::Button::RenderReport),
+          :keepSpinner => true,
+          :url_parms   => "?render_type=csv",
+          :klass       => ApplicationHelper::Button::RenderReport),
         button(
           :render_report_pdf,
-          'fa fa-file-pdf-o fa-lg',
-          N_('Download this report in PDF format'),
-          N_('Download as PDF'),
-          :klass     => ApplicationHelper::Button::RenderReportPdf,
-          :url_parms => "?render_type=pdf"),
+          'pficon pficon-print fa-lg',
+          N_('Print or export this report in PDF format'),
+          N_('Print or export as PDF'),
+          :keepSpinner => true,
+          :klass       => ApplicationHelper::Button::RenderReport,
+          :url_parms   => "?render_type=pdf"),
       ]
     ),
   ])

@@ -1,0 +1,73 @@
+.workflow-states-list-container {
+  margin-bottom: 20px;
+
+  .workflow-states-container {
+    padding: 10px;
+    border: 1px solid lightgray;
+    border-bottom: 0;
+
+    &:last-child {
+      border-bottom: 1px solid lightgray;
+    }
+  
+    .workflow-status-container {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    
+      .workflow-status-label {
+        font-weight:bold;
+        font-size: 14px;
+        margin-right: 5px;
+      }
+    
+      .workflow-status-tag {
+        margin-right: 5px;
+      }
+    }
+    
+    .workflow-notification-container {
+      margin-top: 10px;
+    }
+  }  
+}
+
+.entry-point-wrapper {
+  display: inline-flex;
+  width: 100%;
+
+  .entry-point-text-input {
+    width: 80%;
+    margin-right: 20px;
+  }
+
+  .entry-point-buttons {
+    display: inline-flex;
+    margin-top: 24px;
+
+    .entry-point-open {
+      margin-right: 10px;
+    }
+  }
+}
+// Removing footer button styles inherited from the form-override because the modal is also nested within the form
+form .cds--modal .cds--modal-footer {
+  margin-bottom: 0;
+  .cds--btn--secondary {
+    margin-left: 0;
+  }
+  .cds--btn--primary {
+    margin-right: 0;
+  }
+}
+
+.miq-workflow-payload-graph-tab-panel {
+  .workflowgraph {
+    .graph-buttons-container {
+      left: 0.7rem;
+    }
+    .nodes .node-container .node .label tspan {
+      font-size: 13px;
+    }
+  }
+}

@@ -1,0 +1,361 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Add/remove security groups form component should add security group 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class="cds--form-item"
+    >
+      <div
+        class="cds--select"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="security_group"
+        >
+          Security Group
+        </label>
+        <div
+          class="cds--select-input__wrapper"
+        >
+          <select
+            class="cds--select-input"
+            id="security_group"
+            name="security_group"
+            title="<Choose>"
+          >
+            <option
+              class="cds--select-option"
+              label="<Choose>"
+              value=""
+            >
+              &lt;Choose&gt;
+            </option>
+            <option
+              class="cds--select-option"
+              label="loic"
+              value="loic"
+            >
+              loic
+            </option>
+            <option
+              class="cds--select-option"
+              label="docs-test"
+              value="docs-test"
+            >
+              docs-test
+            </option>
+            <option
+              class="cds--select-option"
+              label="dave"
+              value="dave"
+            >
+              dave
+            </option>
+            <option
+              class="cds--select-option"
+              label="Test Loic"
+              value="Test Loic"
+            >
+              Test Loic
+            </option>
+            <option
+              class="cds--select-option"
+              label="test_loic_1"
+              value="test_loic_1"
+            >
+              test_loic_1
+            </option>
+          </select>
+          <svg
+            aria-hidden="true"
+            class="cds--select__arrow"
+            fill="currentColor"
+            focusable="false"
+            height="16"
+            preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 16 16"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Save
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`Add/remove security groups form component should remove security group 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class="cds--form-item"
+    >
+      <div
+        class="cds--select"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="security_group"
+        >
+          Security Group
+        </label>
+        <div
+          class="cds--select-input__wrapper"
+        >
+          <select
+            class="cds--select-input"
+            id="security_group"
+            name="security_group"
+            title="<Choose>"
+          >
+            <option
+              class="cds--select-option"
+              label="<Choose>"
+              value=""
+            >
+              &lt;Choose&gt;
+            </option>
+            <option
+              class="cds--select-option"
+              label="default"
+              value="default"
+            >
+              default
+            </option>
+          </select>
+          <svg
+            aria-hidden="true"
+            class="cds--select__arrow"
+            fill="currentColor"
+            focusable="false"
+            height="16"
+            preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 16 16"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Save
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`Add/remove security groups form component should render add security group form 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class="cds--form-item"
+    >
+      <div
+        class="cds--select"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="security_group"
+        >
+          Security Group
+        </label>
+        <div
+          class="cds--select-input__wrapper"
+        >
+          <select
+            class="cds--select-input"
+            id="security_group"
+            name="security_group"
+            title="<Choose>"
+          >
+            <option
+              class="cds--select-option"
+              label="<Choose>"
+              value=""
+            >
+              &lt;Choose&gt;
+            </option>
+            <option
+              class="cds--select-option"
+              label="loic"
+              value="loic"
+            >
+              loic
+            </option>
+          </select>
+          <svg
+            aria-hidden="true"
+            class="cds--select__arrow"
+            fill="currentColor"
+            focusable="false"
+            height="16"
+            preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 16 16"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Save
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`Add/remove security groups form component should render remove security group form 1`] = `
+<div>
+  <form
+    class="cds--form form-0-2-3 form-react"
+    novalidate=""
+  >
+    <div
+      class="cds--form-item"
+    >
+      <div
+        class="cds--select"
+      >
+        <label
+          class="cds--label"
+          dir="auto"
+          for="security_group"
+        >
+          Security Group
+        </label>
+        <div
+          class="cds--select-input__wrapper"
+        >
+          <select
+            class="cds--select-input"
+            id="security_group"
+            name="security_group"
+            title="<Choose>"
+          >
+            <option
+              class="cds--select-option"
+              label="<Choose>"
+              value=""
+            >
+              &lt;Choose&gt;
+            </option>
+            <option
+              class="cds--select-option"
+              label="default"
+              value="default"
+            >
+              default
+            </option>
+          </select>
+          <svg
+            aria-hidden="true"
+            class="cds--select__arrow"
+            fill="currentColor"
+            focusable="false"
+            height="16"
+            preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 16 16"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div
+      class="cds--btn-set"
+    >
+      <button
+        class="cds--btn cds--btn--primary cds--btn--disabled"
+        disabled=""
+        type="submit"
+        variant="primary"
+      >
+        Save
+      </button>
+      <button
+        class="cds--btn cds--btn--secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+`;
